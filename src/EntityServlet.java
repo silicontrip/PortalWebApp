@@ -60,30 +60,35 @@ public class EntityServlet extends HttpServlet {
             QueueSession queueSession = queueCon.createQueueSession(false, Session.AUTO_ACKNOWLEDGE);
 
 		Queue submitQueue = null;
-		String entityArray = null;
+		JSONArray entityArray = null;
 		if (req.getParameter("portals") != null)
 		{
 			submitQueue = (Queue)ctx.lookup("jms/portalQueue");
-			entityArray = req.getParameter("portals");
+			entityArray = new JSONArray(req.getParameter("portals"));
 		}
 		if (req.getParameter("edges") != null)
 		{
 			submitQueue = (Queue)ctx.lookup("jms/linkQueue");
-			entityArray = req.getParameter("edges");
+			entityArray = new JSONArray(req.getParameter("edges"));
 		}
 		if (req.getParameter("fields") != null)
 		{
 			submitQueue = (Queue)ctx.lookup("jms/fieldQueue");
-			entityArray = req.getParameter("fields");
+			entityArray = new JSONArray(req.getParameter("fields"));
 		}
 
-		System.out.println(entityArray);
+		//System.out.println(entityArray);
 		
 		if (submitQueue != null)
 		{
 			QueueSender sender = queueSession.createSender(submitQueue);
-			Message msg = queueSession.createTextMessage(entityArray); // want to divide this into the individual entities
-			//sender.send(msg);
+			for (Object ent : entityArray)
+			{
+				JSONObject jsonEnt = (JSONObject) ent;
+				//System.out.println(jsonEnt.toString());
+				Message msg = queueSession.createTextMessage(jsonEnt.toString());
+				sender.send(msg);
+			}
 
 			jsonResponse.put("status",  "ok");
 		}

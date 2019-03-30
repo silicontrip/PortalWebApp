@@ -1,0 +1,10 @@
+create JDBC connection pool: IngressMysqlPool
+create SQL datasource: jdbc/IngressResource
+
+create users in Configurations/server-config/Security/Realms/file Manage Users
+
+create JMS Connection Factory: jms/QueueConnectionFactory
+create JMS Queue: jms/portalQueue
+create JMS Queue: jms/linkQueue
+create JMS Queue: jms/fieldQueue
+

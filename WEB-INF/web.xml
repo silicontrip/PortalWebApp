@@ -8,8 +8,8 @@
 	<load-on-startup>1</load-on-startup>
   </servlet>
   <servlet>
-	<servlet-name>LinkServlet</servlet-name>
-	<servlet-class>net.silicontrip.ingress.LinkServlet</servlet-class>
+	<servlet-name>EntityServlet</servlet-name>
+	<servlet-class>net.silicontrip.ingress.EntityServlet</servlet-class>
 	<load-on-startup>1</load-on-startup>
   </servlet>
   <servlet-mapping>
@@ -17,8 +17,8 @@
     <url-pattern>/getPortals</url-pattern>
   </servlet-mapping>
   <servlet-mapping>
-    <servlet-name>LinkServlet</servlet-name>
-    <url-pattern>/getLinks</url-pattern>
+    <servlet-name>EntityServlet</servlet-name>
+    <url-pattern>/submitEntity</url-pattern>
   </servlet-mapping>
   <resource-ref>
     <res-ref-name>jdbc/IngressResource</res-ref-name>

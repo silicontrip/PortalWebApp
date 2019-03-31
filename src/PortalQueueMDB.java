@@ -25,9 +25,12 @@ public class PortalQueueMDB implements MessageListener {
 		JSONObject pobj = new JSONObject (textMessage.getText());
 		SQLPortalDAO pdao = new SQLPortalDAO();
 		if (pobj.has("title")) 
-			pdao.insertFull(pobj.getString("guid"), pobj.getString("title"), pobj.getLong("latE6"), pobj.getLong("lngE6"),pobj.getString("team"),pobj.getInt("level"),pobj.getInt("resCount"),pobj.getInt("health"),pobj.getString("image"));
+		{
+			System.out.println("" + pobj.getString("image").length() + " / " + pobj.getString("image"));
+			pdao.writeFull(pobj.getString("guid"), pobj.getString("title"), pobj.getLong("latE6"), pobj.getLong("lngE6"),pobj.getString("team"),pobj.getInt("level"),pobj.getInt("resCount"),pobj.getInt("health"),pobj.getString("image"));
+		}
 		else 
-			pdao.insert(pobj.getString("guid"), pobj.getLong("latE6"), pobj.getLong("lngE6"),pobj.getString("team"));
+			pdao.write(pobj.getString("guid"), pobj.getLong("latE6"), pobj.getLong("lngE6"),pobj.getString("team"));
 			
         } catch (JMSException e) {
             System.out.println(

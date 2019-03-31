@@ -11,14 +11,33 @@ import javax.jms.*;
 
 public class EntityServlet extends HttpServlet {
 
+	private QueueConnectionFactory qcf = null;
+	private InitialContext ctx = null;
+	private QueueConnection queueCon = null;
+	private QueueSession queueSession = null;
+	private Queue submitQueue = null;
 
-  public void init () throws ServletException {
-	;
-  }
 
-  public void destroy () {
-	;
-  }
+	public void init () throws ServletException {
+		try {
+			ctx = new InitialContext();
+			qcf = (QueueConnectionFactory) ctx.lookup("jms/QueueConnectionFactory");	
+			queueCon = qcf.createQueueConnection();
+			queueSession = queueCon.createQueueSession(false, Session.AUTO_ACKNOWLEDGE);
+		} catch (Exception e) {
+			throw new ServletException(e.getMessage());
+		}
+	}
+
+	public void destroy () {
+		try {
+			queueCon.close(); 
+			queueSession.close(); 
+		} catch (Exception e) {
+		// not much we can do here as we can't throw anything.
+			e.printStackTrace();
+		}
+	}
 
   public void doPost(HttpServletRequest req, HttpServletResponse resp){
 	try {
@@ -51,15 +70,10 @@ public class EntityServlet extends HttpServlet {
 
 		PrintWriter writer = resp.getWriter();
 
-		InitialContext ctx = new InitialContext();
 
-		QueueConnectionFactory qcf = (QueueConnectionFactory) ctx.lookup("jms/QueueConnectionFactory");
-		QueueConnection queueCon = qcf.createQueueConnection();
 
             // create queue session off the connection
-            QueueSession queueSession = queueCon.createQueueSession(false, Session.AUTO_ACKNOWLEDGE);
 
-		Queue submitQueue = null;
 		JSONArray entityArray = null;
 		if (req.getParameter("portals") != null)
 		{

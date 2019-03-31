@@ -14,11 +14,10 @@ import javax.naming.*;
 
 public class PortalServlet extends HttpServlet {
 
-//	PortalDAO pdao = null;
+	PortalDAO pdao = null;
 
   public void init () throws ServletException {
-//	pdao = new SQLPortalDAO();
-	;
+	pdao = new SQLPortalDAO();
   }
 
   public void destroy () {
@@ -32,7 +31,7 @@ public class PortalServlet extends HttpServlet {
 		PrintWriter writer = resp.getWriter();
 
 
-		PortalDAO pdao = new SQLPortalDAO();
+	//	PortalDAO pdao = new SQLPortalDAO();
 
 		S2LatLng p1 =  pdao.getLocation(req.getParameter("ll"));
 		S2LatLng p2 =  pdao.getLocation(req.getParameter("l2"));

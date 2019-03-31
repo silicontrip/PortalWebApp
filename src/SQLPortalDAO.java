@@ -1,3 +1,21 @@
+/*
+mysql> desc portals;
++---------------+--------------+------+-----+---------+-------+
+| Field         | Type         | Null | Key | Default | Extra |
++---------------+--------------+------+-----+---------+-------+
+| guid          | varchar(36)  | NO   | PRI | NULL    |       |
+| title         | text         | YES  |     | NULL    |       |
+| latE6         | int(12)      | NO   |     | NULL    |       |
+| lngE6         | int(12)      | NO   |     | NULL    |       |
+| team          | varchar(16)  | NO   |     | NULL    |       |
+| level         | int(1)       | YES  |     | NULL    |       |
+| res_count     | int(1)       | YES  |     | NULL    |       |
+| health        | int(3)       | YES  |     | NULL    |       |
+| time_lastseen | int(16)      | YES  |     | NULL    |       |
+| deleted       | bit(1)       | YES  |     | b'0'    |       |
+| image         | varchar(160) | YES  |     | NULL    |       |
++---------------+--------------+------+-----+---------+-------+
+*/
 package net.silicontrip.ingress;
 
 import java.util.ArrayList;

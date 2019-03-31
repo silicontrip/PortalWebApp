@@ -13,7 +13,8 @@ public interface PortalDAO {
 	public void delete (String guid) throws PortalDAOException;
 	public void updateTitle(String guid, String title) throws PortalDAOException;
 	public void updateLocation(String guid, long latE6, long lngE6) throws PortalDAOException;
-	public void insert(String guid, String title, long latE6, long lngE6) throws PortalDAOException;
+        public void insertFull(String guid, String title, long latE6, long lngE6,String team,int level,int resCount, int health, String image) throws PortalDAOException;
+        public void insert(String guid, long latE6, long lngE6, String team) throws PortalDAOException;
 
 }
 	

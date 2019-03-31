@@ -16,7 +16,8 @@ public class SQLPortalDAO implements PortalDAO {
 	public static String UPDATE_DELETED = "update portals set deleted=true where guid=?";
 	public static String UPDATE_TITLE = "update portals set title=? where guid=?";
 	public static String UPDATE_LOCATION = "update portals set latE6=?,lngE6=? where guid=?";
-	public static String INSERT = "insert into portals (guid,title,latE6,lngE6) values (?,?,?,?)";
+	public static String INSERT_FULL = "insert into portals (guid,title,latE6,lngE6,team,level,res_count,health,image) values (?,?,?,?,?,?,?,?,?)";
+	public static String INSERT = "insert into portals (guid,latE6,lngE6,team) values (?,?,?,?)";
 	
 
 	private Connection c = null;
@@ -24,12 +25,14 @@ public class SQLPortalDAO implements PortalDAO {
 	
 	public SQLPortalDAO()  throws PortalDAOException {
 		spdDs = getDataSource();
-		c = spdDs.getConnection();		
+		//c = spdDs.getConnection();		
+		/*
 		try {
-			spdConn = spdDs.getConnection();
+			c = spdDs.getConnection();
 		} catch (SQLException se) {
 			throw new PortalDAOException("SQLException: " + se.getMessage());
 		}
+		*/
 	}
 	
 
@@ -52,7 +55,7 @@ public class SQLPortalDAO implements PortalDAO {
 		try {
 
 			S2LatLngRect bound  = reg.getRectBound();
-			//c = spdDs.getConnection();		
+			c = spdDs.getConnection();		
 			ps = c.prepareStatement(GET_FROM_BOX, ResultSet.CONCUR_READ_ONLY);
 			ps.setString(1, Long.toString(bound.latLo().e6()));
 			ps.setString(2, Long.toString(bound.latHi().e6()));
@@ -74,7 +77,7 @@ public class SQLPortalDAO implements PortalDAO {
 
 			rs.close();
 			ps.close();
-			//c.close();
+			c.close();
 			return ret;
 		} catch (SQLException se) {
 			throw new PortalDAOException("SQLException: " + se.getMessage());
@@ -109,7 +112,7 @@ public class SQLPortalDAO implements PortalDAO {
 		S2LatLng ret = null;
       
 		try {
-			//c = spdDs.getConnection();
+			c = spdDs.getConnection();
 			ps = c.prepareStatement(GET_LOCATION_FROM_TITLE, ResultSet.CONCUR_READ_ONLY);
 			ps.setString(1, title);
 			rs = ps.executeQuery();
@@ -138,7 +141,7 @@ public class SQLPortalDAO implements PortalDAO {
 //		System.out.println(">>> getLocationFromTitle: close return");
 			rs.close();
 			ps.close();
-			//c.close();
+			c.close();
 			return ret;
 		} catch (SQLException se) {
 			throw new PortalDAOException("SQLException: " + se.getMessage());
@@ -153,7 +156,7 @@ public class SQLPortalDAO implements PortalDAO {
 		//Connection c = null;
       
 		try {
-			//c = spdDs.getConnection();
+			c = spdDs.getConnection();
 			ps = c.prepareStatement(GET_LOCATION_FROM_GUID, ResultSet.CONCUR_READ_ONLY);
 			ps.setString(1, guid);
 			rs = ps.executeQuery();
@@ -165,7 +168,7 @@ public class SQLPortalDAO implements PortalDAO {
 
 			rs.close();
 			ps.close();
-			//c.close();
+			c.close();
 			return ret;
 		} catch (SQLException se) {
 			throw new PortalDAOException("SQLException: " + se.getMessage());
@@ -182,7 +185,7 @@ public class SQLPortalDAO implements PortalDAO {
 		//Connection c = null;
       
 		try {
-			//c = spdDs.getConnection();
+			c = spdDs.getConnection();
 			ps = c.prepareStatement(GET_LOCATION_FROM_LOCATION, ResultSet.CONCUR_READ_ONLY);
 			ps.setString(1, Long.toString(latE6));
 			ps.setString(2, Long.toString(lngE6));
@@ -195,7 +198,7 @@ public class SQLPortalDAO implements PortalDAO {
 
 			rs.close();
 			ps.close();
-			//c.close();
+			c.close();
 			return ret;
 		} catch (SQLException se) {
 			throw new PortalDAOException("SQLException: " + se.getMessage());
@@ -209,15 +212,20 @@ public class SQLPortalDAO implements PortalDAO {
 		int rs;
       
 		try {
-			//c = spdDs.getConnection();
+			c = spdDs.getConnection();
 			ps = c.prepareStatement(UPDATE_DELETED);
 			ps.setString(1, guid);
 			rs = ps.executeUpdate();
 
-			ps.close();
-			//c.close();
 		} catch (SQLException se) {
 			throw new PortalDAOException("SQLException: " + se.getMessage());
+		} finally {
+			try {
+				ps.close();
+				c.close();
+			} catch (SQLException se) {
+				throw new PortalDAOException("SQLException: " + se.getMessage());
+			}
 		}
 	}
         public void updateTitle(String guid, String title) throws PortalDAOException
@@ -228,16 +236,21 @@ public class SQLPortalDAO implements PortalDAO {
 			//Connection c = null;
 	      
 			try {
-				//c = spdDs.getConnection();
+				c = spdDs.getConnection();
 				ps = c.prepareStatement(UPDATE_TITLE);
 				ps.setString(1, title);
 				ps.setString(2, guid);
 				rs = ps.executeUpdate();
 
-				ps.close();
-				//c.close();
 			} catch (SQLException se) {
 				throw new PortalDAOException("SQLException: " + se.getMessage());
+			} finally {
+			try {
+				ps.close();
+				c.close();
+			} catch (SQLException se) {
+				throw new PortalDAOException("SQLException: " + se.getMessage());
+			}
 			}
 		}
 	}
@@ -248,40 +261,84 @@ public class SQLPortalDAO implements PortalDAO {
 		int rs;
       
 		try {
-			//c = spdDs.getConnection();
+			c = spdDs.getConnection();
 			ps = c.prepareStatement(UPDATE_LOCATION);
 			ps.setString(1, Long.toString(latE6));
 			ps.setString(2, Long.toString(lngE6));
 			ps.setString(3, guid);
 			rs = ps.executeUpdate();
 
-			ps.close();
-			//c.close();
 		} catch (SQLException se) {
 			throw new PortalDAOException("SQLException: " + se.getMessage());
+		} finally {
+			try {
+				ps.close();
+				c.close();
+			} catch (SQLException se) {
+				throw new PortalDAOException("SQLException: " + se.getMessage());
+			}
 		}
 	}
 
-        public void insert(String guid, String title, long latE6, long lngE6) throws PortalDAOException
+        public void insertFull(String guid, String title, long latE6, long lngE6,String team,int level,int resCount, int health, String image) throws PortalDAOException
 	{
 		PreparedStatement ps = null;
 		//Connection c=null;
 		int rs;
       
 		try {
-			//c = spdDs.getConnection();
-			ps = c.prepareStatement(INSERT);
+			c = spdDs.getConnection();
+			ps = c.prepareStatement(INSERT_FULL);
 			ps.setString(1, guid);
 			ps.setString(2, title);
-			ps.setString(3, Long.toString(latE6));
-			ps.setString(4, Long.toString(lngE6));
+			ps.setLong(3, latE6);
+			ps.setLong(4, lngE6);
+			ps.setString(5, team);
+			ps.setInt(6,level);
+			ps.setInt(7,resCount);
+			ps.setInt(8,health);
+			ps.setString(9,image);
 			rs = ps.executeUpdate();
 
-			ps.close();
-			//c.close();
 		} catch (SQLException se) {
 			throw new PortalDAOException("SQLException: " + se.getMessage());
+		} finally {
+			try {
+				ps.close();
+				c.close();
+			} catch (SQLException se) {
+				throw new PortalDAOException("SQLException: " + se.getMessage());
+			}
+		}
+		
+	}
+	public void insert(String guid, long latE6, long lngE6, String team) throws PortalDAOException
+	{
+		PreparedStatement ps = null;
+		//Connection c=null;
+		int rs;
+      
+		try {
+			c = spdDs.getConnection();
+			ps = c.prepareStatement(INSERT_FULL);
+			ps.setString(1, guid);
+			ps.setLong(2, latE6);
+			ps.setLong(3, lngE6);
+			ps.setString(4, team);
+
+			rs = ps.executeUpdate();
+
+		} catch (SQLException se) {
+			throw new PortalDAOException("SQLException: " + se.getMessage());
+		} finally {
+			try {
+				ps.close();
+				c.close();
+			} catch (SQLException se) {
+				throw new PortalDAOException("SQLException: " + se.getMessage());
+			}
 		}
 	}
+
 }
 	

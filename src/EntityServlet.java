@@ -53,6 +53,7 @@ public class EntityServlet extends HttpServlet {
 				sender.send(msg);
 				count++;
 			}
+			sender.close();
 		}
 		return count;
 	}
@@ -95,13 +96,15 @@ public class EntityServlet extends HttpServlet {
 		JSONArray entityArray = null;
 		if (req.getParameter("portals") != null)
 		{
-			jsonResponse.put("portals_submitted", submit ((Queue)ctx.lookup("jms/portalQueue"), new JSONArray(req.getParameter("portals"))));
-			jsonResponse.put("portals_deleted", submit ((Queue)ctx.lookup("jms/portalQueue"), new JSONArray(req.getParameter("deleted_portals"))));
+			submitQueue = (Queue)ctx.lookup("jms/portalQueue");
+			jsonResponse.put("portals_submitted", submit (submitQueue, new JSONArray(req.getParameter("portals"))));
+			jsonResponse.put("portals_deleted", submit (submitQueue, new JSONArray(req.getParameter("portals_deleted"))));
 		}
 		if (req.getParameter("edges") != null)
 		{
-			jsonResponse.put("edges_submitted",submit((Queue)ctx.lookup("jms/linkQueue"), new JSONArray(req.getParameter("edges"))));
-			jsonResponse.put("edges_deleted",submit((Queue)ctx.lookup("jms/linkQueue"), new JSONArray(req.getParameter("deleted_edges"))));
+			submitQueue = (Queue)ctx.lookup("jms/linkQueue");
+			jsonResponse.put("edges_submitted",submit(submitQueue, new JSONArray(req.getParameter("edges"))));
+			jsonResponse.put("edges_deleted",submit(submitQueue, new JSONArray(req.getParameter("edges_deleted"))));
 		}
 		if (req.getParameter("fields") != null)
 		{
@@ -116,6 +119,7 @@ public class EntityServlet extends HttpServlet {
 	catch (Exception e) {
 		JSONObject jsonResponse = new JSONObject();
 		jsonResponse.put("error",  e.getMessage());
+		e.printStackTrace();
 		try {
                         resp.setStatus(500);
                         PrintWriter writer = resp.getWriter();

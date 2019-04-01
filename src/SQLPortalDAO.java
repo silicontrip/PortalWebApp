@@ -34,11 +34,11 @@ public class SQLPortalDAO implements PortalDAO {
 	public static String UPDATE_DELETED = "update portals set deleted=true where guid=?";
 	//public static String UPDATE_TITLE = "update portals set title=? where guid=?";
 	//public static String UPDATE_LOCATION = "update portals set latE6=?,lngE6=? where guid=?";
-	public static String INSERT_FULL = "insert into portals (guid,title,latE6,lngE6,team,level,res_count,health,image) values (?,?,?,?,?,?,?,?,?)";
-	public static String INSERT = "insert into portals (guid,latE6,lngE6,team) values (?,?,?,?)";
+	public static String INSERT_FULL = "insert into portals (guid,title,latE6,lngE6,team,level,res_count,health,image,deleted) values (?,?,?,?,?,?,?,?,?,0)";
+	public static String INSERT = "insert into portals (guid,latE6,lngE6,team,deleted) values (?,?,?,?,0)";
 
-	public static String UPDATE = "update portals set latE6=?,lngE6=?,team=? where guid=?";
-	public static String UPDATE_FULL = "update portals set title=?,latE6=?,lngE6=?,team=?,level=?,res_count=?,health=?,image=? where guid=?";
+	public static String UPDATE = "update portals set latE6=?,lngE6=?,team=?,deleted=0 where guid=?";
+	public static String UPDATE_FULL = "update portals set title=?,latE6=?,lngE6=?,team=?,level=?,res_count=?,health=?,image=?,deleted=0 where guid=?";
 	public static String GUID_EXISTS =  "select guid from portals where guid=?";
 	
 

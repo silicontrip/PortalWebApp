@@ -20,8 +20,9 @@ public class PortalQueueMDB implements MessageListener {
  
     public void onMessage(Message message) {
         TextMessage textMessage = (TextMessage) message;
+	String tm = "";
         try {
-//		System.out.println(textMessage.getText());
+		tm= textMessage.getText();
 		JSONObject pobj = new JSONObject (textMessage.getText());
 		SQLPortalDAO pdao = new SQLPortalDAO();
 		if (pobj.has("delete"))
@@ -40,6 +41,10 @@ public class PortalQueueMDB implements MessageListener {
         } catch (JMSException e) {
             System.out.println(
               "Error while trying to consume messages: " + e.getMessage());
-        }
+        } catch (Exception e) {
+		System.out.println(tm);
+		e.printStackTrace();
+	}
+		
     }
 }

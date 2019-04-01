@@ -24,13 +24,18 @@ public class PortalQueueMDB implements MessageListener {
 //		System.out.println(textMessage.getText());
 		JSONObject pobj = new JSONObject (textMessage.getText());
 		SQLPortalDAO pdao = new SQLPortalDAO();
-		if (pobj.has("title")) 
+		if (pobj.has("delete"))
 		{
-			System.out.println("" + pobj.getString("image").length() + " / " + pobj.getString("image"));
-			pdao.writeFull(pobj.getString("guid"), pobj.getString("title"), pobj.getLong("latE6"), pobj.getLong("lngE6"),pobj.getString("team"),pobj.getInt("level"),pobj.getInt("resCount"),pobj.getInt("health"),pobj.getString("image"));
+			pdao.delete(pobj.getString("delete"));
+		} else {
+			if (pobj.has("title")) 
+			{
+				//System.out.println("" + pobj.getString("image").length() + " / " + pobj.getString("image"));
+				pdao.writeFull(pobj.getString("guid"), pobj.getString("title"), pobj.getLong("latE6"), pobj.getLong("lngE6"),pobj.getString("team"),pobj.getInt("level"),pobj.getInt("resCount"),pobj.getInt("health"),pobj.getString("image"));
+			}
+			else 
+				pdao.write(pobj.getString("guid"), pobj.getLong("latE6"), pobj.getLong("lngE6"),pobj.getString("team"));
 		}
-		else 
-			pdao.write(pobj.getString("guid"), pobj.getLong("latE6"), pobj.getLong("lngE6"),pobj.getString("team"));
 			
         } catch (JMSException e) {
             System.out.println(

@@ -39,6 +39,24 @@ public class EntityServlet extends HttpServlet {
 		}
 	}
 
+	private int submit (Queue sq, JSONArray ea) throws JMSException
+	{
+		int count =0;
+		if (sq != null)
+		{
+			QueueSender sender = queueSession.createSender(sq);
+			for (Object ent : ea)
+			{
+				JSONObject jsonEnt = (JSONObject) ent;
+				//System.out.println(jsonEnt.toString());
+				Message msg = queueSession.createTextMessage(jsonEnt.toString());
+				sender.send(msg);
+				count++;
+			}
+		}
+		return count;
+	}
+
   public void doPost(HttpServletRequest req, HttpServletResponse resp){
 	try {
 		resp.setContentType("text/json");
@@ -53,8 +71,8 @@ public class EntityServlet extends HttpServlet {
 		} catch (ServletException e) {
 			jsonResponse.put("error",  e.getMessage());
 			jsonResponse.put("errorType",  e.getClass().getName());
-			jsonResponse.put("agent", userName);
-			jsonResponse.put("apikey", apiKey);
+			//jsonResponse.put("agent", userName);
+			//jsonResponse.put("apikey", apiKey);
 
 			try {
 				resp.setStatus(403);
@@ -77,39 +95,20 @@ public class EntityServlet extends HttpServlet {
 		JSONArray entityArray = null;
 		if (req.getParameter("portals") != null)
 		{
-			submitQueue = (Queue)ctx.lookup("jms/portalQueue");
-			entityArray = new JSONArray(req.getParameter("portals"));
+			jsonResponse.put("portals_submitted", submit ((Queue)ctx.lookup("jms/portalQueue"), new JSONArray(req.getParameter("portals"))));
+			jsonResponse.put("portals_deleted", submit ((Queue)ctx.lookup("jms/portalQueue"), new JSONArray(req.getParameter("deleted_portals"))));
 		}
 		if (req.getParameter("edges") != null)
 		{
-			submitQueue = (Queue)ctx.lookup("jms/linkQueue");
-			entityArray = new JSONArray(req.getParameter("edges"));
+			jsonResponse.put("edges_submitted",submit((Queue)ctx.lookup("jms/linkQueue"), new JSONArray(req.getParameter("edges"))));
+			jsonResponse.put("edges_deleted",submit((Queue)ctx.lookup("jms/linkQueue"), new JSONArray(req.getParameter("deleted_edges"))));
 		}
 		if (req.getParameter("fields") != null)
 		{
-			submitQueue = (Queue)ctx.lookup("jms/fieldQueue");
-			entityArray = new JSONArray(req.getParameter("fields"));
+			jsonResponse.put("fields_submitted",submit((Queue)ctx.lookup("jms/fieldQueue"),new JSONArray(req.getParameter("fields"))));
 		}
 
 		//System.out.println(entityArray);
-		
-		if (submitQueue != null)
-		{
-			QueueSender sender = queueSession.createSender(submitQueue);
-			for (Object ent : entityArray)
-			{
-				JSONObject jsonEnt = (JSONObject) ent;
-				//System.out.println(jsonEnt.toString());
-				Message msg = queueSession.createTextMessage(jsonEnt.toString());
-				sender.send(msg);
-			}
-
-			jsonResponse.put("status",  "ok");
-		}
-		else
-		{
-			jsonResponse.put("status",  "invalidsubmit");
-		}
 		
 		writer.println(jsonResponse.toString());
 		writer.close(); 
@@ -118,7 +117,10 @@ public class EntityServlet extends HttpServlet {
 		JSONObject jsonResponse = new JSONObject();
 		jsonResponse.put("error",  e.getMessage());
 		try {
-			resp.sendError(500,jsonResponse.toString());
+                        resp.setStatus(500);
+                        PrintWriter writer = resp.getWriter();
+                        writer.println(jsonResponse.toString());
+                        writer.close(); 
 		} catch (Exception e2) {
 			// sending the error caused an error.
 			// is there anything else we can do?

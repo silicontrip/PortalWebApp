@@ -64,23 +64,23 @@ public class LinkServlet extends HttpServlet {
 		else
 			linkList = dao.getAll();
 			
-		JSONArray jsonResponse = new JSONArray();
+		JSONObject jsonResponse = new JSONObject();
 		for (Link li : linkList)
-			{
-				JSONObject jsonLink = new JSONObject();
-				jsonLink.put("guid",li.getGuid());
-				jsonLink.put("team",li.getTeam());
-				jsonLink.put("dguid",li.getdGuid());
-				jsonLink.put("dlat",li.getdLatE6()); // would love to move these to the E6 naming
-				jsonLink.put("dlng",li.getdLngE6()); // E6
+		{
+			JSONObject jsonLink = new JSONObject();
+			jsonLink.put("guid",li.getGuid());
+			jsonLink.put("team",li.getTeam());
+			jsonLink.put("dguid",li.getdGuid());
+			jsonLink.put("dlat",li.getdLatE6()); // would love to move these to the E6 naming
+			jsonLink.put("dlng",li.getdLngE6()); // E6
 
-				jsonLink.put("oguid",li.getoGuid());
-				jsonLink.put("olat",li.getoLatE6()); // would love to move these to the E6 naming
-				jsonLink.put("olng",li.getoLngE6()); // E6
-				jsonResponse.put(jsonLink);	
-			}
-			writer.println(jsonResponse.toString());
-			writer.close(); 
+			jsonLink.put("oguid",li.getoGuid());
+			jsonLink.put("olat",li.getoLatE6()); // would love to move these to the E6 naming
+			jsonLink.put("olng",li.getoLngE6()); // E6
+			jsonResponse.put(li.getGuid(),jsonLink);	
+		}
+		writer.println(jsonResponse.toString());
+		writer.close(); 
 		
 	}
 	catch (Exception e) {

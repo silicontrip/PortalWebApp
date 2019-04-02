@@ -37,16 +37,16 @@ public class SQLLinkDAO implements LinkDAO {
                 InitialContext ctx = new InitialContext();
                 spdDs =  (DataSource) ctx.lookup("jdbc/IngressResource");
             } catch (NamingException slx) {   
-                throw new PortalDAOException("NamingException while looking up DB context : " + slx.getMessage());
+                throw new LinkDAOException("NamingException while looking up DB context : " + slx.getMessage());
             }
         }
 
         public ArrayList<Link> getInRect (S2LatLngRect reg) throws LinkDAOException
         {
-            ArrayList<Link> all  = getAll();
-            ArrayList<Link> ret = new ArrayList<Link>();
+		ArrayList<Link> all  = getAll();
+		ArrayList<Link> ret = new ArrayList<Link>();
             // should I just copy the getAll method to save memory.
-            for (Link l : all)
+		for (Link l : all)
 		{
 			S2LatLngRect lb = l.getBounds();
 			if (reg.contains(lb) || reg.intersects(lb))
@@ -80,7 +80,7 @@ public class SQLLinkDAO implements LinkDAO {
 				rs.getString("team"));
 			}
 		} catch (SQLException e) {
-			throw new PortalDAOException(e.getMessage());
+			throw new LinkDAOException(e.getMessage());
 		} finally {
 			try {
 				rs.close();
@@ -109,7 +109,6 @@ public class SQLLinkDAO implements LinkDAO {
                     long dlng = rs.getLong("d_lngE6");
                     long olat = rs.getLong("o_latE6");
                     long olng = rs.getLong("o_lngE6");
-                    // intersects or contained in region?
                     Link l = new Link(rs.getString("guid"),
                         rs.getString("d_guid"),
                         dlat,dlng,
@@ -120,7 +119,7 @@ public class SQLLinkDAO implements LinkDAO {
                         ret.add(l);
                 }
             } catch (SQLException e) {
-                throw new PortalDAOException(e.getMessage());
+                throw new LinkDAOException(e.getMessage());
             } finally {
                 try {
                     rs.close();
@@ -135,75 +134,81 @@ public class SQLLinkDAO implements LinkDAO {
 
         public void purge() throws LinkDAOException
         {
-            PreparedStatement ps = null;
-		    int rs;
+		PreparedStatement ps = null;
+		int rs;
       
-		    try {
-			    c = spdDs.getConnection();		
-                ps = c.prepareStatement(PURGE); // Little Bobby DROP TABLES
-                rs = ps.executeUpdate();
-            } catch (SQLException se) {
-                throw new LinkDAOException("SQLException: " + se.getMessage());
-            } finally {
-                try {
-                    ps.close();
-                    c.close();
-                } catch (SQLException se) {
-                    throw new LinkDAOException("SQLException: " + se.getMessage());
-                }
-            }
+		try {
+			c = spdDs.getConnection();		
+			ps = c.prepareStatement(PURGE); // Little Bobby DROP TABLES
+			rs = ps.executeUpdate();
+		} catch (SQLException se) {
+			throw new LinkDAOException("SQLException: " + se.getMessage());
+		} finally {
+			try {
+				ps.close();
+				c.close();
+			} catch (SQLException se) {
+				throw new LinkDAOException("SQLException: " + se.getMessage());
+			}
+		}
         }
 
         public void delete(String guid) throws LinkDAOException
         {
-            PreparedStatement ps = null;
-		    int rs;
+		System.out.println("SQLLinkDAO: delete("+guid+")");
+		PreparedStatement ps = null;
+		int rs;
       
-		    try {
-			    c = spdDs.getConnection();		
-                ps = c.prepareStatement(DELETE);
-                ps.setString(1, guid);
-                rs = ps.executeUpdate();
-            } catch (SQLException se) {
-                throw new LinkDAOException("SQLException: " + se.getMessage());
-            } finally {
-                try {
-                    ps.close();
-                    c.close();
-                } catch (SQLException se) {
-                    throw new LinkDAOException("SQLException: " + se.getMessage());
-                }
-            }
+		try {
+			c = spdDs.getConnection();		
+			ps = c.prepareStatement(DELETE);
+			ps.setString(1, guid);
+			rs = ps.executeUpdate();
+		} catch (SQLException se) {
+			throw new LinkDAOException("SQLException: " + se.getMessage());
+		} finally {
+			try {
+				ps.close();
+				c.close();
+			} catch (SQLException se) {
+				throw new LinkDAOException("SQLException: " + se.getMessage());
+			}
+		}
         }
 
         public void insert(String guid,String dguid, long dlatE6, long dlngE6,String oguid, long olatE6, long olngE6, String team) throws LinkDAOException
         {
-            PreparedStatement ps = null;
-		    int rs;
-      
-		    try {
-			    c = spdDs.getConnection();		
-                ps = c.prepareStatement(INSERT);
-                ps.setString(1, guid);
-                ps.setString(2, dguid);
-                ps.setLong(3, dlatE6);
-                ps.setLong(4, dlngE6);
-                ps.setString(5, oguid);
-                ps.setLong(6, olatE6);
-                ps.setLong(7, olngE6);
-                ps.setString(8, team);
 
-                rs = ps.executeUpdate();
-            } catch (SQLException se) {
-                throw new LinkDAOException("SQLException: " + se.getMessage());
-            } finally {
-                try {
-                    ps.close();
-                    c.close();
-                } catch (SQLException se) {
-                    throw new LinkDAOException("SQLException: " + se.getMessage());
-                }
-            }
-        }
+		if (getGuid(guid) == null)
+		{
+
+			PreparedStatement ps = null;
+			int rs;
+      
+			try {
+				c = spdDs.getConnection();		
+				ps = c.prepareStatement(INSERT);
+				ps.setString(1, guid);
+				ps.setString(2, dguid);
+				ps.setLong(3, dlatE6);
+				ps.setLong(4, dlngE6);
+				ps.setString(5, oguid);
+				ps.setLong(6, olatE6);
+				ps.setLong(7, olngE6);
+				ps.setString(8, team);
+
+				rs = ps.executeUpdate();
+			} catch (SQLException se) {
+				throw new LinkDAOException("SQLException: " + se.getMessage());
+			} finally {
+				try {
+					ps.close();
+					c.close();
+				} catch (SQLException se) {
+					throw new LinkDAOException("SQLException: " + se.getMessage());
+				}
+			}
+		}
+	}
 
 }

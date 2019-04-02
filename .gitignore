@@ -1,0 +1,5 @@
+build
+dist
+deprecated
+WEB-INF/classes
+WEB-INF/lib

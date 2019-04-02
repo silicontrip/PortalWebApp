@@ -54,6 +54,7 @@ public class LinkQueueMDB implements MessageListener {
 		String tm = "";
         try {
 			tm= textMessage.getText();
+		//	System.out.println(tm);
 			JSONObject pobj = new JSONObject (textMessage.getText());
 			SQLLinkDAO dao = new SQLLinkDAO();
 			if (pobj.has("delete"))
@@ -66,10 +67,11 @@ public class LinkQueueMDB implements MessageListener {
 					dao.delete(pobj.getString("guid"));
 			} else if (pobj.has("team")) {
 				//System.out.println("" + pobj.getString("image").length() + " / " + pobj.getString("image"));
+//{"dLngE6":145176878,"oGuid":"704dbc67aed54b73b153bbb5be3a9fed.16","oLatE6":-37818041,"guid":"e11e884cdb0e438e9c25c6bc0b909b14.9","team":"E","oLngE6":145157441,"dLatE6":-37802085,"dGuid":"5f7ef86ee21f4c83809527b917cad585.16"}
 				dao.insert(
 					pobj.getString("guid"),
-					pobj.getString("dguid"), pobj.getLong("dlatE6"), pobj.getLong("dlngE6"),
-					pobj.getString("oguid"), pobj.getLong("olatE6"), pobj.getLong("olngE6"),
+					pobj.getString("dGuid"), pobj.getLong("dLatE6"), pobj.getLong("dLngE6"),
+					pobj.getString("oGuid"), pobj.getLong("oLatE6"), pobj.getLong("oLngE6"),
 					pobj.getString("team"));
 			} else if (pobj.has("purge")) {
 				dao.purge();

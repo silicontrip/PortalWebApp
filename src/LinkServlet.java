@@ -64,7 +64,7 @@ public class LinkServlet extends HttpServlet {
 		else
 			linkList = dao.getAll();
 			
-		JSONObject jsonResponse = new JSONObject();
+		JSONArray jsonResponse = new JSONArray();
 		for (Link li : linkList)
 			{
 				JSONObject jsonLink = new JSONObject();
@@ -77,7 +77,7 @@ public class LinkServlet extends HttpServlet {
 				jsonLink.put("oguid",li.getoGuid());
 				jsonLink.put("olat",li.getoLatE6()); // would love to move these to the E6 naming
 				jsonLink.put("olng",li.getoLngE6()); // E6
-				jsonResponse.put(li.getGuid(),jsonLink);	
+				jsonResponse.put(jsonLink);	
 			}
 			writer.println(jsonResponse.toString());
 			writer.close(); 

@@ -72,8 +72,8 @@ public class EntityServlet extends HttpServlet {
 		} catch (ServletException e) {
 			jsonResponse.put("error",  e.getMessage());
 			jsonResponse.put("errorType",  e.getClass().getName());
-			//jsonResponse.put("agent", userName);
-			//jsonResponse.put("apikey", apiKey);
+			jsonResponse.put("agent", userName);
+			jsonResponse.put("apikey", apiKey);
 
 			try {
 				resp.setStatus(403);
@@ -102,6 +102,7 @@ public class EntityServlet extends HttpServlet {
 		}
 		if (req.getParameter("edges") != null)
 		{
+			System.out.println("Submit Edges");
 			submitQueue = (Queue)ctx.lookup("jms/linkQueue");
 			jsonResponse.put("edges_submitted",submit(submitQueue, new JSONArray(req.getParameter("edges"))));
 			jsonResponse.put("edges_deleted",submit(submitQueue, new JSONArray(req.getParameter("edges_deleted"))));

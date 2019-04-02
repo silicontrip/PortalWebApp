@@ -5,6 +5,7 @@ import com.google.common.geometry.*;
 
 public interface LinkDAO {
         public ArrayList<Link> getInRect (S2LatLngRect reg) throws LinkDAOException;
+	public Link getGuid(String guid) throws LinkDAOException;
         public ArrayList<Link> getAll () throws LinkDAOException;
         public void purge() throws LinkDAOException;
         public void delete(String guid) throws LinkDAOException;

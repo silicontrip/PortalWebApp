@@ -24,6 +24,7 @@ import javax.naming.*;
 public class SQLLinkDAO implements LinkDAO {
 
         public static String GET_ALL = "select * from links";
+	public static String GET_GUID = "select * from links where guid=?";
         public static String PURGE = "delete from links";
         public static String DELETE= "delete from links where guid=?";
         public static String INSERT= "insert into links (guid,d_guid,d_latE6,d_lngE6,o_guid,o_latE6,o_lngE6,team) values (?,?,?,?,?,?,?,?)";
@@ -50,6 +51,44 @@ public class SQLLinkDAO implements LinkDAO {
 			S2LatLngRect lb = l.getBounds();
 			if (reg.contains(lb) || reg.intersects(lb))
 				ret.add(l);
+		}
+		return ret;
+        }
+
+        public Link getGuid(String guid) throws LinkDAOException
+	{
+		PreparedStatement ps = null;
+		ResultSet rs = null;
+		Link ret = null;
+      
+		try {
+			c = spdDs.getConnection();		
+			ps = c.prepareStatement(GET_GUID, ResultSet.CONCUR_READ_ONLY);
+			ps.setString(1,guid);
+			rs = ps.executeQuery();
+			while (rs.next())
+			{
+			    long dlat = rs.getLong("d_latE6");
+			    long dlng = rs.getLong("d_lngE6");
+			    long olat = rs.getLong("o_latE6");
+			    long olng = rs.getLong("o_lngE6");
+			    ret = new Link(rs.getString("guid"),
+				rs.getString("d_guid"),
+				dlat,dlng,
+				rs.getString("o_guid"),
+				olat,olng,
+				rs.getString("team"));
+			}
+		} catch (SQLException e) {
+			throw new PortalDAOException(e.getMessage());
+		} finally {
+			try {
+				rs.close();
+				ps.close();
+				c.close();
+			} catch (SQLException se) {
+				throw new LinkDAOException("SQLException: " + se.getMessage());
+			}
 		}
 		return ret;
         }

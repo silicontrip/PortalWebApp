@@ -48,6 +48,7 @@ public class Link implements Serializable {
 	public S2LatLng getdS2LatLng() { return S2LatLng.fromE6(d_latE6,d_lngE6); }	
 	public S2LatLng getoS2LatLng() { return S2LatLng.fromE6(o_latE6,o_lngE6); }	
 	public S2LatLngRect getBounds() { return S2LatLngRect.fromEdge(getoS2Point(),getdS2Point()); }
+	public double getAngle(){ return getoS2Point().angle(getdS2Point());}
 
 
 }

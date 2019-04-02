@@ -26,6 +26,7 @@ public class PortalServlet extends HttpServlet {
 
   public void doPost(HttpServletRequest req, HttpServletResponse resp){
 	try {
+		resp.setCharacterEncoding("UTF-8");
 		resp.setContentType("text/json");
 		resp.addHeader("Access-Control-Allow-Origin","https://intel.ingress.com");
 		PrintWriter writer = resp.getWriter();

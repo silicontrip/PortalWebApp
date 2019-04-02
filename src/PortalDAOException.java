@@ -1,7 +1,7 @@
 package net.silicontrip.ingress;
 
 /**
- * CatalogDAOSysException is an exception that extends the standard
+ * PortalDAOException is an exception that extends the standard
  * RunTimeException Exception. This is thrown by the DAOs of the catalog
  * component when there is some irrecoverable error (like SQLException)
  */

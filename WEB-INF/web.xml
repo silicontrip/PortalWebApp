@@ -16,8 +16,8 @@
 	<load-on-startup>1</load-on-startup>
   </servlet>
   <servlet>
-	<servlet-name>JMSServlet</servlet-name>
-	<servlet-class>net.silicontrip.ingress.JMSServlet</servlet-class>
+	<servlet-name>LinkServlet</servlet-name>
+	<servlet-class>net.silicontrip.ingress.LinkServlet</servlet-class>
 	<load-on-startup>1</load-on-startup>
   </servlet>
   <servlet-mapping>
@@ -29,7 +29,7 @@
     <url-pattern>/submitEntity</url-pattern>
   </servlet-mapping>
   <servlet-mapping>
-    <servlet-name>JMSServlet</servlet-name>
-    <url-pattern>/read</url-pattern>
+    <servlet-name>LinkServlet</servlet-name>
+    <url-pattern>/getLinks</url-pattern>
   </servlet-mapping>
 </web-app>

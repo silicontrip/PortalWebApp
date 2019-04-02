@@ -1,5 +1,6 @@
 create JDBC connection pool: IngressMysqlPool
 create SQL datasource: jdbc/IngressResource
+(make tables)
 
 create users in Configurations/server-config/Security/Realms/file Manage Users
 

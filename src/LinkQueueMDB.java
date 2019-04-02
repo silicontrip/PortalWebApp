@@ -22,30 +22,30 @@ activationConfig = {
 
 public class LinkQueueMDB implements MessageListener {
 
-    private static final Map<String, Integer> zoomDistance = new HashMap<String, Integer>() {
+    private static final Map<Integer, Integer> zoomDistance = new HashMap<Integer, Integer>() {
     {
-        put( "3", 200000);
-        put( "4", 200000);
-        put( "5", 60000);
-        put( "6", 60000);
-        put( "7", 10000);
-        put( "8", 5000);
-        put( "9", 2500);
-	put("10", 2500);
-	put("11", 800);
-	put("12", 300);
-	put("13", 0);
-	put("14", 0);
-	put("15", 0);
-	put("16", 0);
-	put("17", 0);
-	put("18", 0);
-	put("19", 0);
-	put("20", 0);
-	put("21", 0);
-	put("22", 0);
-	put("23", 0);
-	put("24", 0);
+        put( 3, 200000);
+        put( 4, 200000);
+        put( 5, 60000);
+        put( 6, 60000);
+        put( 7, 10000);
+        put( 8, 5000);
+        put( 9, 2500);
+	put(10, 2500);
+	put(11, 800);
+	put(12, 300);
+	put(13, 0);
+	put(14, 0);
+	put(15, 0);
+	put(16, 0);
+	put(17, 0);
+	put(18, 0);
+	put(19, 0);
+	put(20, 0);
+	put(21, 0);
+	put(22, 0);
+	put(23, 0);
+	put(24, 0);
     } 
 	};
  
@@ -63,7 +63,7 @@ public class LinkQueueMDB implements MessageListener {
 				Link l = dao.getGuid(pobj.getString("guid"));
 				double length = l.getAngle() * 6367000;
 				// get link length
-				if ( length > zoomDistance.get(pobj.getString("zoom")))
+				if ( length > zoomDistance.get(pobj.getInt("zoom")))
 					dao.delete(pobj.getString("guid"));
 			} else if (pobj.has("team")) {
 				//System.out.println("" + pobj.getString("image").length() + " / " + pobj.getString("image"));

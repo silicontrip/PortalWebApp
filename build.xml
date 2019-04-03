@@ -3,7 +3,7 @@
  
     <path id="compile.classpath">
         <fileset dir="WEB-INF/lib"> <include name="*.jar"/> </fileset>
-        <fileset dir="/Users/mark/Downloads/glassfish4/glassfish/lib"> <include name="*.jar"/> </fileset>
+        <fileset dir="/Users/mark/Developer/ingress-j2ee/glassfish4/glassfish/lib"> <include name="*.jar"/> </fileset>
     </path>
      
     <target name="init">

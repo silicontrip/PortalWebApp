@@ -155,7 +155,7 @@ public class SQLLinkDAO implements LinkDAO {
 
         public void delete(String guid) throws LinkDAOException
         {
-		System.out.println("SQLLinkDAO: delete("+guid+")");
+		//System.out.println("SQLLinkDAO: delete("+guid+")");
 		PreparedStatement ps = null;
 		int rs;
       

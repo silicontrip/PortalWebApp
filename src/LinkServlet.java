@@ -33,9 +33,9 @@ public class LinkServlet extends HttpServlet {
 		String[] ll = s.split(",");
 		Double lat = Double.parseDouble(ll[0]);
 		Double lng = Double.parseDouble(ll[1]);
-		long latE6 = Math.round(lat * 1000000);
-		long lngE6 = Math.round(lng * 1000000);  
-		return S2LatLng.fromE6(latE6,lngE6);
+		//long latE6 = Math.round(lat * 1000000);
+		//long lngE6 = Math.round(lng * 1000000);  
+		return S2LatLng.fromDegrees(lat,lng);
 	}
 	return null;
   }
@@ -52,6 +52,8 @@ public class LinkServlet extends HttpServlet {
 
 		S2LatLng p1 = fromE6String(req.getParameter("ll"));
 		S2LatLng p2 = fromE6String(req.getParameter("l2"));
+
+		System.out.println("query: " + req.getQueryString() +" Search area: " + p1.toStringDegrees() + " - " +p2.toStringDegrees());
 		
 		S2LatLngRect searchRegion = null;
 

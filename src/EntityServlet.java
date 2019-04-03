@@ -103,17 +103,19 @@ public class EntityServlet extends HttpServlet {
 		}
 		if (req.getParameter("edges") != null)
 		{
-			System.out.println("Submit Edges");
+			//System.out.println("Submit Edges");
 			submitQueue = (Queue)ctx.lookup("jms/linkQueue");
-			jsonResponse.put("edges_submitted",submit(submitQueue, new JSONArray(req.getParameter("edges"))));
+			// due to links being destroyed and recreated with new GUIDs, old links must be deleted before new ones added.
+			// as the old links will cause DB constraint failures.
 			jsonResponse.put("edges_deleted",submit(submitQueue, new JSONArray(req.getParameter("edges_deleted"))));
+			jsonResponse.put("edges_submitted",submit(submitQueue, new JSONArray(req.getParameter("edges"))));
 		}
 		if (req.getParameter("fields") != null)
 		{
 			jsonResponse.put("fields_submitted",submit((Queue)ctx.lookup("jms/fieldQueue"),new JSONArray(req.getParameter("fields"))));
 		}
 
-		//System.out.println(entityArray);
+		System.out.println(jsonResponse.toString());
 		
 		writer.println(jsonResponse.toString());
 		writer.close(); 

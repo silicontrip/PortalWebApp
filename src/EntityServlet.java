@@ -61,6 +61,7 @@ public class EntityServlet extends HttpServlet {
   public void doPost(HttpServletRequest req, HttpServletResponse resp){
 	try {
 		resp.setContentType("text/json");
+		resp.setCharacterEncoding("UTF-8");
 		resp.addHeader("Access-Control-Allow-Origin","https://intel.ingress.com");
 
 	// authentication code

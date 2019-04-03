@@ -2,7 +2,7 @@
 // @id             iitc-plugin-edges-grabber@silicontrip
 // @name           IITC Plugin: db edge grabber
 // @category       Chat
-// @version        0.0.2
+// @version        0.0.3
 // @namespace      https://github.com/jonatkins/ingress-intel-total-conversion
 // @description    Capture edges.
 // @updateURL      https://quadrant.silicontrip.net:8181/portalApi/db_link_grabber.user.js

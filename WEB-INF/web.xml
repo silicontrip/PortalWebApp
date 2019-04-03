@@ -20,6 +20,11 @@
 	<servlet-class>net.silicontrip.ingress.LinkServlet</servlet-class>
 	<load-on-startup>1</load-on-startup>
   </servlet>
+  <servlet>
+	<servlet-name>FieldServlet</servlet-name>
+	<servlet-class>net.silicontrip.ingress.FieldServlet</servlet-class>
+	<load-on-startup>1</load-on-startup>
+  </servlet>
   <servlet-mapping>
     <servlet-name>PortalServlet</servlet-name>
     <url-pattern>/getPortals</url-pattern>
@@ -31,5 +36,9 @@
   <servlet-mapping>
     <servlet-name>LinkServlet</servlet-name>
     <url-pattern>/getLinks</url-pattern>
+  </servlet-mapping>
+  <servlet-mapping>
+    <servlet-name>FieldServlet</servlet-name>
+    <url-pattern>/getMU</url-pattern>
   </servlet-mapping>
 </web-app>

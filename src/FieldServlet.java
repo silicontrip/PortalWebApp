@@ -24,12 +24,12 @@ public class FieldServlet extends HttpServlet {
 	private CellSessionBean cellBean;
 
 	private InitialContext ctx = null;
-	private MUCellDAO cdao = null;
+	//private MUCellDAO cdao = null;
 	private MUFieldDAO fdao = null;
 	private HashMap<S2CellId,UniformDistribution> cellmu = null;
 
 	public void init () throws ServletException {
-		cdao = new SQLMUCellDAO();
+		//cdao = new SQLMUCellDAO();
 		fdao = new SQLMUFieldDAO();
 /*
 		try {
@@ -73,16 +73,12 @@ public class FieldServlet extends HttpServlet {
 	private JSONObject mu(String s) { 
 		//System.out.println("-> " + s);
 
-		
-		// get MU for Cells
-		JSONObject response = new JSONObject();
-		if (cellmu == null)
-			cellmu =cdao.getAll();
 		JSONArray cells = new JSONArray(s);
+		JSONObject response = new JSONObject();
 		for (Object cobj : cells)
 		{
 			S2CellId cell = S2CellId.fromToken((String)cobj);
-			UniformDistribution mu = cellmu.get(cell);
+			UniformDistribution mu = cellBean.getMU(cell);
 			JSONArray jmu = new JSONArray();
 			if (mu != null)
 			{
@@ -100,37 +96,29 @@ public class FieldServlet extends HttpServlet {
 		JSONObject response = new JSONObject();
 
 		JSONObject iitc_field = new JSONObject(s);
-		JSONObject data = iitc_field.getJSONObject("data");
-                JSONArray pts = data.getJSONArray("points");
-		long[] points = new long[6];
+                JSONArray pts = iitc_field.getJSONObject("data").getJSONArray("points");
 
-
-		points[0] = pts.getJSONObject(0).getLong("latE6");
-		points[1] = pts.getJSONObject(0).getLong("lngE6");
-		points[2] = pts.getJSONObject(1).getLong("latE6");
-		points[3] = pts.getJSONObject(1).getLong("lngE6");
-		points[4] = pts.getJSONObject(2).getLong("latE6");
-		points[5] = pts.getJSONObject(2).getLong("lngE6");
+		Field searchField = new Field(
+			pts.getJSONObject(0).getLong("latE6"),
+			pts.getJSONObject(0).getLong("lngE6"),
+			pts.getJSONObject(1).getLong("latE6"),
+			pts.getJSONObject(1).getLong("lngE6"),
+			pts.getJSONObject(2).getLong("latE6"),
+			pts.getJSONObject(2).getLong("lngE6"));
 
 		int known_mu = -1;
-		ArrayList<Field> fa = fdao.findField(points);
-		for (Field f : fa)
+		for (Field f : fdao.findField(searchField))
 			known_mu = f.getMU();
+
 		response.put("mu_known",known_mu);
+
 		// getCellsForField
-		S2Point p1 = S2LatLng.fromE6(points[0],points[1]).toPoint();
-		S2Point p2 = S2LatLng.fromE6(points[2],points[3]).toPoint();
-		S2Point p3 = S2LatLng.fromE6(points[4],points[5]).toPoint();
-
-		S2PolygonBuilder pb = new S2PolygonBuilder(S2PolygonBuilder.Options.UNDIRECTED_UNION);
-                pb.addEdge(p1,p2);
-                pb.addEdge(p2,p3);
-                pb.addEdge(p3,p1);
-                S2Polygon s2Field =  pb.assemblePolygon();
-
+                S2Polygon s2Field = searchField.getS2Polygon();
 		S2CellUnion cellu = cellBean.getCellsForField(s2Field);
-		HashMap<S2CellId,AreaDistribution> area = cellBean.getIntersectionMU(cellu,s2Field);	
+
 		// getIntersectionMU
+		HashMap<S2CellId,AreaDistribution> area = cellBean.getIntersectionMU(cellu,s2Field);	
+
 		// calc mu
 		double min_mu = 0;
 		double max_mu = 0;
@@ -143,12 +131,11 @@ public class FieldServlet extends HttpServlet {
 			areaDist.put("area",mu.area);
 			if (mu.mu != null)
 			{
-				areaDist.put("lower",mu.mu.getLower());
-				areaDist.put("upper",mu.mu.getUpper());
+				areaDist.put("min",mu.mu.getLower());
+				areaDist.put("max",mu.mu.getUpper());
 				min_mu += mu.area * mu.mu.getLower();
 				max_mu += mu.area * mu.mu.getUpper();
-			} else
-			{
+			} else {
 				undefined=true;
 				areaDist.put("lower",-1);
 				areaDist.put("upper",-1);
@@ -162,7 +149,7 @@ public class FieldServlet extends HttpServlet {
 		}
 		response.put("mu_min", min_mu);
 		response.put("mu_max", max_mu);
-		response.put("cells", cells);
+		//response.put("cells", cells); // future expansion
 		System.out.println("<- " + response.toString());
 		return response;
 	}
@@ -173,7 +160,7 @@ public class FieldServlet extends HttpServlet {
 		resp.setCharacterEncoding("UTF-8");
 		resp.addHeader("Access-Control-Allow-Origin","https://intel.ingress.com");
 
-		System.out.println("FieldServlet::doPost("+req.getQueryString()+")");
+		//System.out.println("FieldServlet::doPost("+req.getQueryString()+")");
 
 		PrintWriter writer = resp.getWriter();
 		JSONObject jsonResponse;
@@ -182,21 +169,14 @@ public class FieldServlet extends HttpServlet {
                 String apiKey = req.getParameter("apikey");
 		req.login(userName,apiKey);
 
-/*
-		if (req.getParameter("cells") != null)
-		{
-			jsonResponse = cells(req.getParameter("cells"));
-		}
-		else 
-*/
 		if (req.getParameter("mu") != null)
 		{
-			System.out.println("Field Servlet - mu request");
+		//	System.out.println("Field Servlet - mu request");
 			jsonResponse = mu(req.getParameter("mu"));
 		}
 		else if (req.getParameter("use") != null)
 		{
-			System.out.println("Field Servlet - use request");
+		//	System.out.println("Field Servlet - use request");
 			jsonResponse = use(req.getParameter("use"));
 		} else {
 			System.out.println("Field Servlet - invalid request");
@@ -205,7 +185,6 @@ public class FieldServlet extends HttpServlet {
 			jsonResponse.put("error",  "invalid request");
 		}
 			
-
 		writer.println(jsonResponse.toString());
 		writer.close(); 
 		

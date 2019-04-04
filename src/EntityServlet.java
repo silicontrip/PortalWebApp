@@ -39,7 +39,7 @@ public class EntityServlet extends HttpServlet {
 		}
 	}
 
-	private int submit (Queue sq, JSONArray ea) throws JMSException
+	private int submit (Queue sq, JSONArray ea,String userName) throws JMSException
 	{
 		int count =0;
 		if (sq != null)
@@ -48,6 +48,7 @@ public class EntityServlet extends HttpServlet {
 			for (Object ent : ea)
 			{
 				JSONObject jsonEnt = (JSONObject) ent;
+				jsonEnt.put("agent",userName); // I'd like to know who's submitting fields (and maybe portals)
 				//System.out.println(jsonEnt.toString());
 				Message msg = queueSession.createTextMessage(jsonEnt.toString());
 				sender.send(msg);
@@ -98,8 +99,8 @@ public class EntityServlet extends HttpServlet {
 		if (req.getParameter("portals") != null)
 		{
 			submitQueue = (Queue)ctx.lookup("jms/portalQueue");
-			jsonResponse.put("portals_submitted", submit (submitQueue, new JSONArray(req.getParameter("portals"))));
-			jsonResponse.put("portals_deleted", submit (submitQueue, new JSONArray(req.getParameter("portals_deleted"))));
+			jsonResponse.put("portals_submitted", submit (submitQueue, new JSONArray(req.getParameter("portals")),userName));
+			jsonResponse.put("portals_deleted", submit (submitQueue, new JSONArray(req.getParameter("portals_deleted")),userName));
 		}
 		if (req.getParameter("edges") != null)
 		{
@@ -107,12 +108,13 @@ public class EntityServlet extends HttpServlet {
 			submitQueue = (Queue)ctx.lookup("jms/linkQueue");
 			// due to links being destroyed and recreated with new GUIDs, old links must be deleted before new ones added.
 			// as the old links will cause DB constraint failures.
-			jsonResponse.put("edges_deleted",submit(submitQueue, new JSONArray(req.getParameter("edges_deleted"))));
-			jsonResponse.put("edges_submitted",submit(submitQueue, new JSONArray(req.getParameter("edges"))));
+			jsonResponse.put("edges_deleted",submit(submitQueue, new JSONArray(req.getParameter("edges_deleted")),userName));
+			jsonResponse.put("edges_submitted",submit(submitQueue, new JSONArray(req.getParameter("edges")),userName));
 		}
 		if (req.getParameter("fields") != null)
 		{
-			jsonResponse.put("fields_submitted",submit((Queue)ctx.lookup("jms/fieldQueue"),new JSONArray(req.getParameter("fields"))));
+			// want to put the agent name into the field here.
+			jsonResponse.put("fields_submitted",submit((Queue)ctx.lookup("jms/fieldQueue"),new JSONArray(req.getParameter("fields")),userName));
 		}
 
 		System.out.println(jsonResponse.toString());

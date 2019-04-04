@@ -1,11 +1,12 @@
 package net.silicontrip.ingress;
 
-import net.silicontrip.UniformDistribution;
+import net.silicontrip.*;
 import org.json.*;
 import com.google.common.geometry.*;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Map;
 
 import javax.servlet.http.*;
 import javax.servlet.*;
@@ -62,11 +63,13 @@ public class FieldServlet extends HttpServlet {
 	}
 		
 
+/*
 	private JSONObject cells(String s) {  // looks like USE provides same functionality
 		// getCellsForField
 		// getIntersectionMU
 		return new JSONObject(); 
 	}
+*/
 	private JSONObject mu(String s) { 
 		//System.out.println("-> " + s);
 
@@ -85,11 +88,8 @@ public class FieldServlet extends HttpServlet {
 			{
 				jmu.put(mu.getLower());
 				jmu.put(mu.getUpper());
-			} else {
-				jmu.put(-1);
-				jmu.put(-1);
+				response.put((String)cobj,jmu);	
 			}
-			response.put((String)cobj,jmu);	
 		}	
 		//System.out.println("<- " + response.toString());
 		return response;
@@ -97,10 +97,13 @@ public class FieldServlet extends HttpServlet {
 	private JSONObject use(String s) throws NamingException { 
 		System.out.println("useField -> " + s);
 
+		JSONObject response = new JSONObject();
+
 		JSONObject iitc_field = new JSONObject(s);
 		JSONObject data = iitc_field.getJSONObject("data");
                 JSONArray pts = data.getJSONArray("points");
 		long[] points = new long[6];
+
 
 		points[0] = pts.getJSONObject(0).getLong("latE6");
 		points[1] = pts.getJSONObject(0).getLong("lngE6");
@@ -109,13 +112,59 @@ public class FieldServlet extends HttpServlet {
 		points[4] = pts.getJSONObject(2).getLong("latE6");
 		points[5] = pts.getJSONObject(2).getLong("lngE6");
 
-		// known_mu = findField
+		int known_mu = -1;
 		ArrayList<Field> fa = fdao.findField(points);
+		for (Field f : fa)
+			known_mu = f.getMU();
+		response.put("mu_known",known_mu);
 		// getCellsForField
-		
+		S2Point p1 = S2LatLng.fromE6(points[0],points[1]).toPoint();
+		S2Point p2 = S2LatLng.fromE6(points[2],points[3]).toPoint();
+		S2Point p3 = S2LatLng.fromE6(points[4],points[5]).toPoint();
+
+		S2PolygonBuilder pb = new S2PolygonBuilder(S2PolygonBuilder.Options.UNDIRECTED_UNION);
+                pb.addEdge(p1,p2);
+                pb.addEdge(p2,p3);
+                pb.addEdge(p3,p1);
+                S2Polygon s2Field =  pb.assemblePolygon();
+
+		S2CellUnion cellu = cellBean.getCellsForField(s2Field);
+		HashMap<S2CellId,AreaDistribution> area = cellBean.getIntersectionMU(cellu,s2Field);	
 		// getIntersectionMU
 		// calc mu
-		return new JSONObject(); 
+		double min_mu = 0;
+		double max_mu = 0;
+		boolean undefined = false;
+		JSONObject cells = new JSONObject();
+		for (Map.Entry<S2CellId, AreaDistribution> entry : area.entrySet()) {
+			//System.out.println (entry.getKey().toToken() + ": " + entry.getValue().toString());
+			AreaDistribution mu = entry.getValue();
+			JSONObject areaDist = new JSONObject();
+			areaDist.put("area",mu.area);
+			if (mu.mu != null)
+			{
+				areaDist.put("lower",mu.mu.getLower());
+				areaDist.put("upper",mu.mu.getUpper());
+				min_mu += mu.area * mu.mu.getLower();
+				max_mu += mu.area * mu.mu.getUpper();
+			} else
+			{
+				undefined=true;
+				areaDist.put("lower",-1);
+				areaDist.put("upper",-1);
+			}
+			cells.put(entry.getKey().toToken(),areaDist);
+		}
+		if (undefined)
+		{
+		    min_mu=-1;
+		    max_mu=-1;
+		}
+		response.put("mu_min", min_mu);
+		response.put("mu_max", max_mu);
+		response.put("cells", cells);
+		System.out.println("<- " + response.toString());
+		return response;
 	}
 
   public void doPost(HttpServletRequest req, HttpServletResponse resp){
@@ -124,6 +173,8 @@ public class FieldServlet extends HttpServlet {
 		resp.setCharacterEncoding("UTF-8");
 		resp.addHeader("Access-Control-Allow-Origin","https://intel.ingress.com");
 
+		System.out.println("FieldServlet::doPost("+req.getQueryString()+")");
+
 		PrintWriter writer = resp.getWriter();
 		JSONObject jsonResponse;
 
@@ -131,18 +182,24 @@ public class FieldServlet extends HttpServlet {
                 String apiKey = req.getParameter("apikey");
 		req.login(userName,apiKey);
 
+/*
 		if (req.getParameter("cells") != null)
 		{
 			jsonResponse = cells(req.getParameter("cells"));
 		}
-		else if (req.getParameter("mu") != null)
+		else 
+*/
+		if (req.getParameter("mu") != null)
 		{
+			System.out.println("Field Servlet - mu request");
 			jsonResponse = mu(req.getParameter("mu"));
 		}
 		else if (req.getParameter("use") != null)
 		{
+			System.out.println("Field Servlet - use request");
 			jsonResponse = use(req.getParameter("use"));
 		} else {
+			System.out.println("Field Servlet - invalid request");
 			resp.setStatus(400);
 			jsonResponse = new JSONObject();
 			jsonResponse.put("error",  "invalid request");

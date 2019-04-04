@@ -1,7 +1,7 @@
 // ==UserScript==
 // @id             iitc-plugin-mu@jonatkins
 // @name           IITC plugin: MU getter
-// @version        0.3.31
+// @version        0.3.32
 // @namespace      https://github.com/jonatkins/ingress-intel-total-conversion
 // @description    Gets MU for fields
 // @include        https://*.ingress.com/intel*
@@ -9,8 +9,8 @@
 // @match          https://*.ingress.com/intel*
 // @match          http://*.ingress.com/intel*
 // @grant          none
-// @updateURL      http://silicontrip.net/portalApi/mu.user.js
-// @downloadURL    http://silicontrip.net/portalApi/mu.user.js
+// @updateURL      https://quadrant.silicontrip.net:8181/portalApi/mu.user.js
+// @downloadURL    https://quadrant.silicontrip.net:8181/portalApi/mu.user.js
 
 
 // ==/UserScript==
@@ -44,7 +44,7 @@ window.plugin.muScraper = {
 	hz_fields: [],
 	hz_url: 'https://quadrant.silicontrip.net:8181/portalApi/submitEntity',
 	mu_url: 'https://quadrant.silicontrip.net:8181/portalApi/getMU',
-    mu_use: 'https://quadrant.silicontrip.net:8181/portalApi/getMU',
+	mu_use: 'https://quadrant.silicontrip.net:8181/portalApi/getMU',
 	NAME_WIDTH: 60,
 	NAME_HEIGHT: 12,
 	FILL_STYLE: {
@@ -1127,7 +1127,7 @@ window.plugin.muScraper = {
             if (title == 'Mu: unknown')
                 $.post(
                     window.plugin.muScraper.mu_use,
-                    {apikey: window.plugin.muScraper.submitKey, agent: window.PLAYER.nickname, fields: JSON.stringify(field.options)},
+                    {apikey: window.plugin.muScraper.submitKey, agent: window.PLAYER.nickname, use: JSON.stringify(field.options)},
                     function(data) {
                         var dd = JSON.parse(data);
                         var title = "Mu: unknown";
@@ -1649,7 +1649,7 @@ window.plugin.muScraper = {
             if (window.plugin.muScraper.muSubmit) {
                 var celllist = JSON.stringify(Object.keys(reqMu));
                 //console.log(celllist);
-                $.post(window.plugin.muScraper.mu_url, {apikey: window.plugin.muScraper.submitKey, agent: PLAYER.nickname, cells:celllist},
+                $.post(window.plugin.muScraper.mu_url, {apikey: window.plugin.muScraper.submitKey, agent: PLAYER.nickname, mu:celllist},
                        function(data) {
                     //console.log(data);
                     var dd = JSON.parse(data);

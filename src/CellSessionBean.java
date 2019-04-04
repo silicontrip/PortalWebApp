@@ -13,7 +13,7 @@ public class CellSessionBean {
 
 	private HashMap<S2CellId, UniformDistribution> cellmu = null;
 
-	private UniformDistribution getMU(S2CellId cell)
+	public UniformDistribution getMU(S2CellId cell)
 	{
 		if (cellmu != null)
 			return cellmu.get(cell);

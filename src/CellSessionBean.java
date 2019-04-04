@@ -25,12 +25,20 @@ public class CellSessionBean {
 		S2Loop cellLoop = new S2Loop(cell);
 		return new S2Polygon(cellLoop);
 	}
+	public S2Polygon getS2Polygon (long lat1, long lng1, long lat2, long lng2, long lat3, long lng3)
+	{
+		return getS2Polygon( S2LatLng.fromE6(lat1,lng1), S2LatLng.fromE6(lat2,lng2), S2LatLng.fromE6(lat3,lng3));
+	}
 	public S2Polygon getS2Polygon (S2LatLng v1,S2LatLng v2,S2LatLng v3)
 	{
+		return getS2Polygon(v1.toPoint(), v2.toPoint(), v3.toPoint());
+	}
+	public S2Polygon getS2Polygon (S2Point v1,S2Point v2,S2Point v3)
+	{
 		S2PolygonBuilder pb = new S2PolygonBuilder(S2PolygonBuilder.Options.UNDIRECTED_UNION);
-		pb.addEdge(v1.toPoint(),v2.toPoint());
-		pb.addEdge(v2.toPoint(),v3.toPoint());
-		pb.addEdge(v3.toPoint(),v1.toPoint());
+		pb.addEdge(v1,v2);
+		pb.addEdge(v2,v3);
+		pb.addEdge(v3,v1);
 		return pb.assemblePolygon();
 	}
 	public S2CellUnion getCellsForField(S2Polygon thisField)
@@ -60,7 +68,17 @@ public class CellSessionBean {
 		}
 		return response;
 	}
-public UniformDistribution muForField(S2Polygon s2Field)
+
+	public boolean fieldMUValid(S2Polygon s2Field,int mu)
+	{
+		UniformDistribution muest = muForField(s2Field);
+		if (muest.getLower() == -1)
+			return true;
+
+		return muest.roundAboveZero().contains(mu);
+	}
+
+	public UniformDistribution muForField(S2Polygon s2Field)
 	{
 
 		S2CellUnion cells = getCellsForField(s2Field);

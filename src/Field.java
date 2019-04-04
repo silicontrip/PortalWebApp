@@ -5,19 +5,19 @@ import com.google.common.geometry.*;
 
 public class Field implements Serializable {
 
-	private String creator;
-	private String agent;
-	private int mu; 
-	private String guid;
-	private long timestamp;
-	private String team; 
-	private String pguid1; 
+	private String creator=null;
+	private String agent=null;
+	private int mu=0; 
+	private String guid=null;
+	private long timestamp=0;
+	private String team=null; 
+	private String pguid1=null; 
 	private long plat1; 
 	private long plng1; 
-	private String pguid2; 
+	private String pguid2=null; 
 	private long plat2; 
 	private long plng2; 
-	private String pguid3; 
+	private String pguid3=null; 
 	private long plat3; 
 	private long plng3;
 
@@ -35,6 +35,13 @@ public class Field implements Serializable {
 		pguid3 = pg3; plat3 = pa3; plng3 = po3;
 	}
 
+	// purely geometric constructor
+	public Field(long pa1, long po1,long pa2, long po2,long pa3, long po3)
+	{
+		plat1 = pa1; plng1 = po1;
+		plat2 = pa2; plng2 = po2;
+		plat3 = pa3; plng3 = po3;
+	}
 
 	public void setCreator(String s) { creator = s;}
 	public void setAgent(String s) { agent = s;}

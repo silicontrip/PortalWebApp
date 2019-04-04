@@ -8,7 +8,8 @@ import com.google.common.geometry.*;
 
  
 @Stateless
-public class CellSessionBean implements CellSessionBeanRemote {
+
+public class CellSessionBean {
 
 	private HashMap<S2CellId, UniformDistribution> cellmu = null;
 

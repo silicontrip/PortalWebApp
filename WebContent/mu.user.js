@@ -1,7 +1,7 @@
 // ==UserScript==
 // @id             iitc-plugin-mu@jonatkins
 // @name           IITC plugin: MU getter
-// @version        0.3.32
+// @version        0.3.34
 // @namespace      https://github.com/jonatkins/ingress-intel-total-conversion
 // @description    Gets MU for fields
 // @include        https://*.ingress.com/intel*
@@ -1128,8 +1128,8 @@ window.plugin.muScraper = {
                 $.post(
                     window.plugin.muScraper.mu_use,
                     {apikey: window.plugin.muScraper.submitKey, agent: window.PLAYER.nickname, use: JSON.stringify(field.options)},
-                    function(data) {
-                        var dd = JSON.parse(data);
+                    function(dd) {
+                        //var dd = JSON.parse(data);
                         var title = "Mu: unknown";
                         if (dd.mu_known != -1)
                         {
@@ -1175,7 +1175,7 @@ window.plugin.muScraper = {
         console.log('muGrabber - Pushing fields - ' + window.plugin.muScraper.hz_fields.length);
         $.post(window.plugin.muScraper.hz_url, {apikey: window.plugin.muScraper.submitKey, agent: PLAYER.nickname, fields: JSON.stringify(window.plugin.muScraper.hz_fields)} )
             .fail(function() {
-                alert("edgeGrabber - Invalid key used for request");
+                alert("muGrabber - error posting fields");
         });
         window.plugin.muScraper.hz_fields = [];
         $('#hz_field_grabber').css('background-color', 'green');
@@ -1484,10 +1484,10 @@ window.plugin.muScraper = {
                         let field = fd;
                         $.post(
                             window.plugin.muScraper.mu_use,
-                            {apikey: window.plugin.muScraper.submitKey, agent: window.PLAYER.nickname, fields: JSON.stringify(field.options)},
-                            function(data) {
-                                 console.log("findSuitableFields::post " + data);
-                                var dd = JSON.parse(data);
+                            {apikey: window.plugin.muScraper.submitKey, agent: window.PLAYER.nickname, use: JSON.stringify(field.options)},
+                            function(dd) {
+                                 //console.log("findSuitableFields::post " + data);
+                                //var dd = JSON.parse(data);
                                 if (dd.mu_known == -1)
                                 {
                                     var rmn = Math.round(dd.mu_min);
@@ -1650,9 +1650,9 @@ window.plugin.muScraper = {
                 var celllist = JSON.stringify(Object.keys(reqMu));
                 //console.log(celllist);
                 $.post(window.plugin.muScraper.mu_url, {apikey: window.plugin.muScraper.submitKey, agent: PLAYER.nickname, mu:celllist},
-                       function(data) {
+                       function(dd) {
                     //console.log(data);
-                    var dd = JSON.parse(data);
+                    //var dd = JSON.parse(data);
                     var cell;
                     for (cell in dd) window.plugin.muScraper.cellMu[cell] = dd[cell];
                     for (var cellid in seenCells)

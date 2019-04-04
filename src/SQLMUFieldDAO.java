@@ -189,7 +189,7 @@ public class SQLMUFieldDAO implements MUFieldDAO {
         public void insert(String creator,String agent,int mu, String guid,long timestamp,String team, String pguid1, long plat1, long plng1, String pguid2, long plat2, long plng2, String pguid3, long plat3, long plng3) throws MUFieldDAOException
         {
 
-			System.out.println("SQLMUFieldDAO::insert");
+			//System.out.println("SQLMUFieldDAO::insert");
 
 			PreparedStatement ps = null;
 			int rs;

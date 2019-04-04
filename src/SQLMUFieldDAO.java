@@ -7,7 +7,7 @@ mysql> desc mufields;
 | agent     | varchar(36) | NO   |     | NULL              |                             |
 | mu        | int(8)      | NO   |     | NULL              |                             |
 | guid      | char(36)    | NO   | PRI | NULL              |                             |
-| timestamp | timestamp   | NO   |     | CURRENT_TIMESTAMP | on update CURRENT_TIMESTAMP |
+| timestamp | int(14)     | NO   |     | CURRENT_TIMESTAMP | on update CURRENT_TIMESTAMP |
 | team      | char(1)     | YES  |     | NULL              |                             |
 | pguid1    | char(36)    | YES  |     | NULL              |                             |
 | plat1     | int(12)     | NO   |     | NULL              |                             |
@@ -25,6 +25,8 @@ package net.silicontrip.ingress;
 import java.sql.*;
 import javax.sql.*;
 import javax.naming.*;
+
+import java.util.ArrayList;
 
 public class SQLMUFieldDAO implements MUFieldDAO {
 
@@ -44,6 +46,71 @@ public class SQLMUFieldDAO implements MUFieldDAO {
                 throw new MUFieldDAOException("NamingException while looking up DB context : " + slx.getMessage());
             }
         }
+
+	public ArrayList<Field> findField (long[] points) throws MUFieldDAOException
+	{
+		PreparedStatement ps = null;
+                ResultSet rs = null;
+		ArrayList<Field> ret = new ArrayList<Field>();
+
+
+		try {
+			c = spdDs.getConnection();
+			String q = "select * from mufields where (((plat1=? and plng1=?) or (plat2=? and plng2=?) or (plat3=? and plng3=?)) and ((plat1=? and plng1=?) or (plat2=? and plng2=?) or (plat3=? and plng3=?)) and ((plat1=? and plng1=?) or (plat2=? and plng2=?) or (plat3=? and plng3=?)))";
+			 ps = c.prepareStatement(q,ResultSet.CONCUR_READ_ONLY);
+
+			ps.setLong(1,points[0]);
+			ps.setLong(2,points[1]);
+			ps.setLong(3,points[0]);
+			ps.setLong(4,points[1]);
+			ps.setLong(5,points[0]);
+			ps.setLong(6,points[1]);
+
+			ps.setLong(7,points[2]);
+			ps.setLong(8,points[3]);
+			ps.setLong(9,points[2]);
+			ps.setLong(10,points[3]);
+			ps.setLong(11,points[2]);
+			ps.setLong(12,points[3]);
+
+			ps.setLong(13,points[4]);
+			ps.setLong(14,points[5]);
+			ps.setLong(15,points[4]);
+			ps.setLong(16,points[5]);
+			ps.setLong(17,points[4]);
+			ps.setLong(18,points[5]);
+
+			rs = ps.executeQuery();
+
+			while (rs.next())
+			{
+//public Field(String c,String a,int m, String g,long t,String tm, String pg1, long pa1, long po1, String pg2, long pa2, long po2, String pg3, long pa3, long po3)
+				Field f = new Field(
+					rs.getString("creator"),
+					rs.getString("agent"),
+					rs.getInt("mu"),
+					rs.getString("guid"),
+					rs.getLong("timestamp"),
+					rs.getString("team"),
+					rs.getString("pguid1"), rs.getLong("plat1"), rs.getLong("plng1"),
+					rs.getString("pguid2"), rs.getLong("plat2"), rs.getLong("plng2"),
+					rs.getString("pguid3"), rs.getLong("plat3"), rs.getLong("plng3")
+				);
+				ret.add(f);	
+			}
+		} catch (SQLException e) {
+			throw new MUFieldDAOException(e.getMessage());
+		} finally {
+			try {
+				rs.close();
+				ps.close();
+				c.close();
+			} catch (SQLException se) {
+				throw new MUFieldDAOException("SQLException: " + se.getMessage());
+			}
+		}
+		return ret;
+	} 
 
         public boolean exists(String guid) throws MUFieldDAOException
 	{
@@ -121,6 +188,8 @@ public class SQLMUFieldDAO implements MUFieldDAO {
 
         public void insert(String creator,String agent,int mu, String guid,long timestamp,String team, String pguid1, long plat1, long plng1, String pguid2, long plat2, long plng2, String pguid3, long plat3, long plng3) throws MUFieldDAOException
         {
+
+			System.out.println("SQLMUFieldDAO::insert");
 
 			PreparedStatement ps = null;
 			int rs;

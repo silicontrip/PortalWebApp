@@ -1,9 +1,11 @@
 package net.silicontrip.ingress;
 
+import net.silicontrip.UniformDistribution;
 import org.json.*;
 import com.google.common.geometry.*;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 
 import javax.servlet.http.*;
 import javax.servlet.*;
@@ -12,30 +14,105 @@ import java.sql.*;
 import javax.sql.*;
 import javax.naming.*;
 
+import javax.ejb.EJB;
+
+
 public class FieldServlet extends HttpServlet {
 
-	MUCellDAO dao = null;
+	@EJB
+	private CellSessionBean cellBean;
 
-  public void init () throws ServletException {
-	dao = new SQLMUCellDAO();
-  }
+	private InitialContext ctx = null;
+	private MUCellDAO cdao = null;
+	private MUFieldDAO fdao = null;
+	private HashMap<S2CellId,UniformDistribution> cellmu = null;
 
-  public void destroy () {
+	public void init () throws ServletException {
+		cdao = new SQLMUCellDAO();
+		fdao = new SQLMUFieldDAO();
+/*
+		try {
+			ctx = new InitialContext();
+		} catch (NamingException e) {
+			throw new ServletException(e.getMessage());
+		}
+*/
+	}
+
+	public void destroy () {
 	;
-  }
+	}
+	
+	private long[] e6Points (String s)
+	{
+		JSONObject iitc_field = new JSONObject(s);
+		JSONObject data = iitc_field.getJSONObject("data");
+                JSONArray pts = data.getJSONArray("points");
 
-	private JSONObject cells(String s) { 
+		long[] points = new long[6];
+	
+		points[0] = pts.getJSONObject(0).getLong("latE6");
+		points[1] = pts.getJSONObject(0).getLong("lngE6");
+		points[2] = pts.getJSONObject(1).getLong("latE6");
+		points[3] = pts.getJSONObject(1).getLong("lngE6");
+		points[4] = pts.getJSONObject(2).getLong("latE6");
+		points[5] = pts.getJSONObject(2).getLong("lngE6");
+
+		return points;
+	}
+		
+
+	private JSONObject cells(String s) {  // looks like USE provides same functionality
 		// getCellsForField
 		// getIntersectionMU
 		return new JSONObject(); 
 	}
 	private JSONObject mu(String s) { 
+		//System.out.println("-> " + s);
+
+		
 		// get MU for Cells
-		return new JSONObject(); 
+		JSONObject response = new JSONObject();
+		if (cellmu == null)
+			cellmu =cdao.getAll();
+		JSONArray cells = new JSONArray(s);
+		for (Object cobj : cells)
+		{
+			S2CellId cell = S2CellId.fromToken((String)cobj);
+			UniformDistribution mu = cellmu.get(cell);
+			JSONArray jmu = new JSONArray();
+			if (mu != null)
+			{
+				jmu.put(mu.getLower());
+				jmu.put(mu.getUpper());
+			} else {
+				jmu.put(-1);
+				jmu.put(-1);
+			}
+			response.put((String)cobj,jmu);	
+		}	
+		//System.out.println("<- " + response.toString());
+		return response;
 	}
-	private JSONObject use(String s) { 
+	private JSONObject use(String s) throws NamingException { 
+		System.out.println("useField -> " + s);
+
+		JSONObject iitc_field = new JSONObject(s);
+		JSONObject data = iitc_field.getJSONObject("data");
+                JSONArray pts = data.getJSONArray("points");
+		long[] points = new long[6];
+
+		points[0] = pts.getJSONObject(0).getLong("latE6");
+		points[1] = pts.getJSONObject(0).getLong("lngE6");
+		points[2] = pts.getJSONObject(1).getLong("latE6");
+		points[3] = pts.getJSONObject(1).getLong("lngE6");
+		points[4] = pts.getJSONObject(2).getLong("latE6");
+		points[5] = pts.getJSONObject(2).getLong("lngE6");
+
 		// known_mu = findField
+		ArrayList<Field> fa = fdao.findField(points);
 		// getCellsForField
+		
 		// getIntersectionMU
 		// calc mu
 		return new JSONObject(); 

@@ -2,7 +2,7 @@
 // @id             iitc-plugin-db-portal-grabber@silicontrip
 // @name           IITC Plugin: DB Portal grabber
 // @category       Misc
-// @version        0.1.60
+// @version        0.1.62
 // @namespace      https://github.com/jonatkins/ingress-intel-total-conversion
 // @description    Capture Portals.
 // @updateURL      https://quadrant.silicontrip.net:8181/portalApi/db_portal_grabber.user.js
@@ -49,8 +49,8 @@ function wrapper(plugin_info) {
     //window.plugin.portalGrabber = function() {};
 
     window.plugin.dbPortalGrabber = {
-        hz_submit_url: "https://quadrant.silicontrip.net:8181/portalApi/submitEntity",
-        hz_get_url: "https://quadrant.silicontrip.net:8181/portalApi/getPortals",
+        hz_submit_url: "https://quadrant.silicontrip.net/portalApi/submitEntity",
+        hz_get_url: "https://quadrant.silicontrip.net/portalApi/getPortals",
         hz_portals: [],
 		STROKE_STYLE: {
 			stroke: true,
@@ -176,13 +176,13 @@ function wrapper(plugin_info) {
         var portalgrabber_key = prompt('portalGrabber - Access key');
         if(portalgrabber_key != null)
         {
-		localStorage.setItem('window.plugin.dbPortalGrabber.portalgrabber_key', portalgrabber_key);
+		localStorage.setItem('net.silicontrip.ingress.apikey', portalgrabber_key);
     		console.log("portalGrabber - Setting key: " + portalgrabber_key);
         }
     },
     getKey: function()
     {                 
-	var portalgrabber_key = localStorage.getItem('window.plugin.dbPortalGrabber.portalgrabber_key');
+	var portalgrabber_key = localStorage.getItem('net.silicontrip.ingress.apikey');
         console.log("portalGrabber - Getting key: " + portalgrabber_key);
         return portalgrabber_key;
     },

@@ -2,7 +2,7 @@
 // @id             iitc-plugin-edges-grabber@silicontrip
 // @name           IITC Plugin: db edge grabber
 // @category       Chat
-// @version        0.0.3
+// @version        0.0.4
 // @namespace      https://github.com/jonatkins/ingress-intel-total-conversion
 // @description    Capture edges.
 // @updateURL      https://quadrant.silicontrip.net:8181/portalApi/db_link_grabber.user.js
@@ -36,8 +36,8 @@ function wrapper(plugin_info) {
     
     // use own namespace for plugin
     window.plugin.dbEdgeGrabber = {
-		hz_url: "https://quadrant.silicontrip.net:8181/portalApi/submitEntity",
-		hz_get_url: "https://quadrant.silicontrip.net:8181/portalApi/getLinks",
+		hz_url: "https://quadrant.silicontrip.net/portalApi/submitEntity",
+		hz_get_url: "https://quadrant.silicontrip.net/portalApi/getLinks",
 		hz_edges: [],
 		setupCSS: function() {
 			window.$("<style>").prop("type", "text/css").html(''+
@@ -110,7 +110,7 @@ function wrapper(plugin_info) {
     */
     
 		getKey: function() {                 
-			var edgegrabber_key = localStorage.getItem('portalgrabber_key');
+			var edgegrabber_key = localStorage.getItem('net.silicontrip.ingress.apikey');
 			console.log("edgeGrabber - Getting key: " + edgegrabber_key);
 			return edgegrabber_key;
 		},

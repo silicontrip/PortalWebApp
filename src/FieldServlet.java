@@ -44,32 +44,6 @@ public class FieldServlet extends HttpServlet {
 	;
 	}
 	
-	private long[] e6Points (String s)
-	{
-		JSONObject iitc_field = new JSONObject(s);
-		JSONObject data = iitc_field.getJSONObject("data");
-                JSONArray pts = data.getJSONArray("points");
-
-		long[] points = new long[6];
-	
-		points[0] = pts.getJSONObject(0).getLong("latE6");
-		points[1] = pts.getJSONObject(0).getLong("lngE6");
-		points[2] = pts.getJSONObject(1).getLong("latE6");
-		points[3] = pts.getJSONObject(1).getLong("lngE6");
-		points[4] = pts.getJSONObject(2).getLong("latE6");
-		points[5] = pts.getJSONObject(2).getLong("lngE6");
-
-		return points;
-	}
-		
-
-/*
-	private JSONObject cells(String s) {  // looks like USE provides same functionality
-		// getCellsForField
-		// getIntersectionMU
-		return new JSONObject(); 
-	}
-*/
 	private JSONObject mu(String s) { 
 		//System.out.println("-> " + s);
 
@@ -91,7 +65,7 @@ public class FieldServlet extends HttpServlet {
 		return response;
 	}
 	private JSONObject use(String s) throws NamingException { 
-		System.out.println("useField -> " + s);
+//		System.out.println("useField -> " + s);
 
 		JSONObject response = new JSONObject();
 

@@ -18,6 +18,7 @@ mysql> desc mufields;
 | pguid3    | char(36)    | YES  |     | NULL              |                             |
 | plat3     | int(12)     | NO   |     | NULL              |                             |
 | plng3     | int(12)     | NO   |     | NULL              |                             |
+| valid     | tinyint(1)  | YES  |     | NULL    |       |
 +-----------+-------------+------+-----+-------------------+-----------------------------+
 */
 package net.silicontrip.ingress;
@@ -33,7 +34,8 @@ public class SQLMUFieldDAO implements MUFieldDAO {
 	protected static String GET_GUID = "select * from mufields where guid=?";
 	protected static String UPDATE_MU = "update mufields set mu=? where guid=?";
 	protected static String DELETE = "delete from mufields where guid=?";
-        protected static String INSERT = "insert into mufields (creator,agent,mu,guid,timestamp,team,pguid1,plat1,plng1,pguid2,plat2,plng2,pguid3,plat3,plng3) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+        protected static String INSERT = "insert into mufields (creator,agent,mu,guid,timestamp,team,pguid1,plat1,plng1,pguid2,plat2,plng2,pguid3,plat3,plng3,valid) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+	protected static String FIND_FIELD = "select * from mufields where (((plat1=? and plng1=?) or (plat2=? and plng2=?) or (plat3=? and plng3=?)) and ((plat1=? and plng1=?) or (plat2=? and plng2=?) or (plat3=? and plng3=?)) and ((plat1=? and plng1=?) or (plat2=? and plng2=?) or (plat3=? and plng3=?))) and valid=true";
 
         private Connection c = null;
         private DataSource spdDs = null;
@@ -56,8 +58,7 @@ public class SQLMUFieldDAO implements MUFieldDAO {
 
 		try {
 			c = spdDs.getConnection();
-			String q = "select * from mufields where (((plat1=? and plng1=?) or (plat2=? and plng2=?) or (plat3=? and plng3=?)) and ((plat1=? and plng1=?) or (plat2=? and plng2=?) or (plat3=? and plng3=?)) and ((plat1=? and plng1=?) or (plat2=? and plng2=?) or (plat3=? and plng3=?)))";
-			 ps = c.prepareStatement(q,ResultSet.CONCUR_READ_ONLY);
+			ps = c.prepareStatement(FIND_FIELD,ResultSet.CONCUR_READ_ONLY);
 
 			ps.setLong(1,f.getPLat1());
 			ps.setLong(2,f.getPLng1());
@@ -185,7 +186,7 @@ public class SQLMUFieldDAO implements MUFieldDAO {
 		}
         }
 
-        public void insert(String creator,String agent,int mu, String guid,long timestamp,String team, String pguid1, long plat1, long plng1, String pguid2, long plat2, long plng2, String pguid3, long plat3, long plng3) throws MUFieldDAOException
+        public void insert(String creator,String agent,int mu, String guid,long timestamp,String team, String pguid1, long plat1, long plng1, String pguid2, long plat2, long plng2, String pguid3, long plat3, long plng3, boolean valid) throws MUFieldDAOException
         {
 
 			//System.out.println("SQLMUFieldDAO::insert");
@@ -205,6 +206,7 @@ public class SQLMUFieldDAO implements MUFieldDAO {
 				ps.setString(7, pguid1); ps.setLong(8, plat1); ps.setLong(9, plng1);
 				ps.setString(10, pguid2); ps.setLong(11, plat2); ps.setLong(12, plng2);
 				ps.setString(13, pguid3); ps.setLong(14, plat3); ps.setLong(15, plng3);
+				ps.setBoolean(16,valid);
 
 				rs = ps.executeUpdate();
 			} catch (SQLException se) {

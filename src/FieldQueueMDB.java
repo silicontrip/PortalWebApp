@@ -60,7 +60,9 @@ public class FieldQueueMDB implements MessageListener {
 				// check for validity
 				// EJB???
 				S2Polygon field = cellBean.getS2Polygon(p1.getLong("latE6"),p1.getLong("lngE6"), p2.getLong("latE6"),p2.getLong("lngE6"), p3.getLong("latE6"),p3.getLong("lngE6"));
-				if (cellBean.fieldMUValid(field,pobj.getInt("mu")))
+				boolean valid = cellBean.fieldMUValid(field,pobj.getInt("mu"));
+
+				System.out.println ("" + guid + ": " + pobj.getInt("mu") + " valid: " + valid);
 	
 				// create invalid field. in table.	
 				
@@ -73,7 +75,8 @@ public class FieldQueueMDB implements MessageListener {
 						entPoints.getString(1),
 						p1.getString("guid"),p1.getLong("latE6"),p1.getLong("lngE6"),
 						p2.getString("guid"),p2.getLong("latE6"),p2.getLong("lngE6"),
-						p3.getString("guid"),p3.getLong("latE6"),p3.getLong("lngE6")
+						p3.getString("guid"),p3.getLong("latE6"),p3.getLong("lngE6"),
+						valid
 					);
 				
 			} 

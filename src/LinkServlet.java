@@ -53,7 +53,8 @@ public class LinkServlet extends HttpServlet {
 		S2LatLng p1 = fromE6String(req.getParameter("ll"));
 		S2LatLng p2 = fromE6String(req.getParameter("l2"));
 
-		System.out.println("query: " + req.getQueryString() +" Search area: " + p1.toStringDegrees() + " - " +p2.toStringDegrees());
+		if (p1 != null && p2 != null)
+			System.out.println("query: " + req.getQueryString() +" Search area: " + p1.toStringDegrees() + " - " +p2.toStringDegrees());
 		
 		S2LatLngRect searchRegion = null;
 

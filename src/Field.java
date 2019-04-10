@@ -73,11 +73,11 @@ public class Field implements Serializable {
 	public S2Point getP3Point() { return getP3LatLng().toPoint(); }
 
 	public S2Polygon getS2Polygon ()
-        {
-                S2PolygonBuilder pb = new S2PolygonBuilder(S2PolygonBuilder.Options.UNDIRECTED_UNION);
-                pb.addEdge(getP1Point(),getP2Point());
-                pb.addEdge(getP2Point(),getP3Point());
-                pb.addEdge(getP3Point(),getP1Point());
-                return pb.assemblePolygon();
-        }
+	{
+		S2PolygonBuilder pb = new S2PolygonBuilder(S2PolygonBuilder.Options.UNDIRECTED_UNION);
+		pb.addEdge(getP1Point(),getP2Point());
+		pb.addEdge(getP2Point(),getP3Point());
+		pb.addEdge(getP3Point(),getP1Point());
+		return pb.assemblePolygon();
+	}
 }

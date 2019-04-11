@@ -7,12 +7,12 @@ import com.google.common.geometry.*;
 
 public interface EntityDAO {
 //LINKS
-        public ArrayList<Link> getLinkInRect (S2LatLngRect reg) throws EntityDAOException;
+	public ArrayList<Link> getLinksInRect (S2LatLngRect reg) throws EntityDAOException;
 	public Link getLinkGuid(String guid) throws EntityDAOException;
-        public ArrayList<Link> getLinkAll () throws EntityDAOException;
-        public void purgeLink() throws EntityDAOException;
-        public void deleteLink(String guid) throws EntityDAOException;
-        public void insertLink(String guid,String dguid, long dlatE6, long dlngE6,String oguid, long olatE6, long olngE6, String team) throws EntityDAOException;
+	public ArrayList<Link> getLinkAll () throws EntityDAOException;
+	public void purgeLink() throws EntityDAOException;
+	public void deleteLink(String guid) throws EntityDAOException;
+	public void insertLink(String guid,String dguid, long dlatE6, long dlngE6,String oguid, long olatE6, long olngE6, String team) throws EntityDAOException;
 
 // CELLS
 	public HashMap<S2CellId,UniformDistribution> getMUAll() throws EntityDAOException;
@@ -37,12 +37,11 @@ public interface EntityDAO {
 	public void deletePortal (String guid) throws EntityDAOException;
 //	public void updateTitle(String guid, String title) throws EntityDAOException;
 //	public void updateLocation(String guid, long latE6, long lngE6) throws EntityDAOException;
-        public void updatePortalFull(String guid, String title, long latE6, long lngE6,String team,int level,int resCount, int health, String image) throws EntityDAOException;
-        public void updatePortal(String guid, long latE6, long lngE6, String team) throws EntityDAOException;
-        public void insertPortalFull(String guid, String title, long latE6, long lngE6,String team,int level,int resCount, int health, String image) throws EntityDAOException;
-        public void insertPortal(String guid, long latE6, long lngE6, String team) throws EntityDAOException;
-        public void writePortalFull(String guid, String title, long latE6, long lngE6,String team,int level,int resCount, int health, String image) throws EntityDAOException;
-        public void writePortal(String guid, long latE6, long lngE6, String team) throws EntityDAOException;
+	public void updatePortalFull(String guid, String title, long latE6, long lngE6,String team,int level,int resCount, int health, String image) throws EntityDAOException;
+	public void updatePortal(String guid, long latE6, long lngE6, String team) throws EntityDAOException;
+	public void insertPortalFull(String guid, String title, long latE6, long lngE6,String team,int level,int resCount, int health, String image) throws EntityDAOException;
+	public void insertPortal(String guid, long latE6, long lngE6, String team) throws EntityDAOException;
+	public void writePortalFull(String guid, String title, long latE6, long lngE6,String team,int level,int resCount, int health, String image) throws EntityDAOException;
+	public void writePortal(String guid, long latE6, long lngE6, String team) throws EntityDAOException;
 
 }
-	

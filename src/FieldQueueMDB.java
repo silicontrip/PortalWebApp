@@ -14,12 +14,12 @@ import com.google.common.geometry.*;
 @MessageDriven(
 mappedName = "jms/fieldQueue",
 activationConfig = { 
-    @ActivationConfigProperty(
-      propertyName = "acknowledgeMode", 
-      propertyValue = "Auto-acknowledge"), 
-    @ActivationConfigProperty(
-      propertyName = "destinationType", 
-      propertyValue = "javax.jms.Queue")
+	@ActivationConfigProperty(
+	  propertyName = "acknowledgeMode", 
+	  propertyValue = "Auto-acknowledge"), 
+	@ActivationConfigProperty(
+	  propertyName = "destinationType", 
+	  propertyValue = "javax.jms.Queue")
 })
 
 public class FieldQueueMDB implements MessageListener {
@@ -32,9 +32,9 @@ public class FieldQueueMDB implements MessageListener {
 		String tm = "";
 		try {
 			tm= textMessage.getText();
-//		System.out.println("field: " + tm);
+
 			JSONObject pobj = new JSONObject (textMessage.getText());
-			SQLMUFieldDAO dao = new SQLMUFieldDAO();
+//			SQLMUFieldDAO dao = new SQLMUFieldDAO();
 			if (pobj.has("mu")) {
 
 				// unwrap the JSON message
@@ -48,24 +48,67 @@ public class FieldQueueMDB implements MessageListener {
 				JSONObject p3 = points.getJSONObject(2);
 
 				String guid = pobj.getString("guid");
+				
+				//JSONArray mu = pobj.getJSONArray("mu");
+		// PLUGIN isn't sending arrays yet.
+				JSONArray mu =  new JSONArray();
+		mu.put(pobj.getJSONArray("mu"));
 
 				// perform business logic...
 				// check for duplicates
-				if (dao.exists(guid))
+				//if (dao.exists(guid))
+				if (cellBean.hasFieldGuid(guid))
 				{
-					System.out.println("exists: " + guid);
+					System.out.println("field exists: " + guid);
 					return;
 				}
 				
+				Field fi = new Field (
+					pobj.getString("creator"),
+					pobj.getString("agent"),
+					0, // place holder
+					guid,
+					options.getInt("timestamp"),
+					entPoints.getString(1),
+					p1.getString("guid"),p1.getLong("latE6"),p1.getLong("lngE6"),
+					p2.getString("guid"),p2.getLong("latE6"),p2.getLong("lngE6"),
+					p3.getString("guid"),p3.getLong("latE6"),p3.getLong("lngE6")
+				);
+				
 				// check for validity
 				// EJB???
-				S2Polygon field = cellBean.getS2Polygon(p1.getLong("latE6"),p1.getLong("lngE6"), p2.getLong("latE6"),p2.getLong("lngE6"), p3.getLong("latE6"),p3.getLong("lngE6"));
-				boolean valid = cellBean.fieldMUValid(field,pobj.getInt("mu"));
+				S2Polygon S2Field = fi.getS2Polygon();
+				// thinking about making MU an array
+				// and submitting both values for split fields.
+				// TODO: look at the IITC plugin code
+				
+				boolean[] valid = new boolean[mu.length()];
+				
+				int validCount = 0;
+				for (int i =0; i < mu.length(); i++)
+					if (cellBean.fieldMUValid(S2Field,mu.getInt(i)))
+					{
+						valid[i]=true;
+						validCount ++;
+					} else
+						valid[i]=false;
+					
+					if (validCount > 1)
+						System.out.println("multiple valid mu field: " + guid  );
+					//what to do if different MU are valid?
+
+			// which one is more accurate?
+			// really need split field handler.
 
 				System.out.println ("" + guid + ": " + pobj.getInt("mu") + " valid: " + valid);
-	
-				// create invalid field. in table.	
 				
+				for (int i =0; i < mu.length(); i++)
+				{
+					fi.setMU(mu.getInt(i));
+						// not  implemented yet
+					//cellBean.submitField(fi,valid[i]);
+				}
+/*	
 					dao.insert(
 						pobj.getString("creator"),
 						pobj.getString("agent"),
@@ -78,6 +121,7 @@ public class FieldQueueMDB implements MessageListener {
 						p3.getString("guid"),p3.getLong("latE6"),p3.getLong("lngE6"),
 						valid
 					);
+*/
 				
 			} 
 		} catch (JMSException e) {
@@ -86,5 +130,5 @@ public class FieldQueueMDB implements MessageListener {
 			System.out.println(tm);
 			e.printStackTrace();
 		}
-    }
+	}
 }

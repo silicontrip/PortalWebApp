@@ -154,8 +154,8 @@ public class CellSessionBean {
 	public UniformDistribution muForField(S2Polygon s2Field)
 	{
 
-		S2CellUnion cells = getCellsForField(s2Field);
-		HashMap<S2CellId,AreaDistribution> muArea = getIntersectionMU(cells,s2Field);
+		//S2CellUnion cells = getCellsForField(s2Field);
+		HashMap<S2CellId,AreaDistribution> muArea = getIntersectionMU(s2Field);
 		UniformDistribution fieldmu = new UniformDistribution(0,0);
 
 		for (Map.Entry<S2CellId,AreaDistribution> entry : muArea.entrySet())

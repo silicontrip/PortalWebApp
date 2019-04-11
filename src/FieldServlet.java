@@ -43,8 +43,8 @@ public class FieldServlet extends HttpServlet {
 	public void destroy () {
 	;
 	}
-	
-	private JSONObject mu(String s) { 
+
+	private JSONObject mu(String s) {
 		//System.out.println("-> " + s);
 
 		JSONArray cells = new JSONArray(s);
@@ -58,19 +58,19 @@ public class FieldServlet extends HttpServlet {
 			{
 				jmu.put(mu.getLower());
 				jmu.put(mu.getUpper());
-				response.put((String)cobj,jmu);	
+				response.put((String)cobj,jmu);
 			}
-		}	
+		}
 		//System.out.println("<- " + response.toString());
 		return response;
 	}
-	private JSONObject use(String s) throws NamingException { 
+	private JSONObject use(String s) throws NamingException {
 //		System.out.println("useField -> " + s);
 
 		JSONObject response = new JSONObject();
 
 		JSONObject iitc_field = new JSONObject(s);
-                JSONArray pts = iitc_field.getJSONObject("data").getJSONArray("points");
+				JSONArray pts = iitc_field.getJSONObject("data").getJSONArray("points");
 
 		Field searchField = new Field(
 			pts.getJSONObject(0).getLong("latE6"),
@@ -87,11 +87,11 @@ public class FieldServlet extends HttpServlet {
 		response.put("mu_known",known_mu);
 
 		// getCellsForField
-                S2Polygon s2Field = searchField.getS2Polygon();
-		S2CellUnion cellu = cellBean.getCellsForField(s2Field);
+		S2Polygon s2Field = searchField.getS2Polygon();
+		//S2CellUnion cellu = cellBean.getCellsForField(s2Field);
 
 		// getIntersectionMU
-		HashMap<S2CellId,AreaDistribution> area = cellBean.getIntersectionMU(cellu,s2Field);	
+		HashMap<S2CellId,AreaDistribution> area = cellBean.getIntersectionMU(s2Field);
 
 		// calc mu
 		double min_mu = 0;
@@ -118,8 +118,8 @@ public class FieldServlet extends HttpServlet {
 		}
 		if (undefined)
 		{
-		    min_mu=-1;
-		    max_mu=-1;
+			min_mu=-1;
+			max_mu=-1;
 		}
 		response.put("mu_min", min_mu);
 		response.put("mu_max", max_mu);
@@ -139,8 +139,8 @@ public class FieldServlet extends HttpServlet {
 		PrintWriter writer = resp.getWriter();
 		JSONObject jsonResponse;
 
-                String userName = req.getParameter("agent");
-                String apiKey = req.getParameter("apikey");
+				String userName = req.getParameter("agent");
+				String apiKey = req.getParameter("apikey");
 		req.login(userName,apiKey);
 
 		if (req.getParameter("mu") != null)
@@ -158,10 +158,10 @@ public class FieldServlet extends HttpServlet {
 			jsonResponse = new JSONObject();
 			jsonResponse.put("error",  "invalid request");
 		}
-			
+
 		writer.println(jsonResponse.toString());
-		writer.close(); 
-		
+		writer.close();
+
 	} catch (ServletException e) {
 		JSONObject jsonResponse = new JSONObject();
 		jsonResponse.put("error",  e.getMessage());
@@ -186,13 +186,13 @@ public class FieldServlet extends HttpServlet {
 			resp.setStatus(500);
 			PrintWriter writer = resp.getWriter();
 			writer.println(jsonResponse.toString());
-			writer.close(); 
+			writer.close();
 		} catch (Exception e2) {
 			// sending the error caused an error.
 			// is there anything else we can do?
 			e2.printStackTrace();
 		}
-	}  
+	}
   }
 
   public void doGet(HttpServletRequest req, HttpServletResponse resp){

@@ -17,11 +17,10 @@ public class EntityServlet extends HttpServlet {
 	private QueueSession queueSession = null;
 	private Queue submitQueue = null;
 
-
 	public void init () throws ServletException {
 		try {
 			ctx = new InitialContext();
-			qcf = (QueueConnectionFactory) ctx.lookup("jms/QueueConnectionFactory");	
+			qcf = (QueueConnectionFactory) ctx.lookup("jms/QueueConnectionFactory");
 			queueCon = qcf.createQueueConnection();
 			queueSession = queueCon.createQueueSession(false, Session.AUTO_ACKNOWLEDGE);
 		} catch (Exception e) {
@@ -31,8 +30,8 @@ public class EntityServlet extends HttpServlet {
 
 	public void destroy () {
 		try {
-			queueCon.close(); 
-			queueSession.close(); 
+			queueCon.close();
+			queueSession.close();
 		} catch (Exception e) {
 		// not much we can do here as we can't throw anything.
 			e.printStackTrace();
@@ -59,19 +58,52 @@ public class EntityServlet extends HttpServlet {
 		return count;
 	}
 
-  public void doPost(HttpServletRequest req, HttpServletResponse resp){
-	try {
-		resp.setContentType("text/json");
-		resp.setCharacterEncoding("UTF-8");
-		resp.addHeader("Access-Control-Allow-Origin","https://intel.ingress.com");
-
-	// authentication code
-		JSONObject jsonResponse = new JSONObject();
-		String userName = req.getParameter("agent");		
-		String apiKey = req.getParameter("apikey");		
+	public void doPost(HttpServletRequest req, HttpServletResponse resp){
+	
+		String userName = req.getParameter("agent");
+		String apiKey = req.getParameter("apikey");
 		try {
+			resp.setContentType("text/json");
+			resp.setCharacterEncoding("UTF-8");
+			resp.addHeader("Access-Control-Allow-Origin","https://intel.ingress.com");
+
+			JSONObject jsonResponse = new JSONObject();
+			// authentication code
 			req.login(userName,apiKey);
+			// authentication code ends.  move to method? or catch login exception lower down?
+
+			PrintWriter writer = resp.getWriter();
+
+			// create queue session off the connection
+
+			JSONArray entityArray = null;
+			if (req.getParameter("portals") != null)
+			{
+				submitQueue = (Queue)ctx.lookup("jms/portalQueue");
+				jsonResponse.put("portals_submitted", submit (submitQueue, new JSONArray(req.getParameter("portals")),userName));
+				jsonResponse.put("portals_deleted", submit (submitQueue, new JSONArray(req.getParameter("portals_deleted")),userName));
+			}
+			if (req.getParameter("edges") != null)
+			{
+				//System.out.println("Submit Edges");
+				submitQueue = (Queue)ctx.lookup("jms/linkQueue");
+				// due to links being destroyed and recreated with new GUIDs, old links must be deleted before new ones added.
+				// as the old links will cause DB constraint failures.
+				jsonResponse.put("edges_deleted",submit(submitQueue, new JSONArray(req.getParameter("edges_deleted")),userName));
+				jsonResponse.put("edges_submitted",submit(submitQueue, new JSONArray(req.getParameter("edges")),userName));
+			}
+			if (req.getParameter("fields") != null)
+			{
+				// want to put the agent name into the field here.
+				jsonResponse.put("fields_submitted",submit((Queue)ctx.lookup("jms/fieldQueue"),new JSONArray(req.getParameter("fields")),userName));
+			}
+
+			System.out.println(jsonResponse.toString());
+
+			writer.println(jsonResponse.toString());
+			writer.close();
 		} catch (ServletException e) {
+			JSONObject jsonResponse = new JSONObject();
 			jsonResponse.put("error",  e.getMessage());
 			jsonResponse.put("errorType",  e.getClass().getName());
 			jsonResponse.put("agent", userName);
@@ -85,62 +117,24 @@ public class EntityServlet extends HttpServlet {
 			} catch (Exception e2) {
 				// :-P
 			}
-			return;
+		} 	catch (Exception e) {
+			JSONObject jsonResponse = new JSONObject();
+			jsonResponse.put("error",  e.getMessage());
+			e.printStackTrace();
+			try {
+				resp.setStatus(500);
+				PrintWriter writer = resp.getWriter();
+				writer.println(jsonResponse.toString());
+				writer.close();
+			} catch (Exception e2) {
+				// sending the error caused an error.
+				// is there anything else we can do?
+				;
+			}
 		}
-	// authentication code ends.  move to method? or catch login exception lower down?	
-
-		PrintWriter writer = resp.getWriter();
-
-
-
-            // create queue session off the connection
-
-		JSONArray entityArray = null;
-		if (req.getParameter("portals") != null)
-		{
-			submitQueue = (Queue)ctx.lookup("jms/portalQueue");
-			jsonResponse.put("portals_submitted", submit (submitQueue, new JSONArray(req.getParameter("portals")),userName));
-			jsonResponse.put("portals_deleted", submit (submitQueue, new JSONArray(req.getParameter("portals_deleted")),userName));
-		}
-		if (req.getParameter("edges") != null)
-		{
-			//System.out.println("Submit Edges");
-			submitQueue = (Queue)ctx.lookup("jms/linkQueue");
-			// due to links being destroyed and recreated with new GUIDs, old links must be deleted before new ones added.
-			// as the old links will cause DB constraint failures.
-			jsonResponse.put("edges_deleted",submit(submitQueue, new JSONArray(req.getParameter("edges_deleted")),userName));
-			jsonResponse.put("edges_submitted",submit(submitQueue, new JSONArray(req.getParameter("edges")),userName));
-		}
-		if (req.getParameter("fields") != null)
-		{
-			// want to put the agent name into the field here.
-			jsonResponse.put("fields_submitted",submit((Queue)ctx.lookup("jms/fieldQueue"),new JSONArray(req.getParameter("fields")),userName));
-		}
-
-		System.out.println(jsonResponse.toString());
-		
-		writer.println(jsonResponse.toString());
-		writer.close(); 
 	}
-	catch (Exception e) {
-		JSONObject jsonResponse = new JSONObject();
-		jsonResponse.put("error",  e.getMessage());
-		e.printStackTrace();
-		try {
-                        resp.setStatus(500);
-                        PrintWriter writer = resp.getWriter();
-                        writer.println(jsonResponse.toString());
-                        writer.close(); 
-		} catch (Exception e2) {
-			// sending the error caused an error.
-			// is there anything else we can do?
-			;
-		}
-	}  
-  }
 
-  public void doGet(HttpServletRequest req, HttpServletResponse resp){
-	doPost(req,resp);
-  }
+	public void doGet(HttpServletRequest req, HttpServletResponse resp){
+		doPost(req,resp);
+	}
 }
-

@@ -102,5 +102,12 @@ public class CellSessionBean {
 		}
 		return fieldmu;
 	}
+	
+	public boolean hasFieldGuid(String guid)
+	{
+		MUFieldDAO dao = new SQLMUFieldDAO();
+		return dao.exists(guid);
+	}
+	
 }
 

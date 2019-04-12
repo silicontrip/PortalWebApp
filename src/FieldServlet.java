@@ -25,12 +25,12 @@ public class FieldServlet extends HttpServlet {
 
 	private InitialContext ctx = null;
 	//private MUCellDAO cdao = null;
-	private MUFieldDAO fdao = null;
+	//private MUFieldDAO fdao = null;
 	private HashMap<S2CellId,UniformDistribution> cellmu = null;
 
 	public void init () throws ServletException {
 		//cdao = new SQLMUCellDAO();
-		fdao = new SQLMUFieldDAO();
+		//fdao = new SQLMUFieldDAO();
 /*
 		try {
 			ctx = new InitialContext();
@@ -80,9 +80,7 @@ public class FieldServlet extends HttpServlet {
 			pts.getJSONObject(2).getLong("latE6"),
 			pts.getJSONObject(2).getLong("lngE6"));
 
-		int known_mu = -1;
-		for (Field f : fdao.findField(searchField))
-			known_mu = f.getMU();
+		int known_mu = cellBean.muKnownField(searchField);
 
 		response.put("mu_known",known_mu);
 

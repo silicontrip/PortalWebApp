@@ -19,7 +19,8 @@ public class CellSessionBean {
 
 	private HashMap<S2CellId, UniformDistribution> cellmu = null;
 	private EntityDAO dao = null;
-	public double range = 0.5; // threshold for MU rounding. I think BE use a value of 1.0 here.
+	/** threshold for MU rounding */
+	public double range = 0.5; 
 
 	private EntityDAO getDAO() {
 		if (dao==null)
@@ -137,6 +138,19 @@ public class CellSessionBean {
 			response.put(cell,ad);
 		}
 		return response;
+	}
+	/**
+	 * find the MU for a known field
+	 *
+	 * @param field the field to search for
+	 *
+	 * @return int of the known mu or -1 if unknown
+	 */
+	public int muKnownField(Field field)
+	{
+		for (Field f : getDAO.findField(field))
+			return f.getMU();
+		return -1;
 	}
 	/**
 	 * Determines if a field's mu is possibly valid.

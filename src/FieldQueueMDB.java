@@ -81,12 +81,12 @@ public class FieldQueueMDB implements MessageListener {
 				// thinking about making MU an array
 				// and submitting both values for split fields.
 				// TODO: look at the IITC plugin code
-				
+				// remove this line once the iitc code is changed
 				boolean[] valid = new boolean[mu.length()];
 				
 				int validCount = 0;
 				for (int i =0; i < mu.length(); i++)
-					if (cellBean.fieldMUValid(S2Field,mu.getInt(i)))
+					if (cellBean.muFieldValid(S2Field,mu.getInt(i)))
 					{
 						valid[i]=true;
 						validCount ++;
@@ -99,6 +99,7 @@ public class FieldQueueMDB implements MessageListener {
 
 			// which one is more accurate?
 			// really need split field handler.
+			// problem is we don't know the matching split field.
 
 				System.out.println ("" + guid + ": " + pobj.getInt("mu") + " valid: " + valid);
 				
@@ -106,7 +107,7 @@ public class FieldQueueMDB implements MessageListener {
 				{
 					fi.setMU(mu.getInt(i));
 						// not  implemented yet
-					//cellBean.submitField(fi,valid[i]);
+					cellBean.submitField(fi,valid[i]);
 				}
 /*	
 					dao.insert(

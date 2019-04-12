@@ -5,7 +5,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import com.google.common.geometry.*;
 
+// should split the pure db queries from the business logic
+// would make it easier to replace the data source with a different db engine
+
 public interface EntityDAO {
+
 //LINKS
 	public ArrayList<Link> getLinksInRect (S2LatLngRect reg) throws EntityDAOException;
 	public Link getLinkGuid(String guid) throws EntityDAOException;
@@ -27,8 +31,8 @@ public interface EntityDAO {
 	// future expasion for joined cell table
 	public void insertCellsForField (String guid, S2CellUnion cells) throws EntityDAOException;
 	public ArrayList<String> fieldGuidsForCell(S2CellId cell) throws EntityDAOException;
-//PORTALS
 
+//PORTALS
 	public ArrayList<Portal> getPortalsInRegion (S2Region reg) throws EntityDAOException;
 	public S2LatLng getPortalLocation (String s) throws EntityDAOException;
 	public S2LatLng getPortalLocationFromTitle (String title) throws EntityDAOException;

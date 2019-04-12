@@ -3,7 +3,7 @@
 *
 * @author  Silicon Tripper
 * @version 1.0
-* @since   2019-03-31 
+* @since   2019-03-31
 */
 package net.silicontrip.ingress;
 
@@ -18,6 +18,14 @@ import com.google.common.geometry.*;
 public class CellSessionBean {
 
 	private HashMap<S2CellId, UniformDistribution> cellmu = null;
+	private EntityDAO dao = null;
+	public double range = 0.5; // threshold for MU rounding. I think BE use a value of 1.0 here.
+
+	private EntityDAO getDAO() {
+		if (dao==null)
+			dao = new SQLEntityDAO();
+		return dao;
+	}
 
 	/**
    * This will return the mu uniform distribution for
@@ -31,8 +39,8 @@ public class CellSessionBean {
 	public UniformDistribution getMU(S2CellId cell) {
 		if (cellmu != null)
 			return cellmu.get(cell);
-		MUCellDAO dao = new SQLMUCellDAO();
-		cellmu = dao.getAll();
+
+		cellmu = getDAO().getMUAll();
 		return cellmu.get(cell);
 	}
 	/**
@@ -40,7 +48,7 @@ public class CellSessionBean {
    * @param cell The S2CellId for which the S2Polygon is required.
    * @return S2Polygon of the requested cell.
    */
-	public S2Polygon getS2Polygon (S2Cell cell) {
+	public static S2Polygon getS2Polygon (S2Cell cell) {
 		S2Loop cellLoop = new S2Loop(cell);
 		return new S2Polygon(cellLoop);
 	}
@@ -112,9 +120,9 @@ public class CellSessionBean {
 	 */
 	public HashMap<S2CellId,AreaDistribution> getIntersectionMU(S2Polygon thisField)
 	{
-		
+
 		HashMap<S2CellId,AreaDistribution> response = new HashMap<S2CellId,AreaDistribution>();
-		
+
 		for (S2CellId cell: getCellsForField(thisField))
 		{
 		//System.out.println("getIntersectionMU: " + cell.toToken());
@@ -138,7 +146,7 @@ public class CellSessionBean {
 	 * @param mu the integer value of the field. Fields have floating point mu values but are rounded to the nearest integer greater than 0
 	 * @return boolean indicating if the MU specified agrees with the cell data.
 	 */
-	public boolean fieldMUValid(S2Polygon s2Field,int mu)
+	public boolean muFieldValid(S2Polygon s2Field,int mu)
 	{
 		UniformDistribution muest = muForField(s2Field);
 		if (muest.getLower() == -1)
@@ -182,9 +190,119 @@ public class CellSessionBean {
 	 */
 	public boolean hasFieldGuid(String guid)
 	{
-		MUFieldDAO dao = new SQLMUFieldDAO();
-		return dao.exists(guid);
+		return getDAO().existsField(guid);
 	}
-	
+
+	/**
+	 * inserts the field using the DAO.
+	 * @param field the field entity to insert
+	 * @param valid the mu validity flag
+	 */
+	public void submitField(Field field, boolean valid)
+	{
+		getDAO().insertField(field.getCreator(),
+					field.getAgent(),
+					field.getMU(),
+					field.getGuid(),
+					field.getTimestamp(),
+					field.getTeam(),
+					field.getPGuid1(),
+					field.getPLat1(),
+					field.getPLng1(),
+					field.getPGuid2(),
+					field.getPLat2(),
+					field.getPLng2(),
+					field.getPGuid3(),
+					field.getPLat3(),
+					field.getPLng3(),
+					valid);
+		S2CellUnion fieldCells = getCellsForField(field.getS2Polygon());
+		getDAO().insertCellsForField(field.getGuid(),fieldCells);
+		// too easy?
+	}
+
+	private static Double getIntersectionArea(S2Polygon field, S2CellId cell)
+	{
+		S2Polygon intPoly = new S2Polygon();
+		S2Polygon cellPoly = getS2Polygon(new S2Cell(cell));
+		intPoly.initToIntersection(field, cellPoly);
+		return intPoly.getArea() * 6367 * 6367 ;
+	}
+	/**
+	 * This is the MU worker method converting fields into cell mu
+	 * Any cells which have been modified are placed into the cellQueue
+	 * which then resubmits any fields which use that cell.
+	 * Proof of concept for realtime cell updating. I'm excited.
+	 * @param field the field entity to process into cells
+	 */
+	public void processField(Field field)
+	{
+		Integer score = field.getMU();
+		S2Polygon thisField = field.getS2Polygon();
+		S2CellUnion cells = getCellsForField(thisField);
+		Double area;
+
+		UniformDistribution initialMU = new UniformDistribution(score,range);
+
+		for (S2CellId cello: cells) {
+			UniformDistribution mus = new UniformDistribution(initialMU);
+			for (S2CellId celli: cells) {
+				// if not cell from outer loop
+				if (!cello.toToken().equals(celli.toToken()))
+				{
+					area = getIntersectionArea(thisField,celli);
+
+					// subtract upper range * area from lower MU
+					// subtract lower range * area from upper MU
+					//      errmsg.append (mus +" ");
+					//      errmsg.append (mus.div(totalArea) +" ");
+					UniformDistribution cellmu = getMU(celli);
+
+					if (cellmu != null)
+					{
+						UniformDistribution cma = cellmu.mul(area);
+						mus = mus.sub(cma);
+					}
+					else
+					{
+						mus.setLower(0.0);
+					}
+				}
+			}
+			area = getIntersectionArea(thisField,cello);
+			mus= mus.div(area);
+
+			UniformDistribution cellomu = getMU(cello);
+
+			// refine UD:cello with mus
+
+			if (cellomu == null)
+			{
+				cellomu = mus;
+			}
+			else
+			{
+				try {
+					if (cellomu.refine(mus))
+						System.out.println("" + cello.toToken() + "->" + cellomu.toString());
+				} catch (Exception e) {
+					; // something something, out of range error
+				}
+			}
+
+			cellomu.clampLower(0.0); // this also has the potential to modify a field
+			// end refine UD:cello
+			//multi.put(cello,cellomu);
+		}
+
+	/*
+		for (S2CellId cell: multi.keySet())
+		{
+			response.put(cell.toToken(), multi.get(cell).getArrayList());
+			putMU(cell, multi.get(cell));
+		}
+		return response;
+		*/
+	}
 }
 

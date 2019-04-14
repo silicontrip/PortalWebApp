@@ -56,31 +56,31 @@ public class LinkQueueMDB implements MessageListener {
 			tm= textMessage.getText();
 		//	System.out.println(tm);
 			JSONObject pobj = new JSONObject (textMessage.getText());
-			SQLLinkDAO dao = new SQLLinkDAO();
+			SQLEntityDAO dao = new SQLEntityDAO();
 			if (pobj.has("delete"))
 			{
 				// check zoom 
-				Link l = dao.getGuid(pobj.getString("guid"));
+				Link l = dao.getLinkGuid(pobj.getString("guid"));
 				double length = l.getAngle() * 6367000;
 				// get link length
 				if ( length > zoomDistance.get(pobj.getInt("zoom")))
-					dao.delete(pobj.getString("guid"));
+					dao.deleteLink(pobj.getString("guid")); // new logic being tested, appears to work very well
 			} else if (pobj.has("team")) {
 				//System.out.println("" + pobj.getString("image").length() + " / " + pobj.getString("image"));
 //{"dLngE6":145176878,"oGuid":"704dbc67aed54b73b153bbb5be3a9fed.16","oLatE6":-37818041,"guid":"e11e884cdb0e438e9c25c6bc0b909b14.9","team":"E","oLngE6":145157441,"dLatE6":-37802085,"dGuid":"5f7ef86ee21f4c83809527b917cad585.16"}
-				dao.insert(
+				dao.insertLink(
 					pobj.getString("guid"),
 					pobj.getString("dGuid"), pobj.getLong("dLatE6"), pobj.getLong("dLngE6"),
 					pobj.getString("oGuid"), pobj.getLong("oLatE6"), pobj.getLong("oLngE6"),
 					pobj.getString("team"));
-			} else if (pobj.has("purge")) {
-				dao.purge();
+			} else if (pobj.has("purge")) { // old logic. not sure if this will be used going forward
+				dao.purgeLink();
 			}
         } catch (JMSException e) {
             System.out.println(
               "Error while trying to consume messages: " + e.getMessage());
         } catch (Exception e) {
-			System.out.println(tm);
+			System.out.println("LinkQueueMDB::"+tm);
 			e.printStackTrace();
 		}
     }

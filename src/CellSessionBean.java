@@ -65,7 +65,7 @@ public class CellSessionBean {
 	 * @param lng3 The Longitude of point 3 in E6 format
 	 * @return S2Polygon of the triangle
 	 */
-	public S2Polygon getS2Polygon (long lat1, long lng1, long lat2, long lng2, long lat3, long lng3)
+	public static S2Polygon getS2Polygon (long lat1, long lng1, long lat2, long lng2, long lat3, long lng3)
 	{
 		return getS2Polygon( S2LatLng.fromE6(lat1,lng1), S2LatLng.fromE6(lat2,lng2), S2LatLng.fromE6(lat3,lng3));
 	}
@@ -76,7 +76,7 @@ public class CellSessionBean {
 	 * @param v3 S2LatLng of point 3
 	 * @return S2Polygon of the Triangle
 	 */
-	public S2Polygon getS2Polygon (S2LatLng v1,S2LatLng v2,S2LatLng v3)
+	public static S2Polygon getS2Polygon (S2LatLng v1,S2LatLng v2,S2LatLng v3)
 	{
 		return getS2Polygon(v1.toPoint(), v2.toPoint(), v3.toPoint());
 	}
@@ -90,7 +90,7 @@ public class CellSessionBean {
 	 * @param v3 S2Point of point 3
 	 * @return S2Polygon of the Triangle
 	 */
-	public S2Polygon getS2Polygon (S2Point v1,S2Point v2,S2Point v3)
+	public static S2Polygon getS2Polygon (S2Point v1,S2Point v2,S2Point v3)
 	{
 		S2PolygonBuilder pb = new S2PolygonBuilder(S2PolygonBuilder.Options.UNDIRECTED_UNION);
 		pb.addEdge(v1,v2);
@@ -104,7 +104,7 @@ public class CellSessionBean {
 	 * @param thisField The S2Polygon of the region to be covered
 	 * @return S2CellUnion of the cells
 	 */
-	public S2CellUnion getCellsForField(S2Polygon thisField)
+	public static S2CellUnion getCellsForField(S2Polygon thisField)
 	{
 		S2RegionCoverer rc = new S2RegionCoverer();
 		// ingress mu calculation specifics
@@ -148,7 +148,7 @@ public class CellSessionBean {
 	 */
 	public int muKnownField(Field field)
 	{
-		for (Field f : getDAO.findField(field))
+		for (Field f : getDAO().findField(field))
 			return f.getMU();
 		return -1;
 	}

@@ -12,12 +12,14 @@ import java.sql.*;
 import javax.sql.*;
 import javax.naming.*;
 
+import javax.ejb.EJB;
+
 public class PortalServlet extends HttpServlet {
 
-	PortalDAO pdao = null;
+	@EJB
+	private EntitySessionBean entBean;
 
   public void init () throws ServletException {
-	pdao = new SQLPortalDAO();
   }
 
   public void destroy () {
@@ -34,9 +36,9 @@ public class PortalServlet extends HttpServlet {
 
 	//	PortalDAO pdao = new SQLPortalDAO();
 
-		S2LatLng p1 =  pdao.getLocation(req.getParameter("ll"));
-		S2LatLng p2 =  pdao.getLocation(req.getParameter("l2"));
-		S2LatLng p3 =  pdao.getLocation(req.getParameter("l3"));
+		S2LatLng p1 =  entBean.getPortalLocation(req.getParameter("ll"));
+		S2LatLng p2 =  entBean.getPortalLocation(req.getParameter("l2"));
+		S2LatLng p3 =  entBean.getPortalLocation(req.getParameter("l3"));
 		String pr =  req.getParameter("rr");
 		
 		S2Region searchRegion = null;
@@ -60,7 +62,7 @@ public class PortalServlet extends HttpServlet {
 			searchRegion = S2LatLngRect.fromPointPair(p1,p2);
 
 		if (searchRegion != null) {
-			ArrayList<Portal> portalList = pdao.getInRegion(searchRegion);
+			ArrayList<Portal> portalList = entBean.getPortalInRegion(searchRegion);
 			
 			JSONObject jsonResponse = new JSONObject();
 			for (Portal pt : portalList)

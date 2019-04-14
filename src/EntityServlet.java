@@ -15,7 +15,7 @@ public class EntityServlet extends HttpServlet {
 	private InitialContext ctx = null;
 	private QueueConnection queueCon = null;
 	private QueueSession queueSession = null;
-	private Queue submitQueue = null;
+	// private Queue submitQueue = null;
 
 	public void init () throws ServletException {
 		try {
@@ -79,14 +79,16 @@ public class EntityServlet extends HttpServlet {
 			JSONArray entityArray = null;
 			if (req.getParameter("portals") != null)
 			{
-				submitQueue = (Queue)ctx.lookup("jms/portalQueue");
+				Queue submitQueue = (Queue)ctx.lookup("jms/portalQueue");
+				//System.out.println("Submit Portals");
+				//System.out.println(req.getParameter("portals"));
 				jsonResponse.put("portals_submitted", submit (submitQueue, new JSONArray(req.getParameter("portals")),userName));
 				jsonResponse.put("portals_deleted", submit (submitQueue, new JSONArray(req.getParameter("portals_deleted")),userName));
 			}
 			if (req.getParameter("edges") != null)
 			{
 				//System.out.println("Submit Edges");
-				submitQueue = (Queue)ctx.lookup("jms/linkQueue");
+				Queue submitQueue = (Queue)ctx.lookup("jms/linkQueue");
 				// due to links being destroyed and recreated with new GUIDs, old links must be deleted before new ones added.
 				// as the old links will cause DB constraint failures.
 				jsonResponse.put("edges_deleted",submit(submitQueue, new JSONArray(req.getParameter("edges_deleted")),userName));

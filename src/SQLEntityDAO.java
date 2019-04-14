@@ -115,6 +115,7 @@ public class SQLEntityDAO implements EntityDAO {
 	protected static String PORTAL_UPDATE_FULL = "update portals set title=?,latE6=?,lngE6=?,team=?,level=?,res_count=?,health=?,image=?,deleted=0 where guid=?";
 	protected static String PORTAL_GUID_EXISTS =  "select guid from portals where guid=?";
 
+	/** Constructor */
 	public SQLEntityDAO() throws EntityDAOException {
 		try {
 			InitialContext ctx = new InitialContext();
@@ -123,7 +124,14 @@ public class SQLEntityDAO implements EntityDAO {
 			throw new EntityDAOException("NamingException while looking up DB context : " + slx.getMessage());
 		}
 	}
-
+/** Gets all the links that intersect or are contained within an S2LatLngRect
+ *
+ * @param reg The S2LatLngRect of the area of interest
+ *
+ * @return ArrayList of links
+ *
+ * @throws EntityDAOException
+ */
 	public ArrayList<Link> getLinksInRect (S2LatLngRect reg) throws EntityDAOException
 	{
 		ArrayList<Link> all  = getLinkAll();
@@ -137,7 +145,14 @@ public class SQLEntityDAO implements EntityDAO {
 		}
 		return ret;
 	}
-
+/** Gets a link for specified GUID
+ *
+ * @param guid The guid of the required link
+ *
+ * @return Link for the guid
+ *
+ * @throws EntityDAOException
+ */
 	public Link getLinkGuid(String guid) throws EntityDAOException
 	{
 		PreparedStatement ps = null;
@@ -175,7 +190,12 @@ public class SQLEntityDAO implements EntityDAO {
 		}
 		return ret;
 	}
-
+/** Gets all the links in the database
+ *
+ * @return ArrayList of links
+ *
+ * @throws EntityDAOException
+ */
 	public ArrayList<Link> getLinkAll () throws EntityDAOException
 	{
 		PreparedStatement ps = null;
@@ -214,7 +234,13 @@ public class SQLEntityDAO implements EntityDAO {
 		}
 		return ret;
 	}
-
+/** Erases all links in the database.
+ * This was for an old implementation of the link grabber which required periodic resets.
+ * The new version supports rolling updates and hopefully never needs to be reset.
+ * New functionality is still being evaluated. so far really good.
+ *
+ * @throws EntityDAOException
+ */
 	public void purgeLink() throws EntityDAOException
 	{
 		PreparedStatement ps = null;
@@ -235,7 +261,12 @@ public class SQLEntityDAO implements EntityDAO {
 			}
 		}
 	}
-
+/** Deletes a link for specified GUID
+ *
+ * @param guid The guid of the required link
+ *
+ * @throws EntityDAOException
+ */
 	public void deleteLink(String guid) throws EntityDAOException
 	{
 		//System.out.println("SQLLinkDAO: delete("+guid+")");
@@ -258,7 +289,19 @@ public class SQLEntityDAO implements EntityDAO {
 			}
 		}
 	}
-
+/** Inserts a link into the Link database
+ *
+ * @param guid The guid of the link
+ * @param dguid The guid of the destination portal
+ * @param dlatE6 The latitude of the destination portal in E6 format
+ * @param dlngE6 The longitude of the destination portal in E6 format
+ * @param oguid The guid of the originating portal
+ * @param olatE6 The latitude of the originating portal in E6 format
+ * @param olngE6 The longitude of the originating portal in E6 format
+ * @param team The Faction of the link, 'E' or 'R'
+ *
+ * @throws EntityDAOException
+ */
 	public void insertLink(String guid,String dguid, long dlatE6, long dlngE6,String oguid, long olatE6, long olngE6, String team) throws EntityDAOException
 	{
 
@@ -294,7 +337,13 @@ public class SQLEntityDAO implements EntityDAO {
 	}
 
 // MU CELL
-
+/** Gets all the CELLS:MU in the database
+ * This data is small enough to be stored in an instance variable.
+ *
+ * @return Hashmap of S2CellId keys and UniformDistribution
+ *
+ * @throws EntityDAOException
+ */
 	public HashMap<S2CellId,UniformDistribution> getMUAll() throws EntityDAOException
 	{
 		PreparedStatement ps = null;
@@ -323,7 +372,12 @@ public class SQLEntityDAO implements EntityDAO {
 		}
 		return ret;
 	}
+/** Stores all the CELLS:MU in the database
 
+ * @Param cellmu A HashMap with S2CellId keys and UniformDistribution mu
+ *
+ * @throws EntityDAOException
+ */
 	public void updateMUAll(HashMap<S2CellId,UniformDistribution> cellmu) throws EntityDAOException
 	{
 		PreparedStatement psExist = null;
@@ -372,7 +426,14 @@ public class SQLEntityDAO implements EntityDAO {
 			}
 		}
 	}
-
+/** Gets a Field matching the specified geometry from the database
+ *
+ * @param f The field to find.  This field only requires its 3 lat/long points to have values
+ *
+ * @return ArrayList of Fields
+ *
+ * @throws EntityDAOException
+ */
 	public ArrayList<Field> findField (Field f) throws EntityDAOException
 	{
 		PreparedStatement ps = null;
@@ -434,7 +495,16 @@ public class SQLEntityDAO implements EntityDAO {
 		}
 		return ret;
 	}
-
+/**
+ * Checks if a field already exists in the database from its guid.
+ * Fields of the same geometry but different guids may be present in the database.
+ *
+ * @param guid of the field
+ *
+ * @return boolean of the fields existance
+ *
+ * @throws EntityDAOException
+ */
 	public boolean existsField(String guid) throws EntityDAOException
 	{
 		PreparedStatement ps = null;
@@ -460,7 +530,16 @@ public class SQLEntityDAO implements EntityDAO {
 		}
 		return ret;
 	}
-
+/**
+ * Changes the MU for a field from its guid.
+ * Some split field are incorrectly assigned MU and need to be repaired.
+ * Current business logic checks a field for valid MU before inserting it, correcting fields may not be a requirement
+ *
+ * @param guid of the field
+ * @param mu change the field to this mu
+ *
+ * @throws EntityDAOException
+ */
 	public void updateFieldMU(String guid,int mu) throws EntityDAOException
 	{
 		System.out.println("SQLMUFieldDAO: updateMU("+guid+" -> " + mu +")");
@@ -484,7 +563,15 @@ public class SQLEntityDAO implements EntityDAO {
 			}
 		}
 	}
-
+/**
+ * Deletes a field specified by its guid.
+ * Some fields mu is recorded incorrectly and do not seem to work with the cell data.
+ * Current business logic checks a field for valid MU before inserting it, deleting fields may not be a requirement
+ *
+ * @param guid of the field
+ *
+ * @throws EntityDAOException
+ */
 	public void deleteField(String guid) throws EntityDAOException
 	{
 		System.out.println("SQLMUFieldDAO: delete("+guid+")");
@@ -507,11 +594,35 @@ public class SQLEntityDAO implements EntityDAO {
 			}
 		}
 	}
-
+/**
+ * Inserts a field into the database.
+ * Business logic to check for duplicates and for MU validity should be performed first.
+ * Exceptions may occur for duplicate GUID.
+ * Invalid MU may cause errors in the fieldProcessing logic.
+ * Although fields have point 1, point 2 and point 3 which implies order. No order is a requirement.
+ *
+ * @param creator of the field
+ * @param agent who submitted the field via the field grabber plugin
+ * @param mu of the field
+ * @param guid of the field in string format
+ * @param timestamp of the fields creation time, in milliseconds since epoch (java millis)
+ * @param team of the field. 'E' or 'R'
+ * @param pguid1 guid of the portal for point 1
+ * @param plat1 latitude of the portal for point 1 in E6 format
+ * @param plng1 longitude of the portal for point 1 in E6 format
+ * @param pguid2 guid of the portal for point 2
+ * @param plat2 latitude of the portal for point 2 in E6 format
+ * @param plng2 longitude of the portal for point 2 in E6 format
+ * @param pguid3 guid of the portal for point 3
+ * @param plat3 latitude of the portal for point 3 in E6 format
+ * @param plng3 longitude of the portal for point 3 in E6 format
+ * 
+ * @throws EntityDAOException
+ */
+	
 	public void insertField(String creator,String agent,int mu, String guid,long timestamp,String team, String pguid1, long plat1, long plng1, String pguid2, long plat2, long plng2, String pguid3, long plat3, long plng3, boolean valid) throws EntityDAOException
 	{
 		//System.out.println("SQLMUFieldDAO::insert");
-
 		PreparedStatement ps = null;
 		int rs;
 
@@ -541,7 +652,16 @@ public class SQLEntityDAO implements EntityDAO {
 			}
 		}
 	}
+/**
+ * Inserts a field guid along with the cells which make up its region.
+ * I cannot be held responsible for incorrectly calculated S2CellRegions.
 
+ *
+ * @param guid of the field
+ * @param cells an S2CellUnion of all cells which make this field
+ * 
+ * @throws EntityDAOException
+ */
 	public void insertCellsForField (String guid, S2CellUnion cells) throws EntityDAOException
 	{
 		PreparedStatement ps = null;
@@ -567,7 +687,15 @@ public class SQLEntityDAO implements EntityDAO {
 			}
 		}
 	}
-	
+	/**
+ * Finds all fields guid which use the specified cell.
+ *
+ * @param cell the S2CellId of the required cell
+ *
+ * @return ArrayList of strings containing the guids
+ * 
+ * @throws EntityDAOException
+ */
 	public ArrayList<String> fieldGuidsForCell(S2CellId cell) throws EntityDAOException
 	{
 		PreparedStatement ps = null;
@@ -598,7 +726,15 @@ public class SQLEntityDAO implements EntityDAO {
 		}
 		return ret;
 	}
-
+/**
+ * Gets all Portals contains within an S2Region.
+ *
+ * @param reg S2Region describing the area which contains the portals
+ *
+ * @return ArrayList of the portals
+ *
+ * @throws EntityDAOException
+ */
 	public ArrayList<Portal> getPortalsInRegion (S2Region reg) throws EntityDAOException
 	{
 		PreparedStatement ps = null;
@@ -637,7 +773,18 @@ public class SQLEntityDAO implements EntityDAO {
 			throw new EntityDAOException("SQLException: " + se.getMessage());
 		}
 	}
-
+/**
+ * get the S2LatLng location of a portal description.
+ *
+ *This is a conditional logic method which compares the description with a few known formats
+ *and calls the appropriate method to determine the location.
+ *
+ * @param s the description of a portals location.
+ *
+ * @return S2LatLng of the location.
+ *
+ * @throws EntityDAOException
+ */
 	public S2LatLng getPortalLocation(String s) throws EntityDAOException
 	{
 		if (s==null)
@@ -657,6 +804,18 @@ public class SQLEntityDAO implements EntityDAO {
 		return getPortalLocationFromTitle(s);
 	}
 
+	/**
+	 * Get the portal location from the portals title.
+	 *
+	 * As titles are not unique, this method will throw an error describing all the matching portals.
+	 * The description contains the guid and lat,long of each matching entry.
+	 *
+	 * @param title The Portal title.
+	 *
+	 * @return S2LatLng location of the portal
+	 *
+	 * @throws EntityDAOException
+	 **/
 	public S2LatLng getPortalLocationFromTitle (String title) throws EntityDAOException
 	{
 		//Connection c = null;
@@ -698,7 +857,15 @@ public class SQLEntityDAO implements EntityDAO {
 			throw new EntityDAOException("SQLException: " + se.getMessage());
 		}
 	}
-
+	/**
+	 * Get the portal location from the portals guid.
+	 *
+	 * @param guid The Portal guid.
+	 *
+	 * @return S2LatLng location of the portal
+	 *
+	 * @throws EntityDAOException
+	 **/
 	public S2LatLng getPortalLocationFromGuid (String guid) throws EntityDAOException
 	{
 		PreparedStatement ps = null;
@@ -725,11 +892,25 @@ public class SQLEntityDAO implements EntityDAO {
 			throw new EntityDAOException("SQLException: " + se.getMessage());
 		}
 	}
-
+	/**
+	 * Get the portal location from the location string.
+	 * Initially this would look for the portal in the database.
+	 * However this method was being used with arbitrary locations, so now just
+	 * converts the lat,long into an S2LatLng.  which is probably redundant as
+	 * the S2 Library has an identical method. 
+	 *
+	 * @param latE6 latitude in E6 format.
+	 * @param lngE6 longitude in E6 format.
+	*
+	 * @return S2LatLng location from the description
+	 *
+	 * @throws EntityDAOException
+	 **/
 	public S2LatLng getPortalLocationFromLocation (long latE6, long lngE6) throws EntityDAOException
 	{
 		return S2LatLng.fromE6(latE6,lngE6);
 	// would I ever consider using this code.
+	// leaving it in here for prosperity?
 /*
 		System.out.println(">>> getLocationFromLocation: " + latE6 + ", " + lngE6);
 		PreparedStatement ps = null;
@@ -758,7 +939,13 @@ public class SQLEntityDAO implements EntityDAO {
 		}
 */
 	}
-
+	/**
+	 * Flag the portal as deleted in the database identified by its guid.
+	 *
+	 * @param guid The Portal guid.
+	 *
+	 * @throws EntityDAOException
+	 **/
 	public void deletePortal (String guid) throws EntityDAOException
 	{
 		PreparedStatement ps = null;
@@ -782,7 +969,16 @@ public class SQLEntityDAO implements EntityDAO {
 			}
 		}
 	}
-
+	/**
+	 * Short form update the portal identified by its guid.
+	 *
+	 * @param guid The Portal guid.
+	 * @param latE6 the portal latitude in E6 format
+	 * @param lngE6 the portal longiture in E6 format
+	 * @param team the portal team either 'R' or 'E'
+	 *
+	 * @throws EntityDAOException
+	 **/
 	public void updatePortal(String guid, long latE6, long lngE6, String team) throws EntityDAOException
 	{
 		PreparedStatement ps = null;
@@ -808,7 +1004,21 @@ public class SQLEntityDAO implements EntityDAO {
 			}
 		}
 	}
-
+	/**
+	 * Long form update the portal identified by its guid.
+	 *
+	 * @param guid The Portal guid.
+	 * @param title The name of the portal.
+	 * @param latE6 the portal latitude in E6 format
+	 * @param lngE6 the portal longiture in E6 format
+	 * @param team the portal team either 'R' or 'E'
+	 * @param level the portal level
+	 * @param resCount the portal number of resonators
+	 * @param health the portal total energy, resonator decay or damage
+	 * @param image the portal image url
+	 * 
+	 * @throws EntityDAOException
+	 **/
 	public void updatePortalFull(String guid, String title, long latE6, long lngE6, String team, int level, int resCount, int health,String image) throws EntityDAOException
 	{
 		PreparedStatement ps = null;
@@ -840,7 +1050,21 @@ public class SQLEntityDAO implements EntityDAO {
 			}
 		}
 	}
-
+	/**
+	 * Long form insert portal.
+	 *
+	 * @param guid The Portal guid.
+	 * @param title The name of the portal.
+	 * @param latE6 the portal latitude in E6 format
+	 * @param lngE6 the portal longiture in E6 format
+	 * @param team the portal team either 'R' or 'E'
+	 * @param level the portal level
+	 * @param resCount the portal number of resonators
+	 * @param health the portal total energy, resonator decay or damage
+	 * @param image the portal image url
+	 * 
+	 * @throws EntityDAOException
+	 **/
 	public void insertPortalFull(String guid, String title, long latE6, long lngE6,String team,int level,int resCount, int health, String image) throws EntityDAOException
 	{
 		PreparedStatement ps = null;
@@ -873,7 +1097,16 @@ public class SQLEntityDAO implements EntityDAO {
 		}
 
 	}
-
+	/**
+	 * Short form insert portal 
+	 *
+	 * @param guid The Portal guid.
+	 * @param latE6 the portal latitude in E6 format
+	 * @param lngE6 the portal longiture in E6 format
+	 * @param team the portal team either 'R' or 'E'
+	 *
+	 * @throws EntityDAOException
+	 **/
 	public void insertPortal(String guid, long latE6, long lngE6, String team) throws EntityDAOException
 	{
 		PreparedStatement ps = null;
@@ -901,7 +1134,15 @@ public class SQLEntityDAO implements EntityDAO {
 			}
 		}
 	}
-
+	/**
+	 * Check if a portal guid is in the database (.hasKey()).
+	 *
+	 * @param guid The Portal guid.
+	 *
+	 *@return boolean true if the guid is found.
+	 *
+	 * @throws EntityDAOException
+	 **/
 	private boolean existsPortal(String guid) throws EntityDAOException
 	{
 		PreparedStatement ps = null;
@@ -927,15 +1168,38 @@ public class SQLEntityDAO implements EntityDAO {
 		}
 		return exists;
 	}
-
+	/**
+	 * Short form insert or update portal depending on its existence.
+	 *
+	 * @param guid The Portal guid.
+	 * @param latE6 the portal latitude in E6 format
+	 * @param lngE6 the portal longiture in E6 format
+	 * @param team the portal team either 'R' or 'E'
+	 *
+	 * @throws EntityDAOException
+	 **/
 	public void writePortal (String guid, long latE6, long lngE6, String team) throws EntityDAOException
 	{
 		if (existsPortal(guid))
 			updatePortal(guid,latE6,lngE6,team);
 		else
 			insertPortal(guid,latE6,lngE6,team);
-
 	}
+		/**
+	 * Long form insert or update portal depending on its existence.
+	 *
+	 * @param guid The Portal guid.
+	 * @param title The name of the portal.
+	 * @param latE6 the portal latitude in E6 format
+	 * @param lngE6 the portal longiture in E6 format
+	 * @param team the portal team either 'R' or 'E'
+	 * @param level the portal level
+	 * @param resCount the portal number of resonators
+	 * @param health the portal total energy, resonator decay or damage
+	 * @param image the portal image url
+	 * 
+	 * @throws EntityDAOException
+	 **/
 	public void writePortalFull (String guid, String title, long latE6, long lngE6, String team, int level, int resCount, int health, String image) throws EntityDAOException
 	{
 		if (existsPortal(guid))
@@ -945,4 +1209,3 @@ public class SQLEntityDAO implements EntityDAO {
 
 	}
 }
-

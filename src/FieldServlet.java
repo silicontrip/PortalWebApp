@@ -70,7 +70,7 @@ public class FieldServlet extends HttpServlet {
 		JSONObject response = new JSONObject();
 
 		JSONObject iitc_field = new JSONObject(s);
-				JSONArray pts = iitc_field.getJSONObject("data").getJSONArray("points");
+		JSONArray pts = iitc_field.getJSONObject("data").getJSONArray("points");
 
 		Field searchField = new Field(
 			pts.getJSONObject(0).getLong("latE6"),

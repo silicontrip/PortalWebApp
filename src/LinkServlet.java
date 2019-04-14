@@ -12,33 +12,35 @@ import java.sql.*;
 import javax.sql.*;
 import javax.naming.*;
 
+import javax.ejb.EJB;
+
 public class LinkServlet extends HttpServlet {
 
-	LinkDAO dao = null;
-
-  public void init () throws ServletException {
-	dao = new SQLLinkDAO();
-  }
-
-  public void destroy () {
-	;
-  }
-
-  private S2LatLng fromE6String(String s)
-  {
-	if (s==null)
-		return null;
-	if (s.matches("(\\+|-)?([0-9]+(\\.[0-9]+)),(\\+|-)?([0-9]+(\\.[0-9]+))"))
-	{
-		String[] ll = s.split(",");
-		Double lat = Double.parseDouble(ll[0]);
-		Double lng = Double.parseDouble(ll[1]);
-		//long latE6 = Math.round(lat * 1000000);
-		//long lngE6 = Math.round(lng * 1000000);  
-		return S2LatLng.fromDegrees(lat,lng);
+	@EJB
+	private EntitySessionBean entBean;
+	
+	public void init () throws ServletException {
 	}
-	return null;
-  }
+	
+	public void destroy () {
+		;
+	}
+
+	private S2LatLng fromE6String(String s)
+	{
+		if (s==null)
+			return null;
+		if (s.matches("(\\+|-)?([0-9]+(\\.[0-9]+)),(\\+|-)?([0-9]+(\\.[0-9]+))"))
+		{
+			String[] ll = s.split(",");
+			Double lat = Double.parseDouble(ll[0]);
+			Double lng = Double.parseDouble(ll[1]);
+			//long latE6 = Math.round(lat * 1000000);
+			//long lngE6 = Math.round(lng * 1000000);  
+			return S2LatLng.fromDegrees(lat,lng);
+		}
+		return null;
+	}
 
   public void doPost(HttpServletRequest req, HttpServletResponse resp){
 	try {
@@ -46,9 +48,6 @@ public class LinkServlet extends HttpServlet {
 		resp.setCharacterEncoding("UTF-8");
 		resp.addHeader("Access-Control-Allow-Origin","https://intel.ingress.com");
 		PrintWriter writer = resp.getWriter();
-
-
-	//	PortalDAO pdao = new SQLPortalDAO();
 
 		S2LatLng p1 = fromE6String(req.getParameter("ll"));
 		S2LatLng p2 = fromE6String(req.getParameter("l2"));
@@ -64,9 +63,9 @@ public class LinkServlet extends HttpServlet {
 		ArrayList<Link> linkList; // no not that kind of link list
 
 		if (searchRegion != null) 
-			linkList = dao.getInRect(searchRegion);
+			linkList = entBean.getLinkInRect(searchRegion);
 		else
-			linkList = dao.getAll();
+			linkList = entBean.getLinkAll();
 			
 		JSONObject jsonResponse = new JSONObject();
 		for (Link li : linkList)

@@ -33,8 +33,9 @@ public interface EntityDAO {
 	public ArrayList<String> fieldGuidsForCell(S2CellId cell) throws EntityDAOException;
 
 //PORTALS
-	public ArrayList<Portal> getPortalsInRegion (S2Region reg) throws EntityDAOException;
-	public S2LatLng getPortalLocation (String s) throws EntityDAOException;
+	//public ArrayList<Portal> getPortalsInRegion (S2Region reg) throws EntityDAOException;
+	public ArrayList<Portal> getPortalsInRect (S2LatLngRect bound) throws EntityDAOException;
+	//public S2LatLng getPortalLocation (String s) throws EntityDAOException;
 	public S2LatLng getPortalLocationFromTitle (String title) throws EntityDAOException;
 	public S2LatLng getPortalLocationFromGuid (String Guid) throws EntityDAOException;
 	public S2LatLng getPortalLocationFromLocation (long latE6, long lngE6) throws EntityDAOException;

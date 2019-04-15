@@ -233,6 +233,12 @@ public class CellSessionBean {
 		S2CellUnion fieldCells = getCellsForField(field.getS2Polygon());
 		getDAO().insertCellsForField(field.getGuid(),fieldCells);
 		// too easy?
+		// should this be here or in the caller?
+		if (valid)
+		{
+			System.out.println("Process Field...");
+			processField(field);
+		}
 	}
 
 	private static Double getIntersectionArea(S2Polygon field, S2CellId cell)
@@ -297,18 +303,26 @@ public class CellSessionBean {
 			else
 			{
 				try {
-					if (cellomu.refine(mus))
+					if (cellomu.refine(mus)){
 						System.out.println("" + cello.toToken() + "->" + cellomu.toString());
+						// add cell to modified array
+					}
 				} catch (Exception e) {
 					; // something something, out of range error
 				}
 			}
 
-			cellomu.clampLower(0.0); // this also has the potential to modify a field
+			if (cellomu.clampLower(0.0))
+			{
+				// this also has the potential to modify a field
+				// add cell to modified array
+			}
 			// end refine UD:cello
 			//multi.put(cello,cellomu);
 		}
 
+		// push modified cell array into jms/cellQueue
+		
 	/*
 		for (S2CellId cell: multi.keySet())
 		{

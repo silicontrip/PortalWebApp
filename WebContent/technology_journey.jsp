@@ -33,6 +33,7 @@ try {
 		},
 		setup: function() {
 			console.log('dbPortalGrabber::setup');
+			console.log('this is a change. this is a change');
 
 			window.plugin.dbPortalGrabber.layer = new window.L.LayerGroup();
 			window.addLayerGroup('DB Portals', window.plugin.dbPortalGrabber.layer, true);
@@ -51,11 +52,13 @@ try {
 		},
 		portalAdded: function(data)
 		{
+			console.log (">>> portalAdded");
 			var portal = data.portal.options.data;
 			portal.guid = data.portal.options.guid;
 
 			window.plugin.dbPortalGrabber.hz_portals.push(portal);
 			window.$('#hz_portals').html(window.plugin.dbPortalGrabber.hz_portals.length);
+			console.log ("<<< portalAdded");
 		},
 		selectPortal: function(e){
 			window.renderPortalDetails (e.target.guid);
@@ -82,7 +85,6 @@ try {
 			if (!window.map.hasLayer(window.plugin.dbPortalGrabber.layer)) { return; }
 
 			var bounds = window.map.getBounds();
-			//console.log("Map Bounds");
 			var alat = bounds._southWest.lat;
 			var alng = bounds._southWest.lng;
 			var blat = bounds._northEast.lat;
@@ -95,12 +97,12 @@ try {
 			window.$.get(geturl, window.plugin.dbPortalGrabber.loadJSONPortals);
 		},
 		loadJSONPortals: function (dbPortals) {
-			console.log("dbPortalGrabber::loadJSONPortals");
+			//console.log("dbPortalGrabber::loadJSONPortals");
 			window.plugin.dbPortalGrabber.dbPortals = dbPortals;
 			window.plugin.dbPortalGrabber.drawPortals();
 		},
 		drawPortals: function(){
-			console.log("dbPortalGrabber::drawPortals");
+			//console.log("dbPortalGrabber::drawPortals");
 			// don't draw if all portals are visible.
 			if(window.map.getZoom() < 15) {
 				for (var pt in window.plugin.dbPortalGrabber.dbPortals)
@@ -130,7 +132,7 @@ try {
 			// identify deleted portals
 			// check we are zoom 15 or higher
 			var deleted_portals =[];
-			console.log("db_portal_grabber::pushPortals map zoom: "+window.map.getZoom());
+			//console.log("db_portal_grabber::pushPortals map zoom: "+window.map.getZoom());
 			if (window.map.getZoom() >= 15)
 			{
 				for (var guid in window.plugin.dbPortalGrabber.dbPortals)
@@ -140,10 +142,10 @@ try {
 					{ deleted_portals.push({"delete": guid}); }
 				}
 				// add to deleted array
-			console.log("db_portal_grabber::pushPortals deleted_portals: " +deleted_portals.length);
+			//console.log("db_portal_grabber::pushPortals deleted_portals: " +deleted_portals.length);
 			}
 			window.$('#hz_portals').html('Pushing.. '+window.plugin.dbPortalGrabber.hz_portals.length);
-			console.log('portalGrabber - Pushing portals - ' + window.plugin.dbPortalGrabber.hz_portals.length);
+			//console.log('portalGrabber - Pushing portals - ' + window.plugin.dbPortalGrabber.hz_portals.length);
 			window.$.post(window.plugin.dbPortalGrabber.hz_submit_url, {apikey: window.PLAYER.apikey, agent: window.PLAYER.nickname, portals: JSON.stringify(window.plugin.dbPortalGrabber.hz_portals), portals_deleted: JSON.stringify(deleted_portals)} )
 				.fail(function() {
 					alert("Technology Journey - error submitting portals");
@@ -169,7 +171,7 @@ try {
 			).appendTo("head");
 		},
 		setup: function() {
-			console.log('edgeGrabber - setup');
+			console.log('dbEdgeGrabber::setup');
 
 			window.addHook('linkAdded', window.plugin.dbEdgeGrabber.edgeAdded);
 			window.addHook('mapDataRefreshEnd', window.plugin.dbEdgeGrabber.pushedges);
@@ -228,11 +230,11 @@ try {
 				}
 			}
 			window.$('#hz_edges').html('Pushing.. '+window.plugin.dbEdgeGrabber.hz_edges.length);
-			console.log('edgeGrabber - Pushing edges - ' + window.plugin.dbEdgeGrabber.hz_edges.length);
+			//console.log('edgeGrabber - Pushing edges - ' + window.plugin.dbEdgeGrabber.hz_edges.length);
 
 			// need to put map bounds in here, as intel submits more links than are visible
 			// this causes DB constraint issues
-			window.$.post(window.plugin.dbEdgeGrabber.hz_url, {apikey: window.PLAYER.apikey, agent: window.PLAYER.nickname, edges: JSON.stringify(window.plugin.dbEdgeGrabber.hz_edges), edges_deleted: JSON.stringify(deleted_links)} )
+			window.$.post(window.plugin.dbEdgeGrabber.hz_url, {apikey: window.PLAYER.apikey, agent: window.PLAYER.nickname, bounds: JSON.stringify(window.map.getBounds()), edges: JSON.stringify(window.plugin.dbEdgeGrabber.hz_edges), edges_deleted: JSON.stringify(deleted_links)} )
 				.fail(function(xhr, status, error) {
 					alert("Technology Journey - Error submitting links");
 					console.log(JSON.stringify(xhr) +" " + status + " " + error );
@@ -294,7 +296,7 @@ window.plugin.muScraper = {
 		return "#" + c;
 	},
 	setup: function() {
-		console.log(">>> mu get - Setup");
+		console.log("dbMUFieldsCells::setup");
 		/// S2 Geometry functions
 		// the regional scoreboard is based on a level 6 S2 Cell
 		// - https://docs.google.com/presentation/d/1Hl4KapfAENAOf4gv-pSngKwvS_jwNVHRPZTTDzXXn6Q/view?pli=1#slide=id.i22
@@ -752,7 +754,12 @@ window.plugin.muScraper = {
 					for (ll in cpts)
 					{
 						glatlng=new google.maps.LatLng(cpts[ll]);
-						if(google.maps.geometry.poly.containsLocation(glatlng, gfield)) return true;
+						// catch this error and try again
+						try {
+							if(google.maps.geometry.poly.containsLocation(glatlng, gfield)) return true;
+						} catch (err) {
+							if(google.maps.geometry.poly.containsLocation(glatlng, gfield)) return true;
+						}
 					}
 
 					for (ll in fpts)
@@ -1046,7 +1053,7 @@ window.plugin.muScraper = {
 			};
 		})();
 
-		console.log(">>> muScraper::setup");
+		//console.log(">>> muScraper::setup");
 
 		window.plugin.muScraper.setupCSS();
 
@@ -1086,7 +1093,7 @@ window.plugin.muScraper = {
 		$.each(window.fields, function(ind, fd) { window.plugin.muScraper.readField({field:fd}); });
 	},
 	searchComms: function(data) {
-		console.log(">>> searchComms");
+		//console.log(">>> searchComms");
 		for (var entry of data.result)
 		{
 			var read = entry[2].plext.text.split(" ");
@@ -1127,7 +1134,7 @@ window.plugin.muScraper = {
 		for (var i=0; i< flayers.length; i++) { window.plugin.muScraper.searchCommsForField(flayers[i]); }
 	},
 	searchCommsForFieldGuids: function (fdguidjson) {
-		console.log(">>> searchCommsForGUID Array");
+		//console.log(">>> searchCommsForGUID Array");
 		var fa = JSON.parse(fdguidjson);
 		for (var fdguid in fa) {
 			window.plugin.muScraper.searchCommsForFieldGuid(fdguid);
@@ -1191,7 +1198,7 @@ window.plugin.muScraper = {
 		window.plugin.muScraper.displayField(event.target);
 	},
 	highlightField: function(field) {
-		console.log(">>> highlightField");
+		//console.log(">>> highlightField");
 		if (!window.map.hasLayer(window.plugin.muScraper.fieldLayerGroup)) return;
 
 		var cells = window.S2.getCellsForRegion(field);
@@ -1208,7 +1215,7 @@ window.plugin.muScraper = {
 
 		for (var cell in cells)
 		{
-			console.log(cells[cell]);
+			//console.log(cells[cell]);
 			poly = window.L.polygon(cells[cell].getCornerLatLngs(), window.plugin.muScraper.FILL_STYLE);
 			poly.addTo(window.plugin.muScraper.fieldLayerGroup);
 		}
@@ -1220,7 +1227,7 @@ window.plugin.muScraper = {
 		window.plugin.muScraper.displayField(window.fields[guid]);
 	},
 	displayField: function(field) {
-		console.log(">>> displayField");
+		//console.log(">>> displayField");
 		//console.log(field);
 		//console.log(JSON.stringify(field.options));
 		//console.log(JSON.stringify(field.getLatLngs()));
@@ -1274,13 +1281,13 @@ window.plugin.muScraper = {
 			layersHtml+='</select>';
 
 			//console.log(fd);
-			console.log("displayField::html");
+			//console.log("displayField::html");
 
 			var html='<div style="padding:5px" id="mu_fd">';
 			//console.log("!fd.mu");
 			if (!fd.mu) { html += '<a onclick="window.plugin.muScraper.searchCommsForField(window.plugin.muScraper.selectedField);return false;">Get MU</a> '; }
 			if (unknown>0) { html += '<a onclick="window.plugin.muScraper.searchCommsForLayers(window.plugin.muScraper.clickLatLng);return false;">Get Layers MU</a>'; }
-			console.log("displayField::html<table>");
+			//console.log("displayField::html<table>");
 
 			html+='<table>';
 			var created=window.unixTimeToString(field.options.timestamp,true);
@@ -1293,7 +1300,7 @@ window.plugin.muScraper = {
 
 			html+='<tr><td><b>Created</b></td><td>'+created+'</td></tr>';
 			html+='<tr><td><b>Area</b></td><td>'+fd.area.toFixed(3)+' km^2</td></tr>';
-						console.log("displayField::html getPortalLink");
+						//console.log("displayField::html getPortalLink");
 
 			html+='<tr><td><b>Anchor</b></td><td>' + window.plugin.muScraper.getPortalLink(field.options.ent[2][2][0][0]) + '</td></tr>';
 			html+='<tr><td><b>Anchor</b></td><td>' + window.plugin.muScraper.getPortalLink(field.options.ent[2][2][1][0]) + '</td></tr>';
@@ -1307,12 +1314,12 @@ window.plugin.muScraper = {
 			html+='</table>';
 			html+='</div>';
 
-			console.log("displayField::end html");
+			//console.log("displayField::end html");
 
 			var title = 'Mu: unknown';
 			if (fd.mu) title = "Mu: " + fd.mu;
 
-			console.log("displayField::#portaldetails");
+			// console.log("displayField::#portaldetails");
 
 			$('#portaldetails')
 				.attr('class', TEAM_TO_CSS[teamStringToId(field.options.data.team)])
@@ -1327,7 +1334,7 @@ window.plugin.muScraper = {
 				}).text('X'),
 				html
 				);
-			console.log("displayField::post mu_use");
+			//console.log("displayField::post mu_use");
 			if (title == 'Mu: unknown')
 				$.post(
 					window.plugin.muScraper.mu_use,
@@ -1377,6 +1384,7 @@ window.plugin.muScraper = {
 		}
 		$('#hz_field').html('Pushing.. '+window.plugin.muScraper.hz_fields.length);
 		console.log('muGrabber - Pushing fields - ' + window.plugin.muScraper.hz_fields.length);
+		//console.log(window.plugin.muScraper.hz_fields);
 		$.post(window.plugin.muScraper.hz_url, {apikey: window.PLAYER.apikey, agent: window.PLAYER.nickname, fields: JSON.stringify(window.plugin.muScraper.hz_fields)} )
 			.fail(function() {
 				alert("Technology Journey - error posting fields");
@@ -1389,13 +1397,13 @@ window.plugin.muScraper = {
 	{
 		// console.log("labelSingle: " + fd.guid+  ", " + JSON.stringify(fd.options.data.points) + ", " + label);
 		window.plugin.muScraper.addLabel(fd.guid,fd.options.data.points,label + " mu");
-		fd.mu = label;
+		//fd.mu = label;
 		if (window.plugin.muScraper.selectedField)
 			if (window.plugin.muScraper.selectedField.options.guid == fd.guid)
 				window.plugin.muScraper.displayField(window.plugin.muScraper.selectedField);
 	},
 	pushField: function(f) {
-		//console.log("push Field: " + JSON.stringify(f));
+		console.log("push Field: " + JSON.stringify(f));
 		window.plugin.muScraper.hz_fields.push(f);
 		$('#hz_field').html(window.plugin.muScraper.hz_fields.length);
 	},
@@ -1438,15 +1446,17 @@ window.plugin.muScraper = {
 		for (commGuid in window.plugin.muScraper.plextLinkList)
 		{
 			comm = window.plugin.muScraper.plextLinkList[commGuid];
-			if (comm.field.length == comm.fcomm.length)
+			if (comm.field.length >0 && comm.field.length == comm.fcomm.length )
 			{
 				var label = 'undef';
 				fd = null;
+			// put MU in array and let the server decide which is valid.
 				if (comm.field.length == 1)
 				{
-					comm.field[0].mu = comm.fcomm[0].mu;
+					comm.field[0].mu = [comm.fcomm[0].mu];
 					comm.field[0].creator = comm.fcomm[0].creator;
 					window.plugin.muScraper.labelSingle(comm.field[0],comm.fcomm[0].mu);
+					comm.field[0].mu = [comm.fcomm[0].mu];
 					console.log("matchFieldsAndComms::pushfield single");
 					window.plugin.muScraper.pushField(comm.field[0]);
 				}
@@ -1461,22 +1471,26 @@ window.plugin.muScraper = {
 					{
 						if (comm.field[0].area > comm.field[1].area)
 						{
-							comm.field[0].mu=mu0; comm.field[1].mu=mu1;
+							//comm.field[0].mu=mu0; comm.field[1].mu=mu1;
+							comm.field[0].mu=[mu0,mu1]; comm.field[1].mu=[mu1,mu0];
 							window.plugin.muScraper.labelSingle(comm.field[0],mu0);
 							window.plugin.muScraper.labelSingle(comm.field[1],mu1);
 						} else {
-							comm.field[1].mu=mu0; comm.field[0].mu=mu1;
+							//comm.field[1].mu=mu0; comm.field[0].mu=mu1;
+							comm.field[0].mu=[mu0,mu1]; comm.field[1].mu=[mu1,mu0];
 							window.plugin.muScraper.labelSingle(comm.field[0],mu1);
 							window.plugin.muScraper.labelSingle(comm.field[1],mu0);
 						}
 					} else {
 						if (comm.field[0].area > comm.field[1].area)
 						{
-							comm.field[1].mu=mu0; comm.field[0].mu=mu1;
+							//comm.field[1].mu=mu0; comm.field[0].mu=mu1;
+							comm.field[0].mu=[mu0,mu1]; comm.field[1].mu=[mu1,mu0];
 							window.plugin.muScraper.labelSingle(comm.field[0],mu1);
 							window.plugin.muScraper.labelSingle(comm.field[1],mu0);
 						} else {
-							comm.field[0].mu=mu0; comm.field[1].mu=mu1;
+							//comm.field[0].mu=mu0; comm.field[1].mu=mu1;
+							comm.field[0].mu=[mu0,mu1]; comm.field[1].mu=[mu1,mu0];
 							window.plugin.muScraper.labelSingle(comm.field[0],mu0);
 							window.plugin.muScraper.labelSingle(comm.field[1],mu1);
 						}
@@ -1489,7 +1503,7 @@ window.plugin.muScraper = {
 				}
 				else
 				{
-					console.log("more than 2 field created: " + comm.field.length);
+					console.log("Searching for Split fields: more than 2 field created: " + comm.field.length);
 					//console.log(comm);
 				}
 			} else {
@@ -1582,7 +1596,7 @@ window.plugin.muScraper = {
 	   // console.log("addLabel::previousLayer");
 	   // console.log(previousLayer);
 		 if (!previousLayer) {
-			console.log("addLabel:: label: " + guid + " = " + mu );
+			//console.log("addLabel:: label: " + guid + " = " + mu );
 			var label = window.L.marker(latLng, {
 				icon: window.L.divIcon({
 					className: 'plugin-mu',
@@ -1650,7 +1664,7 @@ window.plugin.muScraper = {
 		return 4 * Math.atan(e);
 	},
 	findSuitableFields: function() {
-		console.log(">>> findSuitableFields");
+		//console.log(">>> findSuitableFields");
 
 		var d = new Date();
 		var n = d.getTime();
@@ -1658,7 +1672,7 @@ window.plugin.muScraper = {
 		//var fa =[];
 		var html ="";
 		var fdguida = {};
-		console.log(window.fields.keys);
+		//console.log(window.fields.keys);
 		var countFields=0;
 		var knownFields=0;
 		var estFields=0;
@@ -1700,12 +1714,12 @@ window.plugin.muScraper = {
 									if (rmn == -1 || rmn != rmx) {
 										//console.log("" + n + " : " + fd.options.timestamp + " : " + age);
 										//console.log(JSON.stringify(fd.options));
-										console.log("findSuitableFields:: searchCommsForField " + field.guid);
+										//console.log("findSuitableFields:: searchCommsForField " + field.guid);
 										window.plugin.muScraper.searchCommsForFieldGuid(field.guid);
 										unknownFields ++;
 										$('#unknownfields').html("unknown " + unknownFields);
 									} else {
-										console.log("findSuitableFields:: accurate MU EST " + field.guid);
+										//console.log("findSuitableFields:: accurate MU EST " + field.guid);
 										window.plugin.muScraper.addLabel(field.guid,field.options.data.points,"["+rmn+"]");
 										estFields ++;
 										$('#estfields').html("Estimate " + estFields);
@@ -1713,7 +1727,7 @@ window.plugin.muScraper = {
 									   // window.plugin.muScraper.labelSingle(fd,rmn);
 									}
 								} else {
-									console.log("findSuitableFields:: known MU " + field.guid);
+									//console.log("findSuitableFields:: known MU " + field.guid);
 									window.plugin.muScraper.addLabel(field.guid,field.options.data.points,"("+dd.mu_known+")");
 									knownFields++;
 									$('#knownfields').html("known " + knownFields);
@@ -1759,7 +1773,7 @@ window.plugin.muScraper = {
 		var html = "<h1>No Layers Selected</h1>";
 		if (window.plugin.muScraper.clickLatLng) {
 			flayers = window.plugin.muScraper.getFieldsContainingLatLng(window.plugin.muScraper.clickLatLng);
-			console.log("Layers selected: " + flayers.length);
+			//console.log("Layers selected: " + flayers.length);
 			//html="<table>";
 			//html+="<tr><th>creator</th><th>created</th><th>Area</th><th>mu</th></tr>";
 			html = "<pre>";
@@ -1767,7 +1781,7 @@ window.plugin.muScraper = {
 			var ttmu=0;
 			for (var i=0; i<flayers.length; i++)
 			{
-				console.log("Layer : " + i);
+				//console.log("Layer : " + i);
 
 				tfd = window.plugin.muScraper.fieldList[flayers[i].options.guid];
 								var fa = window.plugin.muScraper.getAngArea(flayers[i].getLatLngs()) * 6367.0 * 6367.0;

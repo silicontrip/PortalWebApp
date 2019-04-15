@@ -130,9 +130,13 @@ public class UniformDistribution {
 	 * point.
 	 *
 	 * @param d a double specifying the lower cut off point
+	 *
+	 * @return boolean if value was clamped
 	 */
-	public void clampLower(double d) { if (lower < d) lower=d; }
+	public boolean clampLower(double d) { if (lower < d) {lower=d; return true;} return false; }
 	// never implemented a clampUpper, maybe one day for completeness
+	public boolean clampUpper(double d) { if (upper > d) {upper=d; return true;} return false; }
+	// one day seriously? copy... paste... s/lower/upper/i s/</>/ 
 
 	/**
 	 * Gets the mean value (that's mean as in average, not horrible)

@@ -2,7 +2,7 @@
 // @id             iitc-plugin-db-loader@silicontrip
 // @name           IITC Plugin: DB technology journey
 // @category       layer
-// @version        0.2.1
+// @version        0.2.8
 // @namespace      https://github.com/jonatkins/ingress-intel-total-conversion
 // @description
 // @updateURL      https://quadrant.silicontrip.net:8181/portalApi/db_loader.user.js
@@ -32,7 +32,9 @@ function wrapper(plugin_info) {
 
 			window.$('#sidebar').append('<div id="hz_portal_grabber" style="padding: 5px; font-size: 12px">'+
 			'<a onclick="window.plugin.dbLoader.addKey();return false;">'+keyMessage+'</a></div>');
-			if (not (window.PLAYER.apikey == null)) {
+            console.log("Link Possible API Key :"+ window.PLAYER.apikey);
+			if (window.PLAYER.apikey !== null) {
+                console.log("Establishing Portal link.");
 				window.$.post(window.plugin.dbLoader.hz_loader_url,
 					{ apikey: window.PLAYER.apikey, agent: window.PLAYER.nickname }, window.plugin.dbLoader.loader).fail(window.plugin.dbLoader.fail);
 			}
@@ -50,17 +52,23 @@ function wrapper(plugin_info) {
 	getKey: function()
 	{
 		var portalgrabber_key = localStorage.getItem('net.silicontrip.ingress.apikey');
-		console.log("portalGrabber - Getting key: " + portalgrabber_key);
+		console.log("Hacking Portal - Portal Key Acquired: " + portalgrabber_key);
 		return portalgrabber_key;
 	},
 	loader: function(script_text)
 	{
-		var script = document.createElement('script');
-		script.appendChild(document.createTextNode(script_text));
-		(document.body || document.head || document.documentElement).appendChild(script);
+        console.log("Portal Link Established.");
+		//var script = document.createElement('script');
+		//script.appendChild(document.createTextNode(script_text));
+        //console.log(document.body);
+        //console.log(document.head);
+        //console.log(document.documentElement);
+		//(document.body || document.head || document.documentElement).appendChild(script);
 	},
 		fail: function(xhr,status,error)
 		{
+            console.log("Portal Link Failed.");
+            alert ("Unable to establish Portal Link.");
 			console.log("FAIL");
 			console.log(xhr);
 			console.log(status);
@@ -83,5 +91,6 @@ var script = document.createElement('script');
 
 script.appendChild(document.createTextNode('('+ wrapper +')();'));
 (document.body || document.head || document.documentElement).appendChild(script);
+
 
 

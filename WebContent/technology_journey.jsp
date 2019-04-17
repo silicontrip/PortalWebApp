@@ -4,10 +4,16 @@ try {
 	response.setContentType("text/javascript");
 	response.addHeader("Access-Control-Allow-Origin","https://intel.ingress.com");
 	request.login(request.getParameter("agent"),request.getParameter("apikey"));
+
+	String baseUrl = "https://quadrant.silicontrip.net/portalApi/";
+	if (request.getRemoteAddr().startsWith("10.15.240.")) 
+		baseUrl = "https://quadrant.silicontrip.net:8181/portalApi/";
+
 %>
 	window.plugin.dbPortalGrabber = {
-		hz_submit_url: "https://quadrant.silicontrip.net:8181/portalApi/submitEntity",
-		hz_get_url: "https://quadrant.silicontrip.net:8181/portalApi/getPortals",
+		request_ip: "<%= request.getRemoteAddr() %>",
+		hz_submit_url: "<%= baseUrl %>submitEntity",
+		hz_get_url: "<%= baseUrl %>getPortals",
 		hz_portals: [],
 		STROKE_STYLE: {
 			stroke: true,
@@ -157,8 +163,8 @@ try {
 	};
 
 	window.plugin.dbEdgeGrabber = {
-		hz_url: "https://quadrant.silicontrip.net:8181/portalApi/submitEntity",
-		hz_get_url: "https://quadrant.silicontrip.net:8181/portalApi/getLinks",
+		hz_url: "<%= baseUrl %>submitEntity",
+		hz_get_url: "<%= baseUrl %>getLinks",
 		hz_edges: [],
 		setupCSS: function() {
 			window.$("<style>").prop("type", "text/css").html(''+
@@ -259,9 +265,9 @@ window.plugin.muScraper = {
 	muSubmit: true,
 	submitKey: "",
 	hz_fields: [],
-	hz_url: 'https://quadrant.silicontrip.net:8181/portalApi/submitEntity',
-	mu_url: 'https://quadrant.silicontrip.net:8181/portalApi/getMU',
-	mu_use: 'https://quadrant.silicontrip.net:8181/portalApi/getMU',
+	hz_url: '<%= baseUrl %>submitEntity',
+	mu_url: '<%= baseUrl %>getMU',
+	mu_use: '<%= baseUrl %>getMU',
 	NAME_WIDTH: 60,
 	NAME_HEIGHT: 12,
 	FILL_STYLE: {

@@ -7,11 +7,15 @@
 */
 package net.silicontrip.ingress;
 
-import javax.ejb.Stateless;
-import net.silicontrip.*;
+import com.google.common.geometry.*;
+
 import java.util.HashMap;
 import java.util.Map;
-import com.google.common.geometry.*;
+import javax.ejb.Stateless;
+import javax.jms.*;
+import javax.naming.*;
+import net.silicontrip.AreaDistribution;
+import net.silicontrip.UniformDistribution;
 
 @Stateless
 
@@ -21,6 +25,24 @@ public class CellSessionBean {
 	private EntityDAO dao = null;
 	/** threshold for MU rounding */
 	public double range = 0.5; 
+        private QueueConnectionFactory qcf = null;
+        private InitialContext ctx = null;
+        private QueueConnection queueCon = null;
+        private QueueSession queueSession = null;
+        private Queue submitQueue = null;
+	private QueueSender sender = null;
+
+	private void initCellQueue() throws NamingException, JMSException  {
+		if (ctx == null) 
+		{
+			ctx = new InitialContext();
+                        qcf = (QueueConnectionFactory) ctx.lookup("jms/QueueConnectionFactory");
+                        queueCon = qcf.createQueueConnection();
+                        queueSession = queueCon.createQueueSession(false, Session.AUTO_ACKNOWLEDGE);
+			submitQueue = (Queue)ctx.lookup("jms/cellQueue");
+			sender = queueSession.createSender(submitQueue);
+		}
+	}
 
 	private EntityDAO getDAO() {
 		if (dao==null)
@@ -188,9 +210,9 @@ public class CellSessionBean {
 			// if not we should skip this whole thing
 			if (cell.mu!=null)
 			{
-				UniformDistribution cellmu = new UniformDistribution(cell.mu);
-				cellmu = cellmu.mul(cell.area);
-				fieldmu = fieldmu.add(cellmu);
+				UniformDistribution uniformMU = new UniformDistribution(cell.mu);
+				uniformMU = uniformMU.mul(cell.area);
+				fieldmu = fieldmu.add(uniformMU);
 			} else {
 				return new UniformDistribution(-1,-1);
 			}
@@ -234,9 +256,10 @@ public class CellSessionBean {
 		getDAO().insertCellsForField(field.getGuid(),fieldCells);
 		// too easy?
 		// should this be here or in the caller?
+		//System.out.println("Valid for process? " + valid);
 		if (valid)
 		{
-			System.out.println("Process Field...");
+		//	System.out.println("Process Field...");
 			processField(field);
 		}
 	}
@@ -262,61 +285,88 @@ public class CellSessionBean {
 		S2CellUnion cells = getCellsForField(thisField);
 		Double area;
 
+/*
+		System.out.print ("Processing Cells: ");
+		for (S2CellId cello: cells) 
+			System.out.print (cello.toToken() + ", ");
+		System.out.println(".");
+*/
+
+
 		UniformDistribution initialMU = new UniformDistribution(score,range);
 
-		for (S2CellId cello: cells) {
+		// an algorithmic version of the following equation
+		// mu[cell] = ( MU - intersectionArea[cell1] x mu[cell1] ... - intersectionArea[cellN] x mu[cellN]) / intersectionArea[cell]
+
+		for (S2CellId cellOuter: cells) {
+			StringBuilder cellLog = new StringBuilder();
 			UniformDistribution mus = new UniformDistribution(initialMU);
-			for (S2CellId celli: cells) {
+			cellLog.append("( ");
+			cellLog.append(mus.toString());
+			for (S2CellId cellInner: cells) {
 				// if not cell from outer loop
-				if (!cello.toToken().equals(celli.toToken()))
+				if (!cellOuter.equals(cellInner))
 				{
-					area = getIntersectionArea(thisField,celli);
+					double areaInner = getIntersectionArea(thisField,cellInner);
+					UniformDistribution cellInnerMU = getMU(cellInner);
 
-					// subtract upper range * area from lower MU
-					// subtract lower range * area from upper MU
-					//      errmsg.append (mus +" ");
-					//      errmsg.append (mus.div(totalArea) +" ");
-					UniformDistribution cellmu = getMU(celli);
+					cellLog.append(" - ");
+					cellLog.append(areaInner);
+					cellLog.append(" x ");
+					cellLog.append(cellInner.toToken());
+					cellLog.append(":");
 
-					if (cellmu != null)
+					if (cellInnerMU != null)
 					{
-						UniformDistribution cma = cellmu.mul(area);
+						cellLog.append(cellInnerMU);
+						UniformDistribution cma = cellInnerMU.mul(areaInner);
 						mus = mus.sub(cma);
 					}
 					else
 					{
+						cellLog.append("undefined");
 						mus.setLower(0.0);
 					}
 				}
 			}
-			area = getIntersectionArea(thisField,cello);
-			mus= mus.div(area);
+			cellLog.append(" ) / ");
+			double areaOuter = getIntersectionArea(thisField,cellOuter);
+			cellLog.append(areaOuter);
+			mus=mus.div(areaOuter);
+			cellLog.insert(0," = ");
+			cellLog.insert(0,mus);
+			mus.clampLower(0.0);
 
-			UniformDistribution cellomu = getMU(cello);
+
+			UniformDistribution cellOuterMU = getMU(cellOuter);
+			cellLog.insert(0," <=> ");
+			cellLog.insert(0,cellOuterMU.toString());
+			cellLog.insert(0,": ");
+			cellLog.insert(0,cellOuter.toToken());
+		//	System.out.println(cellLog.toString());
 
 			// refine UD:cello with mus
 
-			if (cellomu == null)
+			if (cellOuterMU == null)
 			{
-				cellomu = mus;
+				cellOuterMU = mus;
 			}
 			else
 			{
 				try {
-					if (cellomu.refine(mus)){
-						System.out.println("" + cello.toToken() + "->" + cellomu.toString());
+					if (cellOuterMU.refine(mus)){
+						System.out.println("" + cellOuter.toToken() + "->" + cellOuterMU.toString());
+						initCellQueue();
+						Message msg = queueSession.createTextMessage(cellOuter.toToken());
+						sender.send(msg);
 						// add cell to modified array
+						// nah, just dump it straight on the cell queue. (might be a bit premature MU hasn't been saved)
 					}
-				} catch (Exception e) {
+				} catch (ArithmeticException | JMSException | NamingException e) {
 					; // something something, out of range error
 				}
 			}
 
-			if (cellomu.clampLower(0.0))
-			{
-				// this also has the potential to modify a field
-				// add cell to modified array
-			}
 			// end refine UD:cello
 			//multi.put(cello,cellomu);
 		}

@@ -4,15 +4,12 @@ import net.silicontrip.*;
 import org.json.*;
 import com.google.common.geometry.*;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
 import javax.servlet.http.*;
 import javax.servlet.*;
 import java.io.*;
-import java.sql.*;
-import javax.sql.*;
 import javax.naming.*;
 
 import javax.ejb.EJB;
@@ -23,11 +20,12 @@ public class FieldServlet extends HttpServlet {
 	@EJB
 	private CellSessionBean cellBean;
 
-	private InitialContext ctx = null;
+	private final InitialContext ctx = null;
 	//private MUCellDAO cdao = null;
 	//private MUFieldDAO fdao = null;
-	private HashMap<S2CellId,UniformDistribution> cellmu = null;
+	private final HashMap<S2CellId,UniformDistribution> cellmu = null;
 
+        @Override
 	public void init () throws ServletException {
 		//cdao = new SQLMUCellDAO();
 		//fdao = new SQLMUFieldDAO();
@@ -40,8 +38,8 @@ public class FieldServlet extends HttpServlet {
 */
 	}
 
+        @Override
 	public void destroy () {
-	;
 	}
 
 	private JSONObject mu(String s) {
@@ -126,6 +124,7 @@ public class FieldServlet extends HttpServlet {
 		return response;
 	}
 
+        @Override
   public void doPost(HttpServletRequest req, HttpServletResponse resp){
 	try {
 		resp.setContentType("text/json");
@@ -137,8 +136,8 @@ public class FieldServlet extends HttpServlet {
 		PrintWriter writer = resp.getWriter();
 		JSONObject jsonResponse;
 
-				String userName = req.getParameter("agent");
-				String apiKey = req.getParameter("apikey");
+		String userName = req.getParameter("agent");
+		String apiKey = req.getParameter("apikey");
 		req.login(userName,apiKey);
 
 		if (req.getParameter("mu") != null)
@@ -172,10 +171,10 @@ public class FieldServlet extends HttpServlet {
 			PrintWriter writer = resp.getWriter();
 			writer.println(jsonResponse.toString());
 			writer.close();
-		} catch (Exception e2) {
+		} catch (IOException e2) {
 			// :-P
 		}
-	} catch (Exception e) {
+	} catch (IOException | NamingException | JSONException e) {
 		JSONObject jsonResponse = new JSONObject();
 		e.printStackTrace();
 		jsonResponse.put("error",  e.getMessage());
@@ -185,7 +184,7 @@ public class FieldServlet extends HttpServlet {
 			PrintWriter writer = resp.getWriter();
 			writer.println(jsonResponse.toString());
 			writer.close();
-		} catch (Exception e2) {
+		} catch (IOException e2) {
 			// sending the error caused an error.
 			// is there anything else we can do?
 			e2.printStackTrace();
@@ -193,6 +192,7 @@ public class FieldServlet extends HttpServlet {
 	}
   }
 
+        @Override
   public void doGet(HttpServletRequest req, HttpServletResponse resp){
 	doPost(req,resp);
   }

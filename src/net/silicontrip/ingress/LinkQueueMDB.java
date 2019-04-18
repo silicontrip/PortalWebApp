@@ -61,10 +61,13 @@ public class LinkQueueMDB implements MessageListener {
 			{
 				// check zoom 
 				Link l = dao.getLinkGuid(pobj.getString("guid"));
-				double length = l.getAngle() * 6367000;
-				// get link length
-				if ( length > zoomDistance.get(pobj.getInt("zoom")))
-					dao.deleteLink(pobj.getString("guid")); // new logic being tested, appears to work very well
+				// hmm how do we have a link to delete that isn't in the DB?
+				if (l != null) {
+					// get link length
+					double length = l.getAngle() * 6367000;
+					if ( length > zoomDistance.get(pobj.getInt("zoom")))
+						dao.deleteLink(pobj.getString("guid")); // new logic being tested, appears to work very well
+				}
 			} else if (pobj.has("team")) {
 				//System.out.println("" + pobj.getString("image").length() + " / " + pobj.getString("image"));
 //{"dLngE6":145176878,"oGuid":"704dbc67aed54b73b153bbb5be3a9fed.16","oLatE6":-37818041,"guid":"e11e884cdb0e438e9c25c6bc0b909b14.9","team":"E","oLngE6":145157441,"dLatE6":-37802085,"dGuid":"5f7ef86ee21f4c83809527b917cad585.16"}

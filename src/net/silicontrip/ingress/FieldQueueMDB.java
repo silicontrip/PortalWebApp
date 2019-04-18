@@ -27,12 +27,13 @@ public class FieldQueueMDB implements MessageListener {
 	@EJB
 	private CellSessionBean cellBean;
 
+        @Override
 	public void onMessage(Message message) {
 		TextMessage textMessage = (TextMessage) message;
 		String tm = "";
 		try {
 			tm= textMessage.getText();
-			System.out.println(tm);
+			//System.out.println(tm);
 			JSONObject pobj = new JSONObject (textMessage.getText());
 //			SQLMUFieldDAO dao = new SQLMUFieldDAO();
 			if (pobj.has("mu")) {
@@ -58,18 +59,18 @@ public class FieldQueueMDB implements MessageListener {
 
 				// perform business logic...
 				// check for duplicates
-				//if (dao.exists(guid))
+
 				if (cellBean.hasFieldGuid(guid))
 				{
 					System.out.println("field exists: " + guid);
 					return;
 				}
-						//	System.out.println("new Field");
+				//	System.out.println("new Field");
 
 				Field fi = new Field (
 					pobj.getString("creator"),
 					pobj.getString("agent"),
-					0, // place holder
+					-1, // place holder
 					guid,
 					options.getInt("timestamp"),
 					entPoints.getString(1),
@@ -81,40 +82,40 @@ public class FieldQueueMDB implements MessageListener {
 				// check for validity
 				// EJB???
 				S2Polygon S2Field = fi.getS2Polygon();
-				// thinking about making MU an array
-				// and submitting both values for split fields.
-				// TODO: look at the IITC plugin code
-				// remove this line once the iitc code is changed
+
 				boolean[] valid = new boolean[mu.length()];
 				
-				int validCount = 0;
 				for (int i =0; i < mu.length(); i++)
-					if (cellBean.muFieldValid(S2Field,mu.getInt(i)))
-					{
-							//System.out.println("mu valid: " + mu.getInt(i));
-						valid[i]=true;
-						validCount ++;
-					} else
-						valid[i]=false;
-					
-				if (validCount > 1)
-				{
-					System.out.println("multiple valid mu field: " + guid  );
-					for (int j=0; j < valid.length; j++)
-						valid[j] = false;  // two fields say they're jesus, one of them must be wrong
-				}
-					//what to do if different MU are valid?
+					valid[i] = cellBean.muFieldValid(S2Field,mu.getInt(i));
+
+			//what to do if different MU are valid?
 			// which one is more accurate?
 			// really need split field handler.
 			// problem is we don't know the matching split field.
 
+			// some business logic, while I work out the code;
+			// valid[0], valid[1]
+			// false, false  -> don't know which to submit, safest is not to submit
+			// false, true -> submit 1
+			// true, false -> submit 0
+			// true, true -> don't know
+			// true -> submit 0
+			// false -> submit 0
+
 				// System.out.println ("" + guid + ": " + pobj.getInt("mu") + " valid: " + valid);
-				
+
+
+			// we don't want to actually submit a field twice.
 				for (int i =0; i < mu.length(); i++)
 				{
-					fi.setMU(mu.getInt(i));
 					//System.out.println ("submit field");
-					cellBean.submitField(fi,valid[i]);
+					fi.setMU(mu.getInt(i));
+					if (mu.length() == 1 || (valid[i] && (valid[0] ^ valid[1]))) // above business logic decribed in 1 if statement
+						cellBean.submitField(fi,valid[i]);
+					else
+						if (mu.length()==2)
+							System.out.println ("not Submitting field: " + guid);
+						
 				}
 
 				

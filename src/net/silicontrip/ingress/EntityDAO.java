@@ -1,9 +1,12 @@
 package net.silicontrip.ingress;
 
-import net.silicontrip.UniformDistribution;
+import com.google.common.geometry.S2CellId;
+import com.google.common.geometry.S2CellUnion;
+import com.google.common.geometry.S2LatLng;
+import com.google.common.geometry.S2LatLngRect;
 import java.util.ArrayList;
 import java.util.HashMap;
-import com.google.common.geometry.*;
+import net.silicontrip.UniformDistribution;
 
 // should split the pure db queries from the business logic
 // would make it easier to replace the data source with a different db engine

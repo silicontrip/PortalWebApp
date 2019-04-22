@@ -18,28 +18,24 @@ import javax.ejb.EJB;
 public class FieldServlet extends HttpServlet {
 
 	@EJB
-	private CellSessionBean cellBean;
+	private FieldSessionBean fieldBean;
 
+	@EJB
+	private CellSessionBean cellBean;
+	
 	private final InitialContext ctx = null;
 	//private MUCellDAO cdao = null;
 	//private MUFieldDAO fdao = null;
 	private final HashMap<S2CellId,UniformDistribution> cellmu = null;
 
-        @Override
+    @Override
 	public void init () throws ServletException {
-		//cdao = new SQLMUCellDAO();
-		//fdao = new SQLMUFieldDAO();
-/*
-		try {
-			ctx = new InitialContext();
-		} catch (NamingException e) {
-			throw new ServletException(e.getMessage());
-		}
-*/
+			System.out.println("Starting Field Servlet");
 	}
 
-        @Override
+    @Override
 	public void destroy () {
+		System.out.println("stopping Field Servlet");
 	}
 
 	private JSONObject mu(String s) {
@@ -78,7 +74,7 @@ public class FieldServlet extends HttpServlet {
 			pts.getJSONObject(2).getLong("latE6"),
 			pts.getJSONObject(2).getLong("lngE6"));
 
-		int known_mu = cellBean.muKnownField(searchField);
+		int known_mu = fieldBean.muKnownField(searchField);
 
 		response.put("mu_known",known_mu);
 
@@ -87,7 +83,7 @@ public class FieldServlet extends HttpServlet {
 		//S2CellUnion cellu = cellBean.getCellsForField(s2Field);
 
 		// getIntersectionMU
-		HashMap<S2CellId,AreaDistribution> area = cellBean.getIntersectionMU(s2Field);
+		HashMap<S2CellId,AreaDistribution> area = fieldBean.getIntersectionMU(s2Field);
 
 		// calc mu
 		double min_mu = 0;
@@ -120,7 +116,7 @@ public class FieldServlet extends HttpServlet {
 		response.put("mu_min", min_mu);
 		response.put("mu_max", max_mu);
 		//response.put("cells", cells); // future expansion
-		System.out.println("<- " + response.toString());
+		//System.out.println("<- " + response.toString());
 		return response;
 	}
 

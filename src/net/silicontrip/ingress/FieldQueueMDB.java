@@ -25,7 +25,7 @@ activationConfig = {
 public class FieldQueueMDB implements MessageListener {
 
 	@EJB
-	private CellSessionBean cellBean;
+	private FieldSessionBean fieldBean;
 
         @Override
 	public void onMessage(Message message) {
@@ -33,11 +33,11 @@ public class FieldQueueMDB implements MessageListener {
 		String tm = "";
 		try {
 			tm= textMessage.getText();
-			//System.out.println(tm);
+			System.out.println("FieldQueue: " + tm);
 			JSONObject pobj = new JSONObject (textMessage.getText());
 //			SQLMUFieldDAO dao = new SQLMUFieldDAO();
 			if (pobj.has("mu")) {
-			//System.out.println("has mu");
+			//System.out.println("field has mu");
 
 				// unwrap the JSON message
 
@@ -60,12 +60,15 @@ public class FieldQueueMDB implements MessageListener {
 				// perform business logic...
 				// check for duplicates
 
-				if (cellBean.hasFieldGuid(guid))
+				System.out.println("Check for duplicates");
+				
+				if (fieldBean.hasFieldGuid(guid))
 				{
-					System.out.println("field exists: " + guid);
+					//System.out.println("field exists: " + guid);
 					return;
-				}
-				//	System.out.println("new Field");
+				} 
+				
+					System.out.println("new Field: " + guid);
 
 				Field fi = new Field (
 					pobj.getString("creator"),
@@ -86,7 +89,7 @@ public class FieldQueueMDB implements MessageListener {
 				boolean[] valid = new boolean[mu.length()];
 				
 				for (int i =0; i < mu.length(); i++)
-					valid[i] = cellBean.muFieldValid(S2Field,mu.getInt(i));
+					valid[i] = fieldBean.muFieldValid(S2Field,mu.getInt(i));
 
 			//what to do if different MU are valid?
 			// which one is more accurate?
@@ -102,7 +105,7 @@ public class FieldQueueMDB implements MessageListener {
 			// true -> submit 0
 			// false -> submit 0
 
-				// System.out.println ("" + guid + ": " + pobj.getInt("mu") + " valid: " + valid);
+		//System.out.println ("" + guid + " valid: " + valid);
 
 
 			// we don't want to actually submit a field twice.
@@ -111,7 +114,7 @@ public class FieldQueueMDB implements MessageListener {
 					//System.out.println ("submit field");
 					fi.setMU(mu.getInt(i));
 					if (mu.length() == 1 || (valid[i] && (valid[0] ^ valid[1]))) // above business logic decribed in 1 if statement
-						cellBean.submitField(fi,valid[i]);
+						fieldBean.submitField(fi,valid[i]);
 					else
 						if (mu.length()==2)
 							System.out.println ("not Submitting field: " + guid);

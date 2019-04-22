@@ -34,8 +34,10 @@ public class PortalQueueMDB implements MessageListener {
 		{
 			dao.deletePortal(pobj.getString("delete"));
 		} else {
-			if (pobj.has("title")) 
+			if (pobj.has("level"))  // seems like the title "undefined" shows up in some titles
 			{
+				// grr sometimes these contain nulls.  
+				// have to go over each with a fine grade if statement.
 				//System.out.println("" + pobj.getString("image").length() + " / " + pobj.getString("image"));
 				dao.writePortalFull(pobj.getString("guid"), pobj.getString("title"), pobj.getLong("latE6"), pobj.getLong("lngE6"),pobj.getString("team"),pobj.getInt("level"),pobj.getInt("resCount"),pobj.getInt("health"),pobj.getString("image"));
 			}

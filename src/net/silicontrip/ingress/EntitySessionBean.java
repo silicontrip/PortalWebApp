@@ -10,22 +10,17 @@ package net.silicontrip.ingress;
 import java.util.ArrayList;
 
 import javax.ejb.Stateless;
-import net.silicontrip.*;
-import java.util.HashMap;
-import java.util.Map;
 import com.google.common.geometry.*;
+import javax.ejb.EJB;
+import javax.ejb.LocalBean;
 
 @Stateless
-
+@LocalBean
 public class EntitySessionBean {
 
-	private EntityDAO dao = null;
+	@EJB
+	private SQLEntityDAO dao;
 
-	private EntityDAO getDAO() {
-		if (dao==null)
-			dao = new SQLEntityDAO();
-		return dao;
-	}
 	
 /**
  * get the S2LatLng location of a portal description.
@@ -43,7 +38,7 @@ public class EntitySessionBean {
 		if (s==null)
 			return null;
 		if (s.matches("^[0-9a-fA-F]{32}\\.1[16]$"))
-			return getDAO().getPortalLocationFromGuid(s);
+			return dao.getPortalLocationFromGuid(s);
 		if (s.matches("(\\+|-)?([0-9]+(\\.[0-9]+)),(\\+|-)?([0-9]+(\\.[0-9]+))"))
 		{
 			String[] ll = s.split(",");
@@ -56,7 +51,7 @@ public class EntitySessionBean {
 		
 			//return getDAO().getPortalLocationFromLocation(latE6,lngE6);
 		}
-		return getDAO().getPortalLocationFromTitle(s);
+		return dao.getPortalLocationFromTitle(s);
 	}
 	/**
  * Gets all Portals within an S2Region.
@@ -70,7 +65,7 @@ public class EntitySessionBean {
 	{
 		ArrayList<Portal> ret = new ArrayList<Portal>();
 
-		ArrayList<Portal> rectPortals = getDAO().getPortalsInRect(reg.getRectBound());
+		ArrayList<Portal> rectPortals = dao.getPortalsInRect(reg.getRectBound());
 		for (Portal p : rectPortals) {
 			long plat = p.getLatE6();
 			long plng = p.getLngE6();
@@ -87,7 +82,7 @@ public class EntitySessionBean {
 	
 	public ArrayList<Link> getLinkInRect(S2LatLngRect rect)
 	{
-		ArrayList<Link> all  = getDAO().getLinkAll();
+		ArrayList<Link> all  = dao.getLinkAll();
 		ArrayList<Link> ret = new ArrayList<Link>();
 		// should I just copy the getAll method to save memory.
 		for (Link l : all)
@@ -100,7 +95,7 @@ public class EntitySessionBean {
 	}
 	public ArrayList<Link> getLinkAll()
 	{
-			return getDAO().getLinkAll();
+			return dao.getLinkAll();
 	}
 	
 

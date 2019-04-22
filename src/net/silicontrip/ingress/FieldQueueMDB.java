@@ -60,7 +60,7 @@ public class FieldQueueMDB implements MessageListener {
 				// perform business logic...
 				// check for duplicates
 
-				System.out.println("Check for duplicates");
+				//System.out.println("Check for duplicates");
 				
 				if (fieldBean.hasFieldGuid(guid))
 				{
@@ -68,7 +68,7 @@ public class FieldQueueMDB implements MessageListener {
 					return;
 				} 
 				
-					System.out.println("new Field: " + guid);
+				//	System.out.println("new Field: " + guid);
 
 				Field fi = new Field (
 					pobj.getString("creator"),
@@ -117,7 +117,7 @@ public class FieldQueueMDB implements MessageListener {
 						fieldBean.submitField(fi,valid[i]);
 					else
 						if (mu.length()==2)
-							System.out.println ("not Submitting field: " + guid);
+							System.out.println ("not Submitting field: " + guid + "MU: [" + mu.getLong(0) +", "+mu.getLong(1));
 						
 				}
 

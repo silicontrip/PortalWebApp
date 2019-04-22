@@ -17,6 +17,7 @@ import javax.ejb.EJB;
 import javax.ejb.LocalBean;
 import javax.ejb.Stateless;
 import javax.jms.JMSException;
+import javax.jms.Message;
 import javax.jms.Queue;
 import javax.jms.QueueConnection;
 import javax.jms.QueueConnectionFactory;
@@ -256,8 +257,14 @@ public class FieldSessionBean {
 				cellmuNew.setId(cellOuter);
 				cellmuNew.setDistribution(mus);
 				em.persist(cellmuNew);
-			System.out.println("NEW " + cellOuter.toToken() + "->" + mus.toString());
-
+				System.out.println("NEW " + cellOuter.toToken() + "->" + mus.toString());
+				try{
+					initCellQueue();
+						Message msg = queueSession.createTextMessage(cellOuter.toToken());
+						sender.send(msg);
+				} catch (JMSException | NamingException e) {
+					System.out.println(e.getMessage());
+				}
 			}
 			else
 			{
@@ -265,12 +272,12 @@ public class FieldSessionBean {
 					if (cellOuterMU.refine(mus)){  // this only returns true if the cell is modified.
 						cellmu.setDistribution(cellOuterMU);
 						System.out.println("UPDATE " + cellOuter.toToken() + "->" + cellOuterMU.toString());
-						em.persist(cellmu);
-						/*
+						em.merge(cellmu);
+						
 						initCellQueue();
 						Message msg = queueSession.createTextMessage(cellOuter.toToken());
 						sender.send(msg);
-						*/
+						
 						// add cell to modified array
 						// nah, just dump it straight on the cell queue. 
 					}

@@ -5,6 +5,8 @@ import javax.jms.*;
 import javax.ejb.*;
 
 import com.google.common.geometry.S2CellId;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 @MessageDriven(
 mappedName = "jms/cellQueue",
@@ -25,8 +27,13 @@ public class CellQueueMDB implements MessageListener {
 		@Override
 		public void onMessage(Message message) {
 			TextMessage textMessage = (TextMessage) message;
-			System.out.println("Queue: " + textMessage.toString());
-			S2CellId pcell = S2CellId.fromToken(textMessage.toString());
-			fieldBean.processCell(pcell);
+			try {
+				System.out.println("Queue: " + textMessage.getText());
+				S2CellId pcell = S2CellId.fromToken(textMessage.getText());
+				fieldBean.processCell(pcell);
+
+			} catch (JMSException ex) {
+				Logger.getLogger(CellQueueMDB.class.getName()).log(Level.SEVERE, null, ex);
+			}
 	}
 }

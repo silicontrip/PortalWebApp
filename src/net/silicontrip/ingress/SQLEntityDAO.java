@@ -69,15 +69,23 @@ import java.util.ArrayList;
 import com.google.common.geometry.*;
 
 import java.sql.*;
+import javax.ejb.LocalBean;
+import javax.ejb.Stateless;
 import javax.sql.*;
 import javax.naming.*;
+import javax.persistence.EntityManager;
+import javax.persistence.EntityManagerFactory;
+import javax.persistence.PersistenceContext;
+import net.silicontrip.UniformDistribution;
 
-//import net.silicontrip.UniformDistribution;
-//import java.util.HashMap;
-//import java.util.Map;
 
+@Stateless
+@LocalBean
 public class SQLEntityDAO implements EntityDAO {
 
+	//@PersistenceContext
+	//private EntityManagerFactory emf;
+	
 	private Connection c = null;
 	private DataSource spdDs = null;
 
@@ -307,6 +315,45 @@ public class SQLEntityDAO implements EntityDAO {
 		}
 	}
 
+		/**
+	 * Checks if a field already exists in the database from its guid. Fields of
+	 * the same geometry but different guids may be present in the database.
+	 *
+	 * @param guid of the field
+	 *
+	 * @return boolean of the fields existance
+	 *
+	 * @throws EntityDAOException containing an SQL Exception message
+	 */
+	@Override
+	public boolean existsLink(String guid) throws EntityDAOException {
+		PreparedStatement ps = null;
+		ResultSet rs = null;
+		boolean ret;
+
+		try {
+			c = spdDs.getConnection();
+			ps = c.prepareStatement(LINK_GET_GUID, ResultSet.CONCUR_READ_ONLY);
+			ps.setString(1, guid);
+			rs = ps.executeQuery();
+			ret = rs.first();
+		} catch (SQLException e) {
+			throw new EntityDAOException(e.getMessage());
+		} finally {
+			try {
+				if(rs!=null)
+					rs.close();
+				if (ps!=null)
+					ps.close();
+				c.close();
+			} catch (SQLException se) {
+				throw new EntityDAOException("SQLException: " + se.getMessage());
+			}
+		}
+		return ret;
+	}
+	
+	
 	/**
 	 * Inserts a link into the Link database
 	 *
@@ -324,6 +371,8 @@ public class SQLEntityDAO implements EntityDAO {
 	@Override
 	public void insertLink(String guid, String dguid, long dlatE6, long dlngE6, String oguid, long olatE6, long olngE6, String team) throws EntityDAOException {
 
+		//System.out.println("SQLEntityDAO::insertLink");
+		
 		if (getLinkGuid(guid) == null) {
 			PreparedStatement ps = null;
 			int rs;
@@ -564,6 +613,60 @@ public class SQLEntityDAO implements EntityDAO {
 		}
 		return ret;
 	}
+	
+		/**
+	 * Gets a field from the database from its guid. Fields of
+	 *
+	 * @param guid of the field
+	 *
+	 * @return Field
+	 *
+	 * @throws EntityDAOException containing an SQL Exception message
+	 */
+	@Override
+	public Field getField(String guid) throws EntityDAOException {
+		PreparedStatement ps = null;
+		ResultSet rs = null;
+		Field ret=null;
+
+		try {
+			c = spdDs.getConnection();
+			ps = c.prepareStatement(FIELD_GET_GUID, ResultSet.CONCUR_READ_ONLY);
+			ps.setString(1, guid);
+			rs = ps.executeQuery();
+			if (rs.first())
+			{
+				ret = new Field(rs.getString("creator"),
+								rs.getString("agent"),
+								rs.getInt("mu"),
+								rs.getString("guid"),
+								rs.getLong("timestamp"),
+								rs.getString("team"),
+								rs.getString("pguid1"),
+								rs.getLong("plat1"),
+								rs.getLong("plng1"),
+								rs.getString("pguid2"),
+								rs.getLong("plat2"),
+								rs.getLong("plng2"),
+								rs.getString("pguid3"),
+								rs.getLong ("plat3"),
+								rs.getLong ("plng3"));
+			}
+		} catch (SQLException e) {
+			throw new EntityDAOException(e.getMessage());
+		} finally {
+			try {
+				if(rs!=null)
+					rs.close();
+				if (ps!=null)
+					ps.close();
+				c.close();
+			} catch (SQLException se) {
+				throw new EntityDAOException("SQLException: " + se.getMessage());
+			}
+		}
+		return ret;
+	}
 
 	/**
 	 * Changes the MU for a field from its guid. Some split field are
@@ -693,6 +796,7 @@ public class SQLEntityDAO implements EntityDAO {
 
 			rs = ps.executeUpdate();
 		} catch (SQLException se) {
+			System.out.println("GUID: >" + guid+"<");
 			throw new EntityDAOException("SQLException: " + se.getMessage());
 		} finally {
 			try {
@@ -725,7 +829,7 @@ public class SQLEntityDAO implements EntityDAO {
 			ps = c.prepareStatement(FIELD_INSERT_CELLS);
 			ps.setString(1, guid);
 			for (S2CellId cell : cells) {
-				ps.setString(2, cell.toToken());
+				ps.setLong(2, cell.id());
 				rs = ps.executeUpdate();
 			}
 		} catch (SQLException se) {
@@ -907,7 +1011,7 @@ public class SQLEntityDAO implements EntityDAO {
 		//Connection c = null;
 		PreparedStatement ps = null;
 		ResultSet rs = null;
-		S2LatLng ret = S2LatLng.CENTER;
+		S2LatLng ret = null;
 
 		try {
 			c = spdDs.getConnection();
@@ -919,10 +1023,10 @@ public class SQLEntityDAO implements EntityDAO {
 			boolean searchError = false;
 			String err = "" + title + ": ";
 			while (rs.next()) {
-				//if (ret != null) {
+				if (ret != null) {
 					searchError = true;
 					err = err + ret.toStringDegrees() + " ";
-				//}
+				}
 
 				long plat = rs.getLong("latE6");
 				long plng = rs.getLong("lngE6");
@@ -1335,6 +1439,9 @@ public class SQLEntityDAO implements EntityDAO {
 		} else {
 			insertPortalFull(guid, title, latE6, lngE6, team, level, resCount, health, image);
 		}
-
 	}
+
+
+		
+	
 }

@@ -20,13 +20,15 @@ public interface EntityDAO {
 	public void purgeLink() throws EntityDAOException;
 	public void deleteLink(String guid) throws EntityDAOException;
 	public void insertLink(String guid,String dguid, long dlatE6, long dlngE6,String oguid, long olatE6, long olngE6, String team) throws EntityDAOException;
+	public boolean existsLink(String guid) throws EntityDAOException;
 
 // CELLS
-	public HashMap<S2CellId,UniformDistribution> getMUAll() throws EntityDAOException;
-	public void updateMUAll(HashMap<S2CellId,UniformDistribution> cellmu) throws EntityDAOException;
+	//public HashMap<S2CellId,UniformDistribution> getMUAll() throws EntityDAOException;
+	//public void updateMUAll(HashMap<S2CellId,UniformDistribution> cellmu) throws EntityDAOException;
 
 //FIELDS
 	public boolean existsField(String guid) throws EntityDAOException;
+	public Field getField(String guid) throws EntityDAOException;
 	public ArrayList<Field> findField (Field f) throws EntityDAOException;
 	public void updateFieldMU(String guid,int mu) throws EntityDAOException;
 	public void deleteField(String guid) throws EntityDAOException;
@@ -51,5 +53,7 @@ public interface EntityDAO {
 	public void insertPortal(String guid, long latE6, long lngE6, String team) throws EntityDAOException;
 	public void writePortalFull(String guid, String title, long latE6, long lngE6,String team,int level,int resCount, int health, String image) throws EntityDAOException;
 	public void writePortal(String guid, long latE6, long lngE6, String team) throws EntityDAOException;
+
+	//public UniformDistribution getMU(S2CellId cell);
 
 }

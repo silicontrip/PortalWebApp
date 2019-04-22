@@ -6,6 +6,8 @@ import org.json.*;
 import javax.servlet.http.*;
 import javax.servlet.*;
 import java.io.*;
+import java.util.Collection;
+import java.util.HashSet;
 import javax.naming.*;
 import javax.jms.*;
 
@@ -38,26 +40,45 @@ public class EntityServlet extends HttpServlet {
 		}
 	}
 
-	private int submit (Queue sq, JSONArray ea,String userName) throws JMSException
+	private void insertAgent (JSONArray ea,String userName)
+	{
+		for (Object ent : ea)
+			((JSONObject) ent).put("agent",userName);
+	}
+	
+	private void insertBounds (JSONArray ea,JSONObject b)
+	{
+		for (Object ent : ea)
+			((JSONObject) ent).put("bounds",b);
+	}
+	
+	private int submit (Queue sq, JSONArray ea) throws JMSException
 	{
 		int count =0;
 		if (sq != null)
 		{
+			HashSet<String> submittedGuid = new HashSet<>();
 			QueueSender sender = queueSession.createSender(sq);
 			for (Object ent : ea)
 			{
 				JSONObject jsonEnt = (JSONObject) ent;
-				jsonEnt.put("agent",userName); // I'd like to know who's submitting fields (and maybe portals)
-				//System.out.println(jsonEnt.toString());
-				Message msg = queueSession.createTextMessage(jsonEnt.toString());
-				sender.send(msg);
-				count++;
+				String guid = jsonEnt.getString("guid");
+				// We seem to get duplicates in the single submission.
+				if (!submittedGuid.contains(guid))
+				{
+					Message msg = queueSession.createTextMessage(jsonEnt.toString());
+					sender.send(msg);
+					count++;
+					submittedGuid.add(guid);
+				}
 			}
 			sender.close();
 		}
 		return count;
 	}
+		
 
+	@Override
 	public void doPost(HttpServletRequest req, HttpServletResponse resp){
 	
 		String userName = req.getParameter("agent");
@@ -82,8 +103,9 @@ public class EntityServlet extends HttpServlet {
 				Queue submitQueue = (Queue)ctx.lookup("jms/portalQueue");
 				//System.out.println("Submit Portals");
 				//System.out.println(req.getParameter("portals"));
-				jsonResponse.put("portals_submitted", submit (submitQueue, new JSONArray(req.getParameter("portals")),userName));
-				jsonResponse.put("portals_deleted", submit (submitQueue, new JSONArray(req.getParameter("portals_deleted")),userName));
+				jsonResponse.put("portals_deleted", submit (submitQueue, new JSONArray(req.getParameter("portals_deleted"))));
+				jsonResponse.put("portals_submitted", submit (submitQueue, new JSONArray(req.getParameter("portals"))));
+
 			}
 			if (req.getParameter("edges") != null)
 			{
@@ -91,16 +113,26 @@ public class EntityServlet extends HttpServlet {
 				Queue submitQueue = (Queue)ctx.lookup("jms/linkQueue");
 				// due to links being destroyed and recreated with new GUIDs, old links must be deleted before new ones added.
 				// as the old links will cause DB constraint failures.
-				jsonResponse.put("edges_deleted",submit(submitQueue, new JSONArray(req.getParameter("edges_deleted")),userName));
-				jsonResponse.put("edges_submitted",submit(submitQueue, new JSONArray(req.getParameter("edges")),userName));
+				JSONObject bounds = new JSONObject(req.getParameter("bounds"));
+				//System.out.println("edges bounds: " + bounds.toString());
+				
+				JSONArray ed = new JSONArray(req.getParameter("edges_deleted"));
+				JSONArray ea =new JSONArray(req.getParameter("edges"));
+
+				insertBounds(ea,bounds);
+				jsonResponse.put("edges_deleted",submit(submitQueue, ed));
+				jsonResponse.put("edges_submitted",submit(submitQueue, ea));
 			}
 			if (req.getParameter("fields") != null)
 			{
 				// want to put the agent name into the field here.
-				jsonResponse.put("fields_submitted",submit((Queue)ctx.lookup("jms/fieldQueue"),new JSONArray(req.getParameter("fields")),userName));
+				JSONArray fa = new JSONArray(req.getParameter("fields"));
+				insertAgent(fa,userName);
+				jsonResponse.put("fields_submitted",submit((Queue)ctx.lookup("jms/fieldQueue"),fa));
+			} else {
 			}
 
-			System.out.println(jsonResponse.toString());
+			//System.out.println(jsonResponse.toString());
 
 			writer.println(jsonResponse.toString());
 			writer.close();
@@ -116,7 +148,7 @@ public class EntityServlet extends HttpServlet {
 				PrintWriter writer = resp.getWriter();
 				writer.println(jsonResponse.toString());
 				writer.close();
-			} catch (Exception e2) {
+			} catch (IOException e2) {
 				// :-P
 			}
 		} 	catch (Exception e) {
@@ -136,6 +168,7 @@ public class EntityServlet extends HttpServlet {
 		}
 	}
 
+	@Override
 	public void doGet(HttpServletRequest req, HttpServletResponse resp){
 		doPost(req,resp);
 	}

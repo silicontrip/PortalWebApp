@@ -2,6 +2,7 @@
 try {
 	response.setCharacterEncoding("UTF-8");
 	response.setContentType("text/javascript");
+
 	response.addHeader("Access-Control-Allow-Origin","https://intel.ingress.com");
 	request.login(request.getParameter("agent"),request.getParameter("apikey"));
 

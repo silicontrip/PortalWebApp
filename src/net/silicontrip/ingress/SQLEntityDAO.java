@@ -108,7 +108,7 @@ public class SQLEntityDAO implements EntityDAO {
 	protected static String FIELD_FIND = "select * from mufields where (((plat1=? and plng1=?) or (plat2=? and plng2=?) or (plat3=? and plng3=?)) and ((plat1=? and plng1=?) or (plat2=? and plng2=?) or (plat3=? and plng3=?)) and ((plat1=? and plng1=?) or (plat2=? and plng2=?) or (plat3=? and plng3=?))) and valid=true";
 
 	protected static String FIELD_INSERT_CELLS = "insert into fieldcells (field_guid,cellid) values (?,?)";
-	protected static String FIELD_FIND_FROM_CELL = "select guid from fieldcells where cellid=?";
+	protected static String FIELD_FIND_FROM_CELL = "select field_guid  from fieldcells where cellid=?";
 
 	protected static String PORTAL_GET_FROM_BOX = "select guid,title,latE6,lngE6 from portals where latE6>=? and latE6<=? and lngE6>=? and lngE6<=? and deleted!=true";
 	protected static String PORTAL_GET_LOCATION_FROM_TITLE = "select guid,latE6,lngE6 from portals where title=? and deleted!=true";
@@ -640,7 +640,7 @@ public class SQLEntityDAO implements EntityDAO {
 								rs.getString("agent"),
 								rs.getInt("mu"),
 								rs.getString("guid"),
-								rs.getLong("timestamp"),
+								new Long(rs.getString("timestamp")),
 								rs.getString("team"),
 								rs.getString("pguid1"),
 								rs.getLong("plat1"),
@@ -781,7 +781,7 @@ public class SQLEntityDAO implements EntityDAO {
 			ps.setString(2, agent);
 			ps.setInt(3, mu);
 			ps.setString(4, guid);
-			ps.setLong(5, timestamp); //timestamp sql type
+			ps.setString(5, "" + timestamp); //timestamp sql type 
 			ps.setString(6, team);
 			ps.setString(7, pguid1);
 			ps.setLong(8, plat1);
@@ -864,7 +864,7 @@ public class SQLEntityDAO implements EntityDAO {
 			c = spdDs.getConnection();
 			ps = c.prepareStatement(FIELD_FIND_FROM_CELL, ResultSet.CONCUR_READ_ONLY);
 
-			ps.setString(1, cell.toToken());
+			ps.setLong(1, cell.id());
 
 			rs = ps.executeQuery();
 

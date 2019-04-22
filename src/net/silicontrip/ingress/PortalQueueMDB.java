@@ -18,13 +18,18 @@ activationConfig = {
 
 public class PortalQueueMDB implements MessageListener {
  
+		@EJB
+		private	SQLEntityDAO dao;
+	
+		@Override
     public void onMessage(Message message) {
         TextMessage textMessage = (TextMessage) message;
 	String tm = "";
         try {
 		tm= textMessage.getText();
+		// System.out.println("PortalQUEUE: " + tm);
 		JSONObject pobj = new JSONObject (textMessage.getText());
-		SQLEntityDAO dao = new SQLEntityDAO();
+		//SQLEntityDAO dao = new SQLEntityDAO();
 		if (pobj.has("delete"))
 		{
 			dao.deletePortal(pobj.getString("delete"));

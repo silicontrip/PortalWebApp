@@ -33,7 +33,6 @@ public class FieldQueueMDB implements MessageListener {
 		String tm = "";
 		try {
 			tm= textMessage.getText();
-			System.out.println("FieldQueue: " + tm);
 			JSONObject pobj = new JSONObject (textMessage.getText());
 //			SQLMUFieldDAO dao = new SQLMUFieldDAO();
 			if (pobj.has("mu")) {
@@ -67,7 +66,8 @@ public class FieldQueueMDB implements MessageListener {
 					//System.out.println("field exists: " + guid);
 					return;
 				} 
-				
+				System.out.println("FieldQueue: " + tm);
+
 				//	System.out.println("new Field: " + guid);
 
 				Field fi = new Field (
@@ -105,7 +105,7 @@ public class FieldQueueMDB implements MessageListener {
 			// true -> submit 0
 			// false -> submit 0
 
-		//System.out.println ("" + guid + " valid: " + valid);
+	//	System.out.println ("FieldQMDB: " + guid + " valid: " + valid[0]);
 
 
 			// we don't want to actually submit a field twice.

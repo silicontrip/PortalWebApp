@@ -63,10 +63,10 @@ public class FieldQueueMDB implements MessageListener {
 				
 				if (fieldBean.hasFieldGuid(guid))
 				{
-					//System.out.println("field exists: " + guid);
+				//	System.out.println("field exists: " + guid);
 					return;
 				} 
-				System.out.println("FieldQueue: " + tm);
+			//	System.out.println("FieldQueue: " + tm);
 
 				//	System.out.println("new Field: " + guid);
 

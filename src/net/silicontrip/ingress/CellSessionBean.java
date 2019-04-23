@@ -129,4 +129,25 @@ public class CellSessionBean {
 			return null;
 		return cellmu.getDistribution();
 	}
+	
+	        public UniformDistribution getAveChildMU(S2CellId cell)
+        {
+                if (cell.level() < 13)
+                {
+                        S2CellId id = cell.childBegin();
+                        UniformDistribution ttmu = new UniformDistribution (0,0);
+                        for (int pos = 0; pos < 4; ++pos, id = id.next())
+                        {
+                                UniformDistribution mu = getMU(id);
+                                if (mu == null)
+                                        return null;
+                                ttmu = ttmu.add(mu);
+                        }
+                        
+                        return ttmu.div(4.0);
+                }
+                return null;
+        }
+
+	
 }

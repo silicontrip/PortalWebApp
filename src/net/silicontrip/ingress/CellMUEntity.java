@@ -144,7 +144,7 @@ public class CellMUEntity implements Serializable {
 
 	@Override
 	public String toString() {
-		return "" + s2id.toToken() + ":[" + min + ", " + max + "]";
+		return "" + s2id + ":[" + min + ", " + max + "]";
 	}
 
 }

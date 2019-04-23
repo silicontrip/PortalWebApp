@@ -14,8 +14,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.ejb.EJB;
 import javax.ejb.LocalBean;
 import javax.ejb.Stateless;
@@ -30,7 +28,6 @@ import javax.jms.Session;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 import javax.persistence.EntityManager;
-import javax.persistence.EntityManagerFactory;
 import javax.persistence.PersistenceContext;
 import net.silicontrip.AreaDistribution;
 import net.silicontrip.UniformDistribution;
@@ -58,19 +55,26 @@ public class FieldSessionBean {
 	@EJB
 	private SQLEntityDAO dao;
 	
+	@EJB 
+	private FieldProcessCache fpCache;
+	
 	@PersistenceContext(unitName="net.silicontrip.ingress.persistence")
 	private EntityManager em;
 	
 	private void initCellQueue() throws NamingException, JMSException  {
 		if (ctx == null) 
-		{
 			ctx = new InitialContext();
+		if (qcf==null)
             qcf = (QueueConnectionFactory) ctx.lookup("jms/QueueConnectionFactory");
+		if (queueCon==null)
             queueCon = qcf.createQueueConnection();
+		if (queueSession==null)
             queueSession = queueCon.createQueueSession(false, Session.AUTO_ACKNOWLEDGE);
+		if (submitQueue==null)
 			submitQueue = (Queue)ctx.lookup("jms/cellQueue");
+		if (sender==null)
 			sender = queueSession.createSender(submitQueue);
-		}
+		
 	}
 	
 		/**
@@ -120,6 +124,7 @@ public class FieldSessionBean {
 	public void submitField(Field field, boolean valid)
 	{
 		// System.out.println(">>> submitField: " );
+		try {
 		dao.insertField(field.getCreator(),
 					field.getAgent(),
 					field.getMU(),
@@ -145,6 +150,10 @@ public class FieldSessionBean {
 		{
 			//System.out.println("Process Field...");
 			processField(field);
+		}
+		} catch (Exception e) {
+			System.out.println("submitFieldException: " + e.getMessage());
+			e.printStackTrace();
 		}
 	}
 
@@ -186,7 +195,9 @@ public class FieldSessionBean {
 		for (S2CellId cello: cells) 
 			System.out.print (cello.toToken() + ", ");
 		System.out.println(".");
-*/
+		*/
+		
+		try {
 		
 		if (score==1) 
 			initialMU = new UniformDistribution(0.0,1.5);
@@ -293,7 +304,7 @@ public class FieldSessionBean {
 					if (cellmu.refine(mus)){  // this only returns true if the cell is modified.
 						//cellmu.setDistribution();
 						S2LatLng cellp = cellOuter.toLatLng();
-					//	System.out.println("UPDATE " + cellLog.toString() + " https://www.ingress.com/intel?z=15&ll="+cellp.latDegrees()+","+cellp.lngDegrees());
+						System.out.println("UPDATE " + cellLog.toString() + " https://www.ingress.com/intel?z=15&ll="+cellp.latDegrees()+","+cellp.lngDegrees());
 						em.merge(cellmu);
 						modifiedCells.add(cellOuter);
 						/*						
@@ -320,26 +331,46 @@ public class FieldSessionBean {
 		// but I really think I need to control the transaction 
 		
 		try {
-			initCellQueue();
+			StringBuilder fieldLog = new StringBuilder();
+			boolean sendMessage=false;
 			for (S2CellId cell : modifiedCells)
 			{
-				
+				fieldLog.append(cell.toToken());
+				fieldLog.append(": ");
 				ArrayList<String> fieldGuids = dao.fieldGuidsForCell(cell);
 			//System.out.println("Found " + fieldGuids.size() + " for cell " + cell.toToken());
 				for (String guid : fieldGuids)
 				{
-					Field fi = dao.getField(guid);
-					if (!fi.getGuid().equals(field.getGuid()))
+					if (!guid.equals(field.getGuid()))
 					{
-						Message msg = queueSession.createTextMessage(guid);
-						sender.send(msg);
+						fieldLog.append(guid);
+						fieldLog.append(", ");
+						
+						if (!fpCache.hasFieldGuid(guid))
+						{
+							fpCache.addFieldGuid(guid);
+							sendMessage=true;
+						}
 					}
 				}
+				//fieldLog.append("");
+			}
+			if (sendMessage)
+			{
+				initCellQueue();
+				Message msg = queueSession.createTextMessage(""); // something to prompt the MDB
+				//System.out.println("FIELDLOG: " + fieldLog.toString());
+				sender.send(msg);
 			}
 		} catch (JMSException | NamingException e) {
-			System.out.println("JMS Exception: " + e.getMessage());
+			System.out.println("processField JMS Exception: " + e.getMessage());
+					//	e.printStackTrace();
+
 		}
-		
+		} catch (Exception e) {
+			System.out.println("processFieldException: " + e.getMessage());
+			e.printStackTrace();
+		}
 	}
 	/**
 	 * find the MU for a known field
@@ -350,8 +381,14 @@ public class FieldSessionBean {
 	 */
 	public int muKnownField(Field field)
 	{
-		for (Field f : dao.findField(field))
-			return f.getMU();
+		try {
+			for (Field f : dao.findField(field))
+				return f.getMU();
+		
+		} catch (Exception e) {
+			System.out.println("muKnownFieldException: " + e.getMessage());
+			e.printStackTrace();
+		}
 		return -1;
 	}
 	

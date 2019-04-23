@@ -61,15 +61,22 @@ public class EntityServlet extends HttpServlet {
 			QueueSender sender = queueSession.createSender(sq);
 			for (Object ent : ea)
 			{
+				try {
 				JSONObject jsonEnt = (JSONObject) ent;
-				String guid = jsonEnt.getString("guid");
+				String guid = null;
+				if (jsonEnt.has("guid"))
+						guid = jsonEnt.getString("guid");
 				// We seem to get duplicates in the single submission.
-				if (!submittedGuid.contains(guid))
-				{
-					Message msg = queueSession.createTextMessage(jsonEnt.toString());
-					sender.send(msg);
-					count++;
-					submittedGuid.add(guid);
+					if (guid==null || !submittedGuid.contains(guid))
+					{
+						Message msg = queueSession.createTextMessage(jsonEnt.toString());
+						sender.send(msg);
+						count++;
+						if (guid!=null)
+							submittedGuid.add(guid);
+					}
+				} catch (Exception e) {
+					System.out.println(e.getMessage() + ": " + ((JSONObject)ent));
 				}
 			}
 			sender.close();

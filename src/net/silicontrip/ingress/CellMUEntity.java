@@ -10,8 +10,6 @@ import java.io.Serializable;
 import javax.persistence.Basic;
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.NamedQueries;
 import javax.persistence.NamedQuery;
@@ -52,21 +50,26 @@ public class CellMUEntity implements Serializable {
 	@Column(name = "mu_high")
 	private double max;
 	
+	// @Transient private UniformDistribution distribution;
+	
 	@Transient private S2CellId s2id = null;
-
+	
 	public double getMin() {
 		return min;
 	}
 
 	public void setMin(double min) {
+		//distribution.setLower(min);
 		this.min = min;
 	}
 
 	public double getMax() {
+		//return distribution.getUpper();
 		return max;
 	}
 
 	public void setMax(double max) {
+		//distribution.setUpper(max);
 		this.max = max;
 	}
 
@@ -101,10 +104,24 @@ public class CellMUEntity implements Serializable {
 		return new UniformDistribution(min,max);
 	}
 
+	public boolean refine (UniformDistribution ud)
+	{
+		UniformDistribution thisDistribution = getDistribution();
+		if (thisDistribution.refine(ud))
+		{
+			this.min = thisDistribution.getLower();
+			this.max = thisDistribution.getUpper();
+			return true;
+		}
+		return false;
+	}
+	
 	public void setDistribution(UniformDistribution ud)
 	{
 		this.min = ud.getLower();
 		this.max = ud.getUpper();
+		//this.distribution.setLower(ud.getLower());
+		//this.distribution.setUpper(ud.getUpper());
 	}
 
 	@Override

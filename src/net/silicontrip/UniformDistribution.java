@@ -16,6 +16,8 @@ public class UniformDistribution implements Serializable {
 	 * the upper bounds of the distribution
 	 */
 	private double upper;
+	
+	transient private double epsilon=1E-5;
 /**
  * Constructor.
  *
@@ -364,7 +366,8 @@ public class UniformDistribution implements Serializable {
 				double d = a.getLower() - lower;
 				//System.err.println("lower diff: " + d + "/" + lower);
 				lower=a.getLower();
-				changed=true;
+				if (d>epsilon)
+					changed=true;
 			}
 
 			if (upper > a.getUpper())
@@ -372,7 +375,8 @@ public class UniformDistribution implements Serializable {
 				double d = upper - a.getUpper();
 				//System.err.println("upper diff: " + d +  "/" + upper + " : " + lower);
 				upper=a.getUpper();
-				changed=true;
+				if (d>epsilon)
+					changed=true;
 			}
 		} else {
 			throw new ArithmeticException( "REFINE Sanity check Exception : " + toString() + " x " + a);

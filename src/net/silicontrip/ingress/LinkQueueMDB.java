@@ -138,7 +138,10 @@ public class LinkQueueMDB implements MessageListener {
               "Error while trying to consume messages: " + e.getMessage());
         } catch (EntityDAOException | JSONException e) {
 			System.out.println("LinkQueueMDB::"+tm);
-			//e.printStackTrace();
+			e.printStackTrace();
+		} catch (Exception e) {
+			System.out.println("LinkQueueMDBException: " + e.getMessage());
+			e.printStackTrace();
 		}
     }
 }

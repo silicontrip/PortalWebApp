@@ -34,6 +34,11 @@ public class FieldProcessCache {
 		fieldCache.remove(guid);
 	}
 	
+	public boolean hasFieldGuid(String guid)
+	{
+		return fieldCache.contains(guid);
+	}
+	
 	public String nextFieldGuid()
 	{
 		if (fieldCache.iterator().hasNext())

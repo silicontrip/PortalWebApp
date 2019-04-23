@@ -1,20 +1,21 @@
 package net.silicontrip;
+import java.io.Serializable;
 import java.util.ArrayList;
 
 /**
  * A uniform distribution statistics class.
  *
  */
-public class UniformDistribution {
+public class UniformDistribution implements Serializable {
 
 /**
  * the lower bounds of the distribution
  */
-	double lower;
+	private double lower;
 	/**
 	 * the upper bounds of the distribution
 	 */
-	double upper;
+	private double upper;
 /**
  * Constructor.
  *
@@ -164,9 +165,9 @@ public class UniformDistribution {
 	 */
 	public ArrayList<Double> getArrayList()
 	{
-		ArrayList<Double> da = new ArrayList<Double>();
-		da.add(new Double(getLower()));
-		da.add(new Double(getUpper()));
+		ArrayList<Double> da = new ArrayList<>();
+		da.add(getLower());
+		da.add(getUpper());
 		return da;
 	}
 
@@ -383,5 +384,6 @@ public class UniformDistribution {
 	 *
 	 * 	@return String representation of the UD, could be used to reconstruct the UD.
 	 */
+	@Override
 	public String toString () { return "[" + lower + "," + upper + "]"; }
 }

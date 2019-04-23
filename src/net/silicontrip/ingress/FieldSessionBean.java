@@ -13,6 +13,9 @@ import com.google.common.geometry.*;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.ejb.EJB;
 import javax.ejb.LocalBean;
 import javax.ejb.Stateless;
@@ -92,6 +95,8 @@ public class FieldSessionBean {
 			ad.area = intPoly.getArea() * 6367 * 6367 ;
 			ad.mu = cellBean.getMU(cell);
 
+			// System.out.println("getIntersectionMU: " + cell.toToken() + ": " + ad.mu);
+			
 			response.put(cell,ad);
 		}
 		return response;
@@ -151,7 +156,7 @@ public class FieldSessionBean {
 	public void processCell(S2CellId cell)
 	{
 			ArrayList<String> fieldGuids = dao.fieldGuidsForCell(cell);
-			System.out.println("Found " + fieldGuids.size() + " for cell " + cell.toToken());
+			//System.out.println("Found " + fieldGuids.size() + " for cell " + cell.toToken());
 			for (String guid : fieldGuids)
 			{
 				Field fi = dao.getField(guid);
@@ -167,11 +172,12 @@ public class FieldSessionBean {
 	 */
 	public void processField(Field field)
 	{
-		Integer score = field.getMU();
-		S2Polygon thisField = field.getS2Polygon();
-		S2CellUnion cells = getCellsForField(thisField);
+		UniformDistribution initialMU;
 		Double area;
 
+		Integer score = field.getMU();
+		S2Polygon thisField = field.getS2Polygon();
+		HashSet<S2CellId> modifiedCells = new HashSet<>();
 		//EntityManager em = emf.createEntityManager();
 		// HashMap<S2CellId,CellMUEntity> = new HashMap<>();
 
@@ -181,14 +187,18 @@ public class FieldSessionBean {
 			System.out.print (cello.toToken() + ", ");
 		System.out.println(".");
 */
-
-		UniformDistribution initialMU = new UniformDistribution(score,range);
+		
+		if (score==1) 
+			initialMU = new UniformDistribution(0.0,1.5);
+		else
+			initialMU = new UniformDistribution(score,range);
 
 		// an algorithmic version of the following equation
 		// mu[cell] = ( MU - intersectionArea[cell1] x mu[cell1] ... - intersectionArea[cellN] x mu[cellN]) / intersectionArea[cell]
 
 		// em.getTransaction().begin(); // avoid concurrency issues.
-		
+		final S2CellUnion cells = getCellsForField(thisField);
+
 		for (S2CellId cellOuter: cells)
 		{
 			StringBuilder cellLog = new StringBuilder();
@@ -200,12 +210,16 @@ public class FieldSessionBean {
 				// if not cell from outer loop
 				if (!cellOuter.equals(cellInner))
 				{
+					// System.out.println("i<->o: " + cellOuter.toToken() + " - "+ cellInner.toToken());
 					double areaInner = CellSessionBean.getIntersectionArea(thisField,cellInner);
 					CellMUEntity cellmu = em.find(CellMUEntity.class, cellInner.id());
 					UniformDistribution cellInnerMU = null;
 					if (cellmu!=null)
 						cellInnerMU = cellmu.getDistribution();
-
+					/*
+					else
+						System.out.println(cellInner.toToken() + ": not found");
+					*/
 					cellLog.append(" - ");
 					cellLog.append(areaInner);
 					cellLog.append(" x ");
@@ -230,68 +244,102 @@ public class FieldSessionBean {
 			cellLog.append(areaOuter);
 			mus=mus.div(areaOuter);
 			cellLog.insert(0," = ");
-			cellLog.insert(0,mus);
+			
 			mus.clampLower(0.0);
+			cellLog.insert(0,mus);
 
 			CellMUEntity cellmu = em.find(CellMUEntity.class, cellOuter.id());
+			/*
 			UniformDistribution cellOuterMU = null;
 			if (cellmu!=null)
 				cellOuterMU = cellmu.getDistribution();
-			
+			*/
 			//UniformDistribution cellOuterMU = getMU(cellOuter);
-			cellLog.insert(0," <=> ");
-			if (cellOuterMU==null)
+			cellLog.insert(0," => ");
+			if (cellmu==null)
 				cellLog.insert(0,"null");
 			else
-				cellLog.insert(0,cellOuterMU.toString());
+				cellLog.insert(0,cellmu.getDistribution().toString());
 			cellLog.insert(0,": ");
 			cellLog.insert(0,cellOuter.toToken());
 			//System.out.println(cellLog.toString());
 
 			// refine UD:cello with mus
 
-			if (cellOuterMU == null)
+			if (cellmu == null)
 			{
 				//cellOuterMU = mus;
 				CellMUEntity cellmuNew = new CellMUEntity();
 				cellmuNew.setId(cellOuter);
 				cellmuNew.setDistribution(mus);
 				em.persist(cellmuNew);
-				System.out.println("NEW " + cellOuter.toToken() + "->" + mus.toString());
-				try{
-					initCellQueue();
-						Message msg = queueSession.createTextMessage(cellOuter.toToken());
-						sender.send(msg);
+				S2LatLng cellp = cellOuter.toLatLng();
+				//System.out.println(cellLog.toString());
+				System.out.println("NEW " + cellLog.toString() + " https://www.ingress.com/intel?z=15&ll="+cellp.latDegrees()+","+cellp.lngDegrees());
+
+				modifiedCells.add(cellOuter);
+				/*				try{
+				initCellQueue();
+				Message msg = queueSession.createTextMessage(cellOuter.toToken());
+				sender.send(msg);
 				} catch (JMSException | NamingException e) {
-					System.out.println(e.getMessage());
-				}
+				System.out.println(e.getMessage());
+				}*/
 			}
 			else
 			{
 				try {
-					if (cellOuterMU.refine(mus)){  // this only returns true if the cell is modified.
-						cellmu.setDistribution(cellOuterMU);
-						System.out.println("UPDATE " + cellOuter.toToken() + "->" + cellOuterMU.toString());
+					UniformDistribution oldMU = new UniformDistribution(cellmu.getDistribution());
+					if (cellmu.refine(mus)){  // this only returns true if the cell is modified.
+						//cellmu.setDistribution();
+						S2LatLng cellp = cellOuter.toLatLng();
+					//	System.out.println("UPDATE " + cellLog.toString() + " https://www.ingress.com/intel?z=15&ll="+cellp.latDegrees()+","+cellp.lngDegrees());
 						em.merge(cellmu);
-						
+						modifiedCells.add(cellOuter);
+						/*						
 						initCellQueue();
 						Message msg = queueSession.createTextMessage(cellOuter.toToken());
-						sender.send(msg);
+						sender.send(msg);*/
 						
 						// add cell to modified array
 						// nah, just dump it straight on the cell queue. 
+						//  a xenomorph may be involved.
 					}
 				} catch (ArithmeticException ae) {
 					// field error
-					System.out.println(ae.getMessage());
+					System.out.println(ae.getMessage() + " " + cellLog.toString());
 					// something something, out of range error
 					// mark field as invalid 
 				} catch (Exception e) {
 					// we should throw something?
 				}
 			}
-		//	em.getTransaction().commit(); // I hope this works.
 		}
+		//	em.getTransaction().commit(); // I hope this works. 
+		// it didn't work, it threw some error about being incompatible with JTA
+		// but I really think I need to control the transaction 
+		
+		try {
+			initCellQueue();
+			for (S2CellId cell : modifiedCells)
+			{
+				
+				ArrayList<String> fieldGuids = dao.fieldGuidsForCell(cell);
+			//System.out.println("Found " + fieldGuids.size() + " for cell " + cell.toToken());
+				for (String guid : fieldGuids)
+				{
+					Field fi = dao.getField(guid);
+					if (!fi.getGuid().equals(field.getGuid()))
+					{
+						Message msg = queueSession.createTextMessage(guid);
+						sender.send(msg);
+					}
+				}
+			}
+		} catch (JMSException | NamingException e) {
+			System.out.println("JMS Exception: " + e.getMessage());
+		}
+		
 	}
 	/**
 	 * find the MU for a known field
@@ -318,6 +366,7 @@ public class FieldSessionBean {
 	public boolean muFieldValid(S2Polygon s2Field,int mu)
 	{
 		UniformDistribution muest = muForField(s2Field);
+		// System.out.println("muFieldValid: MU est: "+ muest);
 		if (muest.getLower() == -1)
 			return true;
 
@@ -338,7 +387,7 @@ public class FieldSessionBean {
 		for (Map.Entry<S2CellId,AreaDistribution> entry : muArea.entrySet())
 		{
 			AreaDistribution cell = entry.getValue();
-			//System.out.println(cell);
+			// System.out.println("muForField: " + entry.getKey().toToken() + ": " + cell.mu);
 			// do we have information for this cell
 			// if not we should skip this whole thing
 			if (cell.mu!=null)
@@ -347,7 +396,7 @@ public class FieldSessionBean {
 				uniformMU = uniformMU.mul(cell.area);
 				fieldmu = fieldmu.add(uniformMU);
 			} else {
-				return new UniformDistribution(-1,-1);
+				return new UniformDistribution(-1.0,-1.0);
 			}
 		}
 		return fieldmu;

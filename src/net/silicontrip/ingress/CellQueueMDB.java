@@ -27,15 +27,26 @@ public class CellQueueMDB implements MessageListener {
 		@EJB
 		private SQLEntityDAO dao;
 		
+		@EJB FieldProcessCache fpCache;
+		
 		@Override
 		public void onMessage(Message message) {
 			TextMessage textMessage = (TextMessage) message;
 			try {
-				// System.out.println("Queue: " + textMessage.getText());
+				//System.out.println("Queue: " + textMessage.getText());
 				//S2CellId pcell = S2CellId.fromToken(textMessage.getText());
-				Field fi = dao.getField(textMessage.getText());
-				fieldBean.processField(fi);
-
+				String fieldGuid = textMessage.getText(); 
+				int count = 0;
+				while ((fieldGuid = fpCache.nextFieldGuid())!=null)
+				{				
+						//	System.out.println("Queue: " + textMessage.getText() + " " + fieldGuid);
+					fpCache.removeFieldGuid(fieldGuid);
+					Field fi = dao.getField(fieldGuid);
+					fieldBean.processField(fi);
+				//		count ++;
+				//			if (count > 500)
+				//				return;
+				}
 			} catch (JMSException ex) {
 				Logger.getLogger(CellQueueMDB.class.getName()).log(Level.SEVERE, null, ex);
 			}

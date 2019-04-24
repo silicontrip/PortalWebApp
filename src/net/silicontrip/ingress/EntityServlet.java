@@ -89,7 +89,7 @@ public class EntityServlet extends HttpServlet {
 	public void doPost(HttpServletRequest req, HttpServletResponse resp){
 	
 		String userName = req.getParameter("agent");
-		String apiKey = req.getParameter("apikey");
+		String apiKey = req.getParameter("apikey").toLowerCase();
 		try {
 			resp.setContentType("text/json");
 			resp.setCharacterEncoding("UTF-8");

@@ -4,7 +4,7 @@ try {
 	response.setContentType("text/javascript");
 
 	response.addHeader("Access-Control-Allow-Origin","https://intel.ingress.com");
-	request.login(request.getParameter("agent"),request.getParameter("apikey"));
+	request.login(request.getParameter("agent"),request.getParameter("apikey").toLowerCase());
 
 	String baseUrl = "https://quadrant.silicontrip.net/portalApi/";
 	if (request.getRemoteAddr().startsWith("10.15.240.")) 

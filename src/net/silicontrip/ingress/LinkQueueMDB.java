@@ -82,6 +82,7 @@ public class LinkQueueMDB implements MessageListener {
     public void onMessage(Message message) {
         TextMessage textMessage = (TextMessage) message;
 		String tm = "";
+	String exceptionLog = new String();
         try {
 			tm= textMessage.getText();
 			//System.out.println("LinkQueue: "+ tm);
@@ -98,21 +99,23 @@ public class LinkQueueMDB implements MessageListener {
 					// get link length
 					double length = l.getAngle() * 6367000;
 					if ( length > ZoomDistance.get(pobj.getInt("zoom")))
+					{
+						System.out.println("DELETE: " + tm);
 						dao.deleteLink(pobj.getString("guid")); // new logic being tested, appears to work very well
+					}
 				}
 			} else if (pobj.has("team")) {
 				
 				if (dao.existsLink(pobj.getString("guid")))
 					return;
 				
-				//System.out.println("insert");
 
-				//System.out.println("" + pobj.getString("image").length() + " / " + pobj.getString("image"));
 //{"dLngE6":145176878,"oGuid":"704dbc67aed54b73b153bbb5be3a9fed.16","oLatE6":-37818041,"guid":"e11e884cdb0e438e9c25c6bc0b909b14.9","team":"E","oLngE6":145157441,"dLatE6":-37802085,"dGuid":"5f7ef86ee21f4c83809527b917cad585.16"}
 				
 				// check link is within mapBounds
 				S2LatLngRect mapBounds = getMapBounds(pobj.getJSONObject("bounds"));
 				
+				exceptionLog ="insert: " + pobj.getString("guid") + " / " + pobj.getString("oGuid") + "-" + pobj.getString("dGuid") + " mapBounds: " + mapBounds;
 				//System.out.println("mapBounds s2llr:" + mapBounds);
 				
 				S2LatLngRect linkBounds  = S2LatLngRect.fromEdge(getS2Point(pobj.getLong("oLatE6"), pobj.getLong("oLngE6")),
@@ -123,7 +126,7 @@ public class LinkQueueMDB implements MessageListener {
 				if (mapBounds.contains(linkBounds) || mapBounds.intersects(linkBounds))
 				{
 					//do we even check that the link exists?
-					//System.out.println("Inserting...");
+					System.out.println("INSERT: " + tm);
 					dao.insertLink(
 						pobj.getString("guid"),
 						pobj.getString("dGuid"), pobj.getLong("dLatE6"), pobj.getLong("dLngE6"),
@@ -141,6 +144,7 @@ public class LinkQueueMDB implements MessageListener {
 			e.printStackTrace();
 		} catch (Exception e) {
 			System.out.println("LinkQueueMDBException: " + e.getMessage());
+			System.out.println(exceptionLog);
 			e.printStackTrace();
 		}
     }

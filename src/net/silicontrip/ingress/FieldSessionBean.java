@@ -356,6 +356,8 @@ public class FieldSessionBean {
 				//fieldLog.append("");
 			}
 			if (sendMessage)
+				sendMessage=fpCache.isEmpty();
+			if (sendMessage)
 			{
 				initCellQueue();
 				Message msg = queueSession.createTextMessage(""); // something to prompt the MDB

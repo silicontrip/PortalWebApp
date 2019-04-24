@@ -39,6 +39,12 @@ public class FieldProcessCache {
 		return fieldCache.contains(guid);
 	}
 	
+	// I should've just made the HashSet Public (or a public getter)
+	public boolean isEmpty()
+	{
+		return fieldCache.isEmpty();
+	}
+	
 	public String nextFieldGuid()
 	{
 		if (fieldCache.iterator().hasNext())

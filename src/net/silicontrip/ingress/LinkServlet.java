@@ -58,7 +58,10 @@ public class LinkServlet extends HttpServlet {
 		S2LatLngRect searchRegion = null;
 
 		if (p1 !=null && p2 !=null)
+		{
 			searchRegion = S2LatLngRect.fromPointPair(p1,p2);
+			System.out.println("<- links: " + searchRegion);
+		}
 
 		ArrayList<Link> linkList; // no not that kind of link list
 

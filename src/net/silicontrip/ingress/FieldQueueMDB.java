@@ -27,14 +27,14 @@ public class FieldQueueMDB implements MessageListener {
 	@EJB
 	private FieldSessionBean fieldBean;
 
-        @Override
+	@Override
 	public void onMessage(Message message) {
 		TextMessage textMessage = (TextMessage) message;
 		String tm = "";
 		try {
 			tm= textMessage.getText();
 			JSONObject pobj = new JSONObject (textMessage.getText());
-//			SQLMUFieldDAO dao = new SQLMUFieldDAO();
+
 			if (pobj.has("mu")) {
 			//System.out.println("field has mu");
 
@@ -63,12 +63,12 @@ public class FieldQueueMDB implements MessageListener {
 				
 				if (fieldBean.hasFieldGuid(guid))
 				{
-				//	System.out.println("field exists: " + guid);
+				//  System.out.println("field exists: " + guid);
 					return;
 				} 
-			//	System.out.println("FieldQueue: " + tm);
+			//  System.out.println("FieldQueue: " + tm);
 
-				//	System.out.println("new Field: " + guid);
+				//  System.out.println("new Field: " + guid);
 
 				Field fi = new Field (
 					pobj.getString("creator"),
@@ -105,23 +105,27 @@ public class FieldQueueMDB implements MessageListener {
 			// true -> submit 0
 			// false -> submit 0
 
-	//	System.out.println ("FieldQMDB: " + guid + " valid: " + valid[0]);
-
+	//  System.out.println ("FieldQMDB: " + guid + " valid: " + valid[0]);
 
 			// we don't want to actually submit a field twice.
+				boolean submit = false;
 				for (int i =0; i < mu.length(); i++)
 				{
 					//System.out.println ("submit field");
 					fi.setMU(mu.getInt(i));
-					if (mu.length() == 1 || (valid[i] && (valid[0] ^ valid[1]))) // above business logic decribed in 1 if statement
+					if (mu.length() == 1 || (valid[i] && (valid[0] ^ valid[1])))
+					{
+						// above business logic decribed in 1 if statement
 						fieldBean.submitField(fi,valid[i]);
-					else
-						if (mu.length()==2)
-							System.out.println ("not Submitting field: " + guid + "MU: [" + mu.getLong(0) +", "+mu.getLong(1));
-						
+						submit = true;
+					}
 				}
-
-				
+				// maybe set up an invalid table with split MU
+				if (!submit)
+					if(mu.length()==2)
+						System.out.println ("not Submitting field: " + guid + "MU: [" + valid[0] + ": " +mu.getLong(0) + ", "+valid[1] + ": "+mu.getLong(1)+"]");
+					else
+						System.out.println ("not Submitting field: " + guid + "MU: " + valid[0] + ": " +mu.getLong(0));
 			} 
 		} catch (JMSException e) {
 			System.out.println( "Error while trying to consume messages: " + e.getMessage());

@@ -133,7 +133,8 @@ public class FieldServlet extends HttpServlet {
 		JSONObject jsonResponse;
 
 		String userName = req.getParameter("agent");
-		String apiKey = req.getParameter("apikey").toLowerCase();
+		String apiKey = req.getParameter("apikey");
+		if (apiKey!=null) apiKey = apiKey.toLowerCase();
 		req.login(userName,apiKey);
 
 		if (req.getParameter("mu") != null)

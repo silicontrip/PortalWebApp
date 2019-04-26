@@ -1,256 +1,4 @@
-<%
-try {
-	response.setCharacterEncoding("UTF-8");
-	response.setContentType("text/javascript");
-
-	response.addHeader("Access-Control-Allow-Origin","https://intel.ingress.com");
-	request.login(request.getParameter("agent"),request.getParameter("apikey").toLowerCase());
-
-	String baseUrl = "https://quadrant.silicontrip.net/portalApi/";
-	if (request.getRemoteAddr().startsWith("10.15.240.")) 
-		baseUrl = "https://quadrant.silicontrip.net:8181/portalApi/";
-
-%>
-	window.plugin.dbPortalGrabber = {
-		request_ip: "<%= request.getRemoteAddr() %>",
-		hz_submit_url: "<%= baseUrl %>submitEntity",
-		hz_get_url: "<%= baseUrl %>getPortals",
-		hz_portals: [],
-		STROKE_STYLE: {
-			stroke: true,
-			opacity: 1,
-			weight: 1.5,
-			fill: true,
-			fillColor: null, //same as color by default
-			fillOpacity: 0.2,
-			clickable: true,
-		},
-		dbPortals: {},
-		portalLayer: {},
-		layer: null,
-		setupCSS: function() {
-			window.$("<style>").prop("type", "text/css").html(''
-			+'#hz_portal_grabber a {'
-			+'margin-left: 5px;'
-			+'margin-right: 5px;'
-			+'white-space: nowrap;'
-			+'display: inline-block;'
-			+'}'
-			).appendTo("head");
-		},
-		setup: function() {
-			console.log('dbPortalGrabber::setup');
-			console.log('this is a change. this is a change');
-
-			window.plugin.dbPortalGrabber.layer = new window.L.LayerGroup();
-			window.addLayerGroup('DB Portals', window.plugin.dbPortalGrabber.layer, true);
-			window.plugin.dbPortalGrabber.STROKE_STYLE.color = localStorage.getItem("window.plugin.dbPortalGrabber.STROKE_STYLE.color");
-
-			window.addHook('portalAdded', window.plugin.dbPortalGrabber.portalAdded);
-			window.addHook('mapDataRefreshEnd', window.plugin.dbPortalGrabber.pushPortals);
-			window.addHook('mapDataRefreshStart', window.plugin.dbPortalGrabber.mapDataRefreshStart);
-			// want to catch enable db portals layer. perform redraw.
-
-			window.$('#toolbox').append('<a onclick="window.plugin.dbPortalGrabber.portalColour();return false;" accesskey="C" >DB Colour</a>');
-
-		window.$('#hz_portal_grabber').html('<strong>Portal post</strong> '
-					+'<a onclick="window.plugin.dbPortalGrabber.addKey();return false;">Update key</a>'
-					+' (<span id="hz_portals">0</span>)');
-		},
-		portalAdded: function(data)
-		{
-			console.log (">>> portalAdded");
-			var portal = data.portal.options.data;
-			portal.guid = data.portal.options.guid;
-
-			window.plugin.dbPortalGrabber.hz_portals.push(portal);
-			window.$('#hz_portals').html(window.plugin.dbPortalGrabber.hz_portals.length);
-			console.log ("<<< portalAdded");
-		},
-		selectPortal: function(e){
-			window.renderPortalDetails (e.target.guid);
-		},
-		portalColour: function() {
-			var html = '<div id="db_colour"><input id="colour_selector" type="color" name="color" value="' + window.plugin.dbPortalGrabber.STROKE_STYLE.color +'" /></div>' ;
-						  window.dialog({
-							html: html,
-							id: 'plugin-dbportal-colour',
-							dialogClass: 'ui-dialog-dbportal',
-							title: 'DB Portal Colour'
-						  });
-						document.getElementById('colour_selector').addEventListener('change', window.plugin.dbPortalGrabber.changeColour, false);
-		},
-		changeColour: function(evt) {
-			window.plugin.dbPortalGrabber.STROKE_STYLE.color = evt.srcElement.value;
-			localStorage.setItem("window.plugin.dbPortalGrabber.STROKE_STYLE.color", window.plugin.dbPortalGrabber.STROKE_STYLE.color);
-			window.plugin.dbPortalGrabber.portalLayer = {};
-			window.plugin.dbPortalGrabber.drawPortals();
-		},
-		mapDataRefreshStart: function()
-		{
-			window.$('#hz_portal_grabber').css('background-color', '');
-			if (!window.map.hasLayer(window.plugin.dbPortalGrabber.layer)) { return; }
-
-			var bounds = window.map.getBounds();
-			var alat = bounds._southWest.lat;
-			var alng = bounds._southWest.lng;
-			var blat = bounds._northEast.lat;
-			var blng = bounds._northEast.lng;
-
-			var query = "?ll=" + alat + "," + alng +"&l2=" + blat + "," + blng + "&agent=" + window.PLAYER.nickname ;
-			var geturl = window.plugin.dbPortalGrabber.hz_get_url+query;
-			//console.log(geturl);
-
-			window.$.get(geturl, window.plugin.dbPortalGrabber.loadJSONPortals);
-		},
-		loadJSONPortals: function (dbPortals) {
-			//console.log("dbPortalGrabber::loadJSONPortals");
-			window.plugin.dbPortalGrabber.dbPortals = dbPortals;
-			window.plugin.dbPortalGrabber.drawPortals();
-		},
-		drawPortals: function(){
-			//console.log("dbPortalGrabber::drawPortals");
-			// don't draw if all portals are visible.
-			if(window.map.getZoom() < 15) {
-				for (var pt in window.plugin.dbPortalGrabber.dbPortals)
-				{
-					//console.log(pt)
-					var thisPortal = window.plugin.dbPortalGrabber.dbPortals[pt];
-					if (! (pt in window.plugin.dbPortalGrabber.portalLayer)) {
-						var ll = window.L.latLng(thisPortal.lat/1000000.0, thisPortal.lng/1000000.0);
-						var circ = window.L.circle(ll,10,window.plugin.dbPortalGrabber.STROKE_STYLE);
-						circ.on('click', window.plugin.dbPortalGrabber.selectPortal);
-						circ.guid = pt;
-						window.plugin.dbPortalGrabber.portalLayer[pt] = circ;
-						circ.addTo(window.plugin.dbPortalGrabber.layer);
-					}
-				}
-			}
-			//console.log(window.plugin.dbPortals.layer);
-		},
-		pushPortals: function()
-		{
-			if(!window.plugin.dbPortalGrabber.hz_portals.length)
-			{
-				window.$('#hz_portal_grabber').css('background-color', 'green');
-				return;
-			}
-
-			// identify deleted portals
-			// check we are zoom 15 or higher
-			var deleted_portals =[];
-			//console.log("db_portal_grabber::pushPortals map zoom: "+window.map.getZoom());
-			if (window.map.getZoom() >= 15)
-			{
-				for (var guid in window.plugin.dbPortalGrabber.dbPortals)
-				{
-					// does this guid exist?
-					if (!window.portals.hasOwnProperty(guid)) //no?
-					{ deleted_portals.push({"delete": guid}); }
-				}
-				// add to deleted array
-			//console.log("db_portal_grabber::pushPortals deleted_portals: " +deleted_portals.length);
-			}
-			window.$('#hz_portals').html('Pushing.. '+window.plugin.dbPortalGrabber.hz_portals.length);
-			//console.log('portalGrabber - Pushing portals - ' + window.plugin.dbPortalGrabber.hz_portals.length);
-			window.$.post(window.plugin.dbPortalGrabber.hz_submit_url, {apikey: window.PLAYER.apikey, agent: window.PLAYER.nickname, portals: JSON.stringify(window.plugin.dbPortalGrabber.hz_portals), portals_deleted: JSON.stringify(deleted_portals)} )
-				.fail(function() {
-					alert("Technology Journey - error submitting portals");
-			});
-			window.plugin.dbPortalGrabber.hz_portals = [];
-			window.$('#hz_portal_grabber').css('background-color', 'green');
-			window.$('#hz_portals').html(window.plugin.dbPortalGrabber.hz_portals.length);
-		}
-	};
-
-	window.plugin.dbEdgeGrabber = {
-		hz_url: "<%= baseUrl %>submitEntity",
-		hz_get_url: "<%= baseUrl %>getLinks",
-		hz_edges: [],
-		setupCSS: function() {
-			window.$("<style>").prop("type", "text/css").html(''+
-				'#hz_edge_grabber a {' +
-				'margin-left: 5px;' +
-				'margin-right: 5px;' +
-				'white-space: nowrap;' +
-				'display: inline-block;'+
-				'}'
-			).appendTo("head");
-		},
-		setup: function() {
-			console.log('dbEdgeGrabber::setup');
-
-			window.addHook('linkAdded', window.plugin.dbEdgeGrabber.edgeAdded);
-			window.addHook('mapDataRefreshEnd', window.plugin.dbEdgeGrabber.pushedges);
-			window.addHook('mapDataRefreshStart', window.plugin.dbEdgeGrabber.mapDataRefreshStart);
-
-			window.$('#sidebar').append('<div id="hz_edge_grabber" style="padding: 5px; font-size: 12px">'
-				+'<strong>Edges: </strong> '
-				+' (<span id="hz_edges">0</span>)'
-				+'</div>'
-			);
-		},
-		edgeAdded: function(data) {
-			var edge = data.link.options.data;
-			edge.guid = data.link.options.guid;
-
-			window.plugin.dbEdgeGrabber.hz_edges.push(edge);
-			window.$('#hz_edges').html(window.plugin.dbEdgeGrabber.hz_edges.length);
-		},
-		mapDataRefreshStart: function()
-		{
-			window.$('#hz_edge_grabber').css('background-color', '');
-			var bounds = window.map.getBounds();
-			//console.log("Map Bounds");
-			var alat = bounds._southWest.lat;
-			var alng = bounds._southWest.lng;
-			var blat = bounds._northEast.lat;
-			var blng = bounds._northEast.lng;
-
-			var query = "?ll=" + alat + "," + alng +"&l2=" + blat + "," + blng + "&agent=" + window.PLAYER.nickname ;
-			var geturl = window.plugin.dbEdgeGrabber.hz_get_url+query;
-			//console.log(geturl);
-			// maybe try this as post?
-			window.$.get(geturl, window.plugin.dbEdgeGrabber.loadJSON);
-		},
-		loadJSON: function (json) {
-			window.plugin.dbEdgeGrabber.dbLinks = json;
-		},
-		pushedges: function()
-		{
-			if(!window.plugin.dbEdgeGrabber.hz_edges.length)
-			{
-				window.$('#hz_edge_grabber').css('background-color', 'green');
-				return;
-			}
-
-			// work out deleted links
-			// read links DB for current view
-			var deleted_links =[];
-			var zoom = window.map.getZoom();
-			for (var guid in window.plugin.dbEdgeGrabber.dbLinks)
-			{
-				// does this guid exist?
-				if (!window.links.hasOwnProperty(guid)) //no?
-				{
-					deleted_links.push({"delete": true, "guid": guid, "zoom":zoom});
-				}
-			}
-			window.$('#hz_edges').html('Pushing.. '+window.plugin.dbEdgeGrabber.hz_edges.length);
-			//console.log('edgeGrabber - Pushing edges - ' + window.plugin.dbEdgeGrabber.hz_edges.length);
-
-			// need to put map bounds in here, as intel submits more links than are visible
-			// this causes DB constraint issues
-			window.$.post(window.plugin.dbEdgeGrabber.hz_url, {apikey: window.PLAYER.apikey, agent: window.PLAYER.nickname, bounds: JSON.stringify(window.map.getBounds()), edges: JSON.stringify(window.plugin.dbEdgeGrabber.hz_edges), edges_deleted: JSON.stringify(deleted_links)} )
-				.fail(function(xhr, status, error) {
-					alert("Technology Journey - Error submitting links");
-					console.log(JSON.stringify(xhr) +" " + status + " " + error );
-				});
-			window.plugin.dbEdgeGrabber.hz_edges = [];
-			window.$('#hz_edge_grabber').css('background-color', 'green');
-			window.$('#hz_edges').html(window.plugin.dbEdgeGrabber.hz_edges.length);
-		}
-	};
+/* global GeodesicLine, parseInt, google, TEAM_TO_CSS */
 
 window.plugin.muScraper = {
 	plextLinkList: {},
@@ -266,9 +14,9 @@ window.plugin.muScraper = {
 	muSubmit: true,
 	submitKey: "",
 	hz_fields: [],
-	hz_url: '<%= baseUrl %>submitEntity',
-	mu_url: '<%= baseUrl %>getMU',
-	mu_use: '<%= baseUrl %>getMU',
+	hz_url: window.silicontrip_ingress_url+'submitEntity',
+	mu_url: window.silicontrip_ingress_url+'getMU',
+	mu_use: window.silicontrip_ingress_url+'getMU',
 	NAME_WIDTH: 60,
 	NAME_HEIGHT: 12,
 	FILL_STYLE: {
@@ -362,7 +110,7 @@ window.plugin.muScraper = {
 			};
 
 			GeodesicLine.prototype.isMeridian = function() {
-				return this.lng1 == this.lng2;
+				return this.lng1 === this.lng2;
 			};
 
 			GeodesicLine.prototype.latAtLng = function(lng) {
@@ -372,9 +120,9 @@ window.plugin.muScraper = {
 				// if we're testing the start/end point, return that directly rather than calculating
 				// 1. this may be fractionally faster, no complex maths
 				// 2. there's odd rounding issues that occur on some browsers (noticed on IITC MObile) for very short links - this may help
-				if (lng == this.lng1) {
+				if (lng === this.lng1) {
 					lat = this.lat1;
-				} else if (lng == this.lng2) {
+				} else if (lng === this.lng2) {
 					lat = this.lat2;
 				} else {
 					lat = Math.atan ( (this.sinLat1CosLat2*Math.sin(lng-this.lng2) - this.sinLat2CosLat1*Math.sin(lng-this.lng1))/this.cosLat1CosLat2SinDLng);
@@ -414,14 +162,14 @@ window.plugin.muScraper = {
 				b1.lat=gdl.lat2;
 				//debugger;
 				// zero length line tests
-				if ((a0.lat==a1.lat)&&(a0.lng==a1.lng)) return false;
-				if ((b0.lat==b1.lat)&&(b0.lng==b1.lng)) return false;
+				if ((a0.lat===a1.lat)&&(a0.lng===a1.lng)) return false;
+				if ((b0.lat===b1.lat)&&(b0.lng===b1.lng)) return false;
 
 				// lines have a common point
-				if ((a0.lat==b0.lat)&&(a0.lng==b0.lng)) return false;
-				if ((a0.lat==b1.lat)&&(a0.lng==b1.lng)) return false;
-				if ((a1.lat==b0.lat)&&(a1.lng==b0.lng)) return false;
-				if ((a1.lat==b1.lat)&&(a1.lng==b1.lng)) return false;
+				if ((a0.lat===b0.lat)&&(a0.lng===b0.lng)) return false;
+				if ((a0.lat===b1.lat)&&(a0.lng===b1.lng)) return false;
+				if ((a1.lat===b0.lat)&&(a1.lng===b0.lng)) return false;
+				if ((a1.lat===b1.lat)&&(a1.lng===b1.lng)) return false;
 
 				// a0.lng<=-90 && a1.lng>=90 dosent suffice... a link from -70 to 179 still crosses
 				//if a0.lng-a1.lng >180 or <-180 there is a cross!
@@ -502,7 +250,7 @@ window.plugin.muScraper = {
 				// calculate the latitudes for each line at left + right longitudes
 				// NOTE: need a special case for meridians - as GeodesicLine.latAtLng method is invalid in that case
 				var aLeftLat, aRightLat;
-				if (a0.lng == a1.lng) {
+				if (a0.lng === a1.lng) {
 					// 'left' and 'right' now become 'top' and 'bottom' (in some order) - which is fine for the below intersection code
 					aLeftLat = a0.lat;
 					aRightLat = a1.lat;
@@ -513,7 +261,7 @@ window.plugin.muScraper = {
 				}
 
 				var bLeftLat, bRightLat;
-				if (b0.lng == b1.lng) {
+				if (b0.lng === b1.lng) {
 					// 'left' and 'right' now become 'top' and 'bottom' (in some order) - which is fine for the below intersection code
 					bLeftLat = b0.lat;
 					bRightLat = b1.lat;
@@ -854,7 +602,7 @@ window.plugin.muScraper = {
 							{
 								if(S2.CellRegionOverlap(ccells[ccell],field)) count++;
 							}
-							if (count==1)
+							if (count===1)
 							{
 								for (ccell in ccells)
 								{
@@ -886,7 +634,7 @@ window.plugin.muScraper = {
 								if(S2.CellRegionOverlap(ccells[ccell],field)) count++;
 							}
 							// console.log("count: " + count);
-							if (count==4 && altcandidate.length > 2) {
+							if (count===4 && altcandidate.length > 2) {
 								// don't subdivide further
 								// unless the children have 1 child as their children
 								candidate.push(altcandidate[cell]);
@@ -918,7 +666,7 @@ window.plugin.muScraper = {
 					for (cell in cellcover)
 					{
 						parent = cellcover[cell].getParent();
-						if (pcells[parent.toId()] == 4)
+						if (pcells[parent.toId()] === 4)
 						{ ucellcover[parent.toId()] = parent; }
 						else
 						{ ucellcover[cell] = cellcover[cell]; }
@@ -975,7 +723,7 @@ window.plugin.muScraper = {
 				//console.log(JSON.stringify([this.ij,this.level]));
 				var children=[];
 
-				if (this.level==30) return [this]; // is 30 correct?
+				if (this.level===30) return [this]; // is 30 correct?
 
 				// I'm wondering if there is a correct order to these...
 				children =[
@@ -1101,11 +849,10 @@ window.plugin.muScraper = {
 	},
 	searchComms: function(data) {
 		//console.log(">>> searchComms");
-		for (var entry of data.result)
-		{
+		for (var entry in data.result) {
 			var read = entry[2].plext.text.split(" ");
 			var creator = read[0];
-			if ( read[1] == "linked")
+			if ( read[1] === "linked")
 			{
 				//console.log(entry[2].plext.text);
 				var oPortal = entry[2].plext.markup[2][1];
@@ -1113,7 +860,7 @@ window.plugin.muScraper = {
 				window.plugin.muScraper.plextLinkList[entry[0]] = { guid: entry[0], ts: entry[1], oPortal: oPortal, dPortal: dPortal, creator: creator};
 			}
 
-			if ( read[1] == "created")
+			if ( read[1] === "created")
 			{
 				//console.log("search comms - created");
 				//console.log(entry);
@@ -1332,24 +1079,24 @@ window.plugin.muScraper = {
 				.attr('class', TEAM_TO_CSS[teamStringToId(field.options.data.team)])
 				.html('')
 				.append(
-				$('<h3>').attr({class:'title'}).text(title),
-				$('<span>').attr({
-					class: 'close',
-					title: 'Close [w]',
-					onclick:'renderPortalDetails(null);',
-					accesskey: 'w'
+				$('<h3>').attr({"class": 'title'}).text(title),
+				$('span').attr({
+					"class": 'close',
+					"title": 'Close [w]',
+					"onclick":'renderPortalDetails(null);',
+					"accesskey": 'w'
 				}).text('X'),
 				html
 				);
 			//console.log("displayField::post mu_use");
-			if (title == 'Mu: unknown')
+			if (title === 'Mu: unknown')
 				$.post(
 					window.plugin.muScraper.mu_use,
 					{apikey: window.PLAYER.apikey, agent: window.PLAYER.nickname, use: JSON.stringify(field.options)},
 					function(dd) {
 						//var dd = JSON.parse(data);
 						var title = "Mu: unknown";
-						if (dd.mu_known != -1)
+						if (dd.mu_known !== -1)
 						{
 							var rmk = Math.round(dd.mu_known * 1000) / 1000;
 							title="Mu: (" + rmk +")";
@@ -1365,12 +1112,12 @@ window.plugin.muScraper = {
 							.attr('class', TEAM_TO_CSS[teamStringToId(field.options.data.team)])
 							.html('')
 							.append(
-							$('<h3>').attr({class:'title'}).text(title),
+							$('<h3>').attr({"class":'title'}).text(title),
 							$('<span>').attr({
-								class: 'close',
-								title: 'Close [w]',
-								onclick:'renderPortalDetails(null);',
-								accesskey: 'w'
+								"class": 'close',
+								"title": 'Close [w]',
+								"onclick":'renderPortalDetails(null);',
+								"accesskey": 'w'
 							}).text('X'),
 							html
 						);
@@ -1406,7 +1153,7 @@ window.plugin.muScraper = {
 		window.plugin.muScraper.addLabel(fd.guid,fd.options.data.points,label + " mu");
 		//fd.mu = label;
 		if (window.plugin.muScraper.selectedField)
-			if (window.plugin.muScraper.selectedField.options.guid == fd.guid)
+			if (window.plugin.muScraper.selectedField.options.guid === fd.guid)
 				window.plugin.muScraper.displayField(window.plugin.muScraper.selectedField);
 	},
 	pushField: function(f) {
@@ -1428,7 +1175,7 @@ window.plugin.muScraper = {
 			for (var fcommGuid in window.plugin.muScraper.plextFieldList)
 			{
 				var fcomm = window.plugin.muScraper.plextFieldList[fcommGuid];
-				if (comm.ts == fcomm.ts) {
+				if (comm.ts === fcomm.ts) {
 					// can create 2 fields with 1 link
 					comm.fcomm.push(fcomm);
 				}
@@ -1453,12 +1200,12 @@ window.plugin.muScraper = {
 		for (commGuid in window.plugin.muScraper.plextLinkList)
 		{
 			comm = window.plugin.muScraper.plextLinkList[commGuid];
-			if (comm.field.length >0 && comm.field.length == comm.fcomm.length )
+			if (comm.field.length >0 && comm.field.length === comm.fcomm.length )
 			{
 				var label = 'undef';
 				fd = null;
 			// put MU in array and let the server decide which is valid.
-				if (comm.field.length == 1)
+				if (comm.field.length === 1)
 				{
 					comm.field[0].mu = [comm.fcomm[0].mu];
 					comm.field[0].creator = comm.fcomm[0].creator;
@@ -1467,7 +1214,7 @@ window.plugin.muScraper = {
 					console.log("matchFieldsAndComms::pushfield single");
 					window.plugin.muScraper.pushField(comm.field[0]);
 				}
-				else if (comm.field.length == 2)
+				else if (comm.field.length === 2)
 				{
 					var mu0 = parseInt(comm.fcomm[0].mu);
 					var mu1 = parseInt(comm.fcomm[1].mu);
@@ -1526,13 +1273,13 @@ window.plugin.muScraper = {
 	compareLinkAndField: function(link,field){
 		//console.log(">>> compareLinkAndField");
 
-		return ((link[0].latE6 == field[0].latE6 && link[0].lngE6 == field[0].lngE6) ||
-			(link[0].latE6 == field[1].latE6 && link[0].lngE6 == field[1].lngE6) ||
-			(link[0].latE6 == field[2].latE6 && link[0].lngE6 == field[2].lngE6) ) &&
+		return ((link[0].latE6 === field[0].latE6 && link[0].lngE6 === field[0].lngE6) ||
+			(link[0].latE6 === field[1].latE6 && link[0].lngE6 === field[1].lngE6) ||
+			(link[0].latE6 === field[2].latE6 && link[0].lngE6 === field[2].lngE6) ) &&
 
-			((link[1].latE6 == field[0].latE6 && link[1].lngE6 == field[0].lngE6) ||
-			(link[1].latE6 == field[1].latE6 && link[1].lngE6 == field[1].lngE6) ||
-			(link[1].latE6 == field[2].latE6 && link[1].lngE6 == field[2].lngE6) ) ;
+			((link[1].latE6 === field[0].latE6 && link[1].lngE6 === field[0].lngE6) ||
+			(link[1].latE6 === field[1].latE6 && link[1].lngE6 === field[1].lngE6) ||
+			(link[1].latE6 === field[2].latE6 && link[1].lngE6 === field[2].lngE6) ) ;
 	},
 	setupCSS: function() {
 		$("<style>").prop("type", "text/css").html('' +'.plugin-mu{' +'color:#FFFFBB;' +
@@ -1611,7 +1358,7 @@ window.plugin.muScraper = {
 					iconSize: [window.plugin.muScraper.NAME_WIDTH,window.plugin.muScraper.NAME_HEIGHT],
 					html: mu
 				}),
-				guid: guid,
+				guid: guid
 			});
 			//console.log(JSON.stringify(label));
 			window.plugin.muScraper.fieldLayers[guid] = label;
@@ -1713,12 +1460,12 @@ window.plugin.muScraper = {
 							function(dd) {
 								 //console.log("findSuitableFields::post " + data);
 								//var dd = JSON.parse(data);
-								if (dd.mu_known == -1)
+								if (dd.mu_known === -1)
 								{
 									var rmn = Math.round(dd.mu_min);
 									var rmx = Math.round(dd.mu_max);
 
-									if (rmn == -1 || rmn != rmx) {
+									if (rmn === -1 || rmn !== rmx) {
 										//console.log("" + n + " : " + fd.options.timestamp + " : " + age);
 										//console.log(JSON.stringify(fd.options));
 										//console.log("findSuitableFields:: searchCommsForField " + field.guid);
@@ -1768,9 +1515,9 @@ window.plugin.muScraper = {
 				for (var pts=0; pts < 3; pts++) dtpoints.push({"lat": points[pts].latE6/1000000.0, "lng": points[pts].lngE6/1000000.0});
 				dt.push({"type": "polygon", "color": "#a24ac3", "latLngs": dtpoints});
 			}
-			//console.log(dt);
-			window.plugin.drawTools.import(dt);
+                       // window.plugin.drawTools.import(dt);
 			window.plugin.drawTools.save();
+
 		}
 	},
 	layerReport: function()
@@ -1923,7 +1670,7 @@ window.plugin.muScraper = {
 					className: 'plugin-regions-name',
 					iconAnchor: [100,5],
 					iconSize: [200,10],
-					html: name,
+					html: name
 				})
 			});
 			//console.log(data);
@@ -1936,7 +1683,7 @@ window.plugin.muScraper = {
 					className: 'plugin-regions-name',
 					iconAnchor: [100,5],
 					iconSize: [200,10],
-					html: name,
+					html: name
 				})
 			});
 			window.plugin.muScraper.cellsLayerGroup.addLayer(marker);
@@ -1948,16 +1695,5 @@ window.plugin.muScraper = {
 	}
 };
 
-//window.bootPlugins.push(window.plugin.dbPortalGrabber.setup);
-//window.bootPlugins.push(window.plugin.dbEdgeGrabber.setup);
-//window.bootPlugins.push(window.plugin.muScraper.setup);
-window.plugin.dbPortalGrabber.setup();
-window.plugin.dbEdgeGrabber.setup();
 window.plugin.muScraper.setup();
-
-<%
-} catch (Exception e) {
-%>
-alert("<%= e.getMessage() %>");
-<% } %>
 

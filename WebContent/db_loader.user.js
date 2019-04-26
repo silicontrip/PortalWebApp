@@ -20,7 +20,7 @@ function wrapper(plugin_info) {
 
 	// use own namespace for plugin
 	window.plugin.dbLoader = {
-		hz_loader_url: "https://quadrant.silicontrip.net:8181/portalApi/technology_journey.jsp",
+		hz_loader_url: "https://quadrant.silicontrip.net:8181/portalApi/loader",
 		setup: function() {
 			console.log('dbLoader::setup');
 

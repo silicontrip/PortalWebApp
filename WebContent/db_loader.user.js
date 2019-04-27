@@ -2,7 +2,7 @@
 // @id             iitc-plugin-db-loader@silicontrip
 // @name           IITC Plugin: DB technology journey
 // @category       layer
-// @version        0.2.8
+// @version        0.2.9
 // @namespace      https://github.com/jonatkins/ingress-intel-total-conversion
 // @description
 // @updateURL      https://quadrant.silicontrip.net:8181/portalApi/db_loader.user.js

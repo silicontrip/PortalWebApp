@@ -183,11 +183,11 @@ window.plugin.muScraper = {
 					aCross = true;
 					if (a0.lng <0)
 					{
-						a0.lng += 360;
+                                            a0.lng += 360;
 					}
 					if (a1.lng <0)
 					{
-						a1.lng += 360;
+                                            a1.lng += 360;
 					}
 				}
 				//this is the arc
@@ -848,8 +848,13 @@ window.plugin.muScraper = {
 		$.each(window.fields, function(ind, fd) { window.plugin.muScraper.readField({field:fd}); });
 	},
 	searchComms: function(data) {
-		//console.log(">>> searchComms");
-		for (var entry in data.result) {
+		console.log(">>> searchComms");
+                console.log(data);
+                var result = data['result'];
+               // console.log(JSON.stringify(result));
+		for (var count=0; count< result.length; count++) {
+                        var entry = result[count];  
+                        //console.log("ENTRY" + JSON.stringify(entry));
 			var read = entry[2].plext.text.split(" ");
 			var creator = read[0];
 			if ( read[1] === "linked")
@@ -898,6 +903,7 @@ window.plugin.muScraper = {
 		window.plugin.muScraper.searchCommsForField(window.fields[fdguid]);
 	},
 	searchCommsForField: function (fd) {
+            console.log(">> searchCommsForField");
 		var minLatE6;
 		var maxLatE6;
 		var minLngE6;
@@ -1000,7 +1006,7 @@ window.plugin.muScraper = {
 			var fd = window.plugin.muScraper.fieldList[field.options.guid];
 			if (fd === undefined) { fd={}; }
 
-			console.log("displayField::flayers");
+			//console.log("displayField::flayers");
 			var flayers = [];
 			if (window.plugin.muScraper.clickLatLng) { flayers = window.plugin.muScraper.getFieldsContainingLatLng(window.plugin.muScraper.clickLatLng); }
 
@@ -1010,7 +1016,7 @@ window.plugin.muScraper = {
 			var unknown = 0;
 
 			//flayers.sort(function(a,b) {return (window.plugin.muScraper.getAngArea(a.getLatLngs()) > window.plugin.muScraper.getAngArea(b.getLatLngs())) ? 1 : ( (window.plugin.muScraper.getAngArea(b.getLatLngs()) > window.plugin.muScraper.getAngArea(a.getLatLngs())) ? -1 : 0);} );
-			console.log("displayField::for j");
+			//console.log("displayField::for j");
 
 			for(var j=0;j<flayers.length;j++)
 			{
@@ -1043,14 +1049,15 @@ window.plugin.muScraper = {
 			if (unknown>0) { html += '<a onclick="window.plugin.muScraper.searchCommsForLayers(window.plugin.muScraper.clickLatLng);return false;">Get Layers MU</a>'; }
 			//console.log("displayField::html<table>");
 
-			html+='<table>';
 			var created=window.unixTimeToString(field.options.timestamp,true);
 			var creator = "unknown";
 
 			if (fd.creator) { creator = fd.creator; }
 
 			// <mark class="nickname" style="cursor:pointer; color:#03DC03">zfonz</mark>
-			html+='<tr><td><b>Creator</b></td><td><mark class="nickname" style="cursor:pointer; color:' + window.COLORS[window.teamStringToId(field.options.data.team)] + '">'+creator+'</mark></td></tr>';
+					html+='<table>';
+	
+                    html+='<tr><td><b>Creator</b></td><td><mark class="nickname" style="cursor:pointer; color:' + window.COLORS[window.teamStringToId(field.options.data.team)] + '">'+creator+'</mark></td></tr>';
 
 			html+='<tr><td><b>Created</b></td><td>'+created+'</td></tr>';
 			html+='<tr><td><b>Area</b></td><td>'+fd.area.toFixed(3)+' km^2</td></tr>';
@@ -1076,18 +1083,18 @@ window.plugin.muScraper = {
 			// console.log("displayField::#portaldetails");
 
 			$('#portaldetails')
-				.attr('class', TEAM_TO_CSS[teamStringToId(field.options.data.team)])
-				.html('')
-				.append(
-				$('<h3>').attr({"class": 'title'}).text(title),
-				$('span').attr({
-					"class": 'close',
-					"title": 'Close [w]',
-					"onclick":'renderPortalDetails(null);',
-					"accesskey": 'w'
-				}).text('X'),
-				html
-				);
+                            .attr('class', TEAM_TO_CSS[teamStringToId(field.options.data.team)])
+                            .html('')
+                            .append(
+                                $("<h3>").attr({"class": 'title'}).text(title),
+                                $("#span").attr({
+                                    "class": 'close',
+                                    "title": 'Close [w]',
+                                    "onclick":'renderPortalDetails(null);',
+                                    "accesskey": 'w'
+                                }).text('X'),
+                                html
+                            );
 			//console.log("displayField::post mu_use");
 			if (title === 'Mu: unknown')
 				$.post(
@@ -1138,6 +1145,7 @@ window.plugin.muScraper = {
 		}
 		$('#hz_field').html('Pushing.. '+window.plugin.muScraper.hz_fields.length);
 		console.log('muGrabber - Pushing fields - ' + window.plugin.muScraper.hz_fields.length);
+                console.log('muGrabber - hz_url' + window.plugin.muScraper.hz_url);
 		//console.log(window.plugin.muScraper.hz_fields);
 		$.post(window.plugin.muScraper.hz_url, {apikey: window.PLAYER.apikey, agent: window.PLAYER.nickname, fields: JSON.stringify(window.plugin.muScraper.hz_fields)} )
 			.fail(function() {
@@ -1157,8 +1165,9 @@ window.plugin.muScraper = {
 				window.plugin.muScraper.displayField(window.plugin.muScraper.selectedField);
 	},
 	pushField: function(f) {
-		console.log("push Field: " + JSON.stringify(f));
+		//console.log("push Field: " + JSON.stringify(f));
 		window.plugin.muScraper.hz_fields.push(f);
+                console.log("hz_fields.length="+window.plugin.muScraper.hz_fields.length);
 		$('#hz_field').html(window.plugin.muScraper.hz_fields.length);
 	},
 	matchFieldsAndComms: function() {

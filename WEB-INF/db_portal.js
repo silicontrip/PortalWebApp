@@ -45,13 +45,13 @@
 		},
 		portalAdded: function(data)
 		{
-			console.log (">>> portalAdded");
+			//console.log (">>> portalAdded");
 			var portal = data.portal.options.data;
 			portal.guid = data.portal.options.guid;
 
 			window.plugin.dbPortalGrabber.hz_portals.push(portal);
 			window.$('#hz_portals').html(window.plugin.dbPortalGrabber.hz_portals.length);
-			console.log ("<<< portalAdded");
+			//console.log ("<<< portalAdded");
 		},
 		selectPortal: function(e){
 			window.renderPortalDetails (e.target.guid);

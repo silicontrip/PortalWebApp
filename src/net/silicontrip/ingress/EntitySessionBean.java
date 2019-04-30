@@ -8,18 +8,27 @@
 package net.silicontrip.ingress;
 
 import java.util.ArrayList;
+import java.util.Collection;
 
-import javax.ejb.Stateless;
 import com.google.common.geometry.*;
+import javax.ejb.Stateless;
 import javax.ejb.EJB;
 import javax.ejb.LocalBean;
+import javax.persistence.EntityManager;
+import javax.persistence.LockModeType;
+import javax.persistence.PersistenceContext;
+import javax.persistence.Query;
 
 @Stateless
 @LocalBean
 public class EntitySessionBean {
 
+	// migrate away from DAO/SQL
 	@EJB
 	private SQLEntityDAO dao;
+
+        @PersistenceContext(unitName="net.silicontrip.ingress.persistence")
+        private EntityManager em;
 
 	
 /**
@@ -82,7 +91,9 @@ public class EntitySessionBean {
 	
 	public ArrayList<Link> getLinkInRect(S2LatLngRect rect)
 	{
-		ArrayList<Link> all  = dao.getLinkAll();
+
+
+		Collection<Link> all  = getLinkAll();
 		ArrayList<Link> ret = new ArrayList<Link>();
 		// should I just copy the getAll method to save memory.
 		for (Link l : all)
@@ -93,10 +104,22 @@ public class EntitySessionBean {
 		}
 		return ret;
 	}
-	public ArrayList<Link> getLinkAll()
+	public Collection<Link> getLinkAll()
 	{
-			return dao.getLinkAll();
+		Query queryAllLink = em.createNamedQuery("Link.findAll");
+		return queryAllLink.getResultList();
+	}
+
+	public Link getLinkGuid(String guid)
+	{
+		return em.find(Link.class, guid);
 	}
 	
+	public void removeLink(Link link) { em.remove(link); }	
+	public void insertLink(Link link) { em.persist(link); }	
+	public boolean existsLinkGuid(String guid)
+	{
+		return (getLinkGuid(guid)!=null);
+	}
 
 }

@@ -26,8 +26,11 @@ activationConfig = {
 
 public class LinkQueueMDB implements MessageListener {
 
+	//@EJB
+	//private SQLEntityDAO dao;
+
 	@EJB
-	private SQLEntityDAO dao;
+	private EntitySessionBean ent;
 	
     private static final Map<Integer, Integer> ZoomDistance = new HashMap<Integer, Integer>() 
 	{
@@ -87,13 +90,12 @@ public class LinkQueueMDB implements MessageListener {
 			tm= textMessage.getText();
 			//System.out.println("LinkQueue: "+ tm);
 			JSONObject pobj = new JSONObject (textMessage.getText());
-			//SQLEntityDAO dao = new SQLEntityDAO();
 			if (pobj.has("delete"))
 			{
 				//System.out.println("delete");
 
 				// check zoom 
-				Link l = dao.getLinkGuid(pobj.getString("guid"));
+				Link l = ent.getLinkGuid(pobj.getString("guid"));
 				// hmm how do we have a link to delete that isn't in the DB?
 				if (l != null) {
 					// get link length
@@ -101,12 +103,12 @@ public class LinkQueueMDB implements MessageListener {
 					if ( length > ZoomDistance.get(pobj.getInt("zoom")))
 					{
 						System.out.println("DELETE: " + tm);
-						dao.deleteLink(pobj.getString("guid")); // new logic being tested, appears to work very well
+						ent.removeLink(l);
 					}
 				}
 			} else if (pobj.has("team")) {
 				
-				if (dao.existsLink(pobj.getString("guid")))
+				if (ent.existsLinkGuid(pobj.getString("guid")))
 					return;
 				
 
@@ -127,19 +129,20 @@ public class LinkQueueMDB implements MessageListener {
 				{
 					//do we even check that the link exists?
 					System.out.println("INSERT: " + tm);
-					dao.insertLink(
+					Link li = new Link(
 						pobj.getString("guid"),
 						pobj.getString("dGuid"), pobj.getLong("dLatE6"), pobj.getLong("dLngE6"),
 						pobj.getString("oGuid"), pobj.getLong("oLatE6"), pobj.getLong("oLngE6"),
 						pobj.getString("team"));
+					ent.insertLink(li);
 				}
 			} else if (pobj.has("purge")) { // old logic. not sure if this will be used going forward
-				dao.purgeLink();
+				//dao.purgeLink();  // deprecated.
 			}
         } catch (JMSException e) {
             System.out.println(
               "Error while trying to consume messages: " + e.getMessage());
-        } catch (EntityDAOException | JSONException e) {
+        } catch (JSONException e) {
 			System.out.println("LinkQueueMDB::"+tm);
 			e.printStackTrace();
 		} catch (Exception e) {

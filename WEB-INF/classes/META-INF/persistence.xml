@@ -3,7 +3,7 @@
   <persistence-unit name="net.silicontrip.ingress.persistence" transaction-type="JTA">
     <jta-data-source>jdbc/IngressResource</jta-data-source>
     <class>net.silicontrip.ingress.CellMUEntity</class>
-    <class>net.silicontrip.ingress.Links</class>
+    <class>net.silicontrip.ingress.Link</class>
     <exclude-unlisted-classes>true</exclude-unlisted-classes>
     <properties>
         <property name="eclipselink.target-database" value="MySQL"/>

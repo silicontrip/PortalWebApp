@@ -4,6 +4,7 @@ import org.json.*;
 import com.google.common.geometry.*;
 
 import java.util.ArrayList;
+import java.util.Collection;
 
 import javax.servlet.http.*;
 import javax.servlet.*;
@@ -63,7 +64,7 @@ public class LinkServlet extends HttpServlet {
 			System.out.println("<- links: " + searchRegion);
 		}
 
-		ArrayList<Link> linkList; // no not that kind of link list
+		Collection<Link> linkList; // no not that kind of link list
 
 		if (searchRegion != null) 
 			linkList = entBean.getLinkInRect(searchRegion);

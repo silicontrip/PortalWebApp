@@ -39,8 +39,8 @@ public class CellMUEntity implements Serializable {
 	@NotNull
 
 	private Long id;
+	
 	@Basic(optional = false)
-
 	@NotNull
 	@Column(name = "mu_low")
 	private double min;

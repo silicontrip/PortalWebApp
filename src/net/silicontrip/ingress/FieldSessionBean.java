@@ -210,6 +210,8 @@ public class FieldSessionBean {
 		// em.getTransaction().begin(); // avoid concurrency issues.
 		final S2CellUnion cells = getCellsForField(thisField);
 
+		// lock cells
+		
 		for (S2CellId cellOuter: cells)
 		{
 			StringBuilder cellLog = new StringBuilder();
@@ -289,13 +291,7 @@ public class FieldSessionBean {
 				System.out.println("NEW " + cellLog.toString() + " https://www.ingress.com/intel?z=15&ll="+cellp.latDegrees()+","+cellp.lngDegrees());
 
 				modifiedCells.add(cellOuter);
-				/*				try{
-				initCellQueue();
-				Message msg = queueSession.createTextMessage(cellOuter.toToken());
-				sender.send(msg);
-				} catch (JMSException | NamingException e) {
-				System.out.println(e.getMessage());
-				}*/
+
 			}
 			else
 			{
@@ -327,6 +323,9 @@ public class FieldSessionBean {
 			}
 		}
 		//	em.getTransaction().commit(); // I hope this works. 
+		
+		// unlock cells
+		
 		// it didn't work, it threw some error about being incompatible with JTA
 		// but I really think I need to control the transaction 
 		

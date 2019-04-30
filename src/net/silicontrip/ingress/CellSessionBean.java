@@ -12,6 +12,7 @@ import com.google.common.geometry.*;
 import javax.ejb.LocalBean;
 import javax.ejb.Stateless;
 import javax.persistence.EntityManager;
+import javax.persistence.LockModeType;
 import javax.persistence.PersistenceContext;
 import net.silicontrip.UniformDistribution;
 
@@ -107,7 +108,7 @@ public class CellSessionBean {
 		return intPoly.getArea() * 6367 * 6367 ;
 	}
 	
-				/**
+/**
    * This will return the mu uniform distribution for
    * the requested S2CellId.  The S2CellId HashMap is quite small
    * so is cached here for speed, rather than querying the DAO each time.
@@ -149,5 +150,35 @@ public class CellSessionBean {
                 return null;
         }
 
+			/**
+   * This will insert or update the mu uniform distribution for
+   * the requested S2CellId.  
+   * @param cell The S2CellId for which the MU is required
+   * @param ud UniformDistribution of the MU. 
+   * @return true if the cell was updated.
+   * 
+   */
+
+	public boolean putMU (S2CellId cell, UniformDistribution ud) {
+	
+		CellMUEntity cellmu = em.find(CellMUEntity.class, cell.id(),LockModeType.PESSIMISTIC_WRITE);
+		
+		if (cellmu==null)
+		{				
+			CellMUEntity cellmuNew = new CellMUEntity();
+			cellmuNew.setId(cell);
+			cellmuNew.setDistribution(ud);
+			em.persist(cellmuNew);
+			return true;
+		} else {
+			UniformDistribution oldMU = new UniformDistribution(cellmu.getDistribution());
+			if (cellmu.refine(ud)){  // this only returns true if the cell is modified.
+					em.merge(cellmu);
+					return true;
+			}
+		}
+		return false;
+	}
+	
 	
 }

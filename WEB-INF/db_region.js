@@ -824,7 +824,10 @@ window.plugin.muScraper = {
 
 		window.addHook('publicChatDataAvailable',window.plugin.muScraper.searchComms);
 		window.addHook('fieldAdded',window.plugin.muScraper.readField);
-		window.addHook('mapDataRefreshEnd' , window.plugin.muScraper.matchFieldsAndComms);
+		window.addHook('mapDataRefreshEnd' , function() {
+                       window.plugin.muScraper.matchFieldsAndComms();
+                       window.plugin.muScraper.updateCells();
+                });
 
 		$('#toolbox').append('<a onclick="window.plugin.muScraper.layerReport();return false;" >Layer Report</a>');
 		$('#toolbox').append('<a onclick="window.plugin.muScraper.findSuitableFields();return false;" >Find Suitable Fields</a>');
@@ -1595,7 +1598,6 @@ window.plugin.muScraper = {
 
 			var cellStr = cell.toId();
 
-
 			if (!seenCells[cellStr]) {
 				// cell not visited - flag it as visited now
 				seenCells[cellStr] = cell;
@@ -1625,10 +1627,13 @@ window.plugin.muScraper = {
 			drawCellAndNeighbors(cell);
 			// can do mu request pre-caching here.
 			var reqMu={};
-			for (var scell in seenCells) if (!window.plugin.muScraper.cellMu[scell]) reqMu[scell]=true;
+			// for (var scell in seenCells) if (!window.plugin.muScraper.cellMu[scell]) reqMu[scell]=true;
 
 			if (window.plugin.muScraper.muSubmit) {
-				var celllist = JSON.stringify(Object.keys(reqMu));
+				//var celllist = JSON.stringify(Object.keys(reqMu));
+                                // don't cache read from server. 
+                                var celllist = JSON.stringify(Object.keys(seenCells));
+
 				//console.log(celllist);
 				$.post(window.plugin.muScraper.mu_url, {apikey: window.PLAYER.apikey, agent: window.PLAYER.nickname, mu:celllist},
 					   function(dd) {

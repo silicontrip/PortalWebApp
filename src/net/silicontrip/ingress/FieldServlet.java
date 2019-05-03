@@ -22,6 +22,9 @@ public class FieldServlet extends HttpServlet {
 
 	@EJB
 	private CellSessionBean cellBean;
+
+	@EJB
+	private MUSessionBean muBean;
 	
 	private final InitialContext ctx = null;
 	//private MUCellDAO cdao = null;
@@ -46,7 +49,7 @@ public class FieldServlet extends HttpServlet {
 		for (Object cobj : cells)
 		{
 			S2CellId cell = S2CellId.fromToken((String)cobj);
-			UniformDistribution mu = cellBean.getMU(cell);
+			UniformDistribution mu = muBean.getMU(cell);
 			JSONArray jmu = new JSONArray();
 			if (mu != null)
 			{

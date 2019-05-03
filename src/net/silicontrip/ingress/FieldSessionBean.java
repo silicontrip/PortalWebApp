@@ -9,11 +9,13 @@
 package net.silicontrip.ingress;
 
 import com.google.common.geometry.*;
+import com.mysql.jdbc.exceptions.MySQLIntegrityConstraintViolationException;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import javax.ejb.EJB;
 import javax.ejb.LocalBean;
 import javax.ejb.Stateless;
@@ -27,10 +29,14 @@ import javax.jms.QueueSession;
 import javax.jms.Session;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
+import javax.persistence.LockModeType;
+import javax.persistence.Query;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
+import javax.persistence.PersistenceException;
 import net.silicontrip.AreaDistribution;
 import net.silicontrip.UniformDistribution;
+import net.silicontrip.UniformDistributionException;
 import static net.silicontrip.ingress.CellSessionBean.getCellsForField;
 import static net.silicontrip.ingress.CellSessionBean.getS2Polygon;
 
@@ -50,7 +56,7 @@ public class FieldSessionBean {
 	private QueueSender sender = null;
 	
 	@EJB
-	private CellSessionBean cellBean;
+	private MUSessionBean muBean;
 	
 	@EJB
 	private SQLEntityDAO dao;
@@ -96,8 +102,12 @@ public class FieldSessionBean {
 
 			intPoly.initToIntersection(thisField, cellPoly);
 			AreaDistribution ad = new AreaDistribution();
+			ad.mu = null;
 			ad.area = intPoly.getArea() * 6367 * 6367 ;
-			ad.mu = cellBean.getMU(cell);
+			if (cell == null) 
+				System.out.println("null cell id");
+			else
+				ad.mu = muBean.getMU(cell);
 
 			// System.out.println("getIntersectionMU: " + cell.toToken() + ": " + ad.mu);
 			
@@ -124,6 +134,7 @@ public class FieldSessionBean {
 	public void submitField(Field field, boolean valid)
 	{
 		// System.out.println(">>> submitField: " );
+		// move to JPA
 		try {
 		dao.insertField(field.getCreator(),
 					field.getAgent(),
@@ -145,7 +156,6 @@ public class FieldSessionBean {
 		dao.insertCellsForField(field.getGuid(),fieldCells);
 		// too easy?
 		// should this be here or in the caller?
-		//System.out.println("Valid for process? " + valid);
 		if (valid)
 		{
 			//System.out.println("Process Field...");
@@ -209,9 +219,27 @@ public class FieldSessionBean {
 
 		// em.getTransaction().begin(); // avoid concurrency issues.
 		final S2CellUnion cells = getCellsForField(thisField);
+/*
+		HashSet <String> cellCollection= new HashSet<>();
+	
+
+		for (S2CellId id : cells) 
+			cellCollection.add(id.toToken());
 
 		// lock cells
-		
+	
+		Map<String, Object> properties = new HashMap<>(); 
+		properties.put("javax.persistence.lock.timeout", 1000L); 
+
+		Query queryUnionCells = em.createNamedQuery("CellMUEntity.findByUnion");
+		queryUnionCells.setParameter("cellUnion", cellCollection);
+		queryUnionCells.setLockMode(LockModeType.PESSIMISTIC_WRITE);	
+		List<CellMUEntity> muCells =(List<CellMUEntity>) queryUnionCells.getResultList();
+
+		HashMap<S2CellId,CellMUEntity> keyCells = new HashMap<>();
+		for (CellMUEntity ce : muCells)
+			keyCells.put(ce.getS2CellId(),ce);
+*/
 		for (S2CellId cellOuter: cells)
 		{
 			StringBuilder cellLog = new StringBuilder();
@@ -225,14 +253,8 @@ public class FieldSessionBean {
 				{
 					// System.out.println("i<->o: " + cellOuter.toToken() + " - "+ cellInner.toToken());
 					double areaInner = CellSessionBean.getIntersectionArea(thisField,cellInner);
-					CellMUEntity cellmu = em.find(CellMUEntity.class, cellInner.id());
-					UniformDistribution cellInnerMU = null;
-					if (cellmu!=null)
-						cellInnerMU = cellmu.getDistribution();
-					/*
-					else
-						System.out.println(cellInner.toToken() + ": not found");
-					*/
+					UniformDistribution cellInnerMU = muBean.getMU(cellInner); // em.find(CellMUEntity.class, cellInner.id());
+
 					cellLog.append(" - ");
 					cellLog.append(areaInner);
 					cellLog.append(" x ");
@@ -261,65 +283,25 @@ public class FieldSessionBean {
 			mus.clampLower(0.0);
 			cellLog.insert(0,mus);
 
-			CellMUEntity cellmu = em.find(CellMUEntity.class, cellOuter.id());
-			/*
-			UniformDistribution cellOuterMU = null;
-			if (cellmu!=null)
-				cellOuterMU = cellmu.getDistribution();
-			*/
-			//UniformDistribution cellOuterMU = getMU(cellOuter);
+			UniformDistribution cellOuterMU = muBean.getMU(cellOuter);
+
 			cellLog.insert(0," => ");
-			if (cellmu==null)
+			if (cellOuterMU==null)
 				cellLog.insert(0,"null");
 			else
-				cellLog.insert(0,cellmu.getDistribution().toString());
+				cellLog.insert(0,cellOuterMU.toString());
 			cellLog.insert(0,": ");
 			cellLog.insert(0,cellOuter.toToken());
-			//System.out.println(cellLog.toString());
 
-			// refine UD:cello with mus
-
-			if (cellmu == null)
-			{
-				//cellOuterMU = mus;
-				CellMUEntity cellmuNew = new CellMUEntity();
-				cellmuNew.setId(cellOuter);
-				cellmuNew.setDistribution(mus);
-				em.persist(cellmuNew);
-				S2LatLng cellp = cellOuter.toLatLng();
-				//System.out.println(cellLog.toString());
-				System.out.println("NEW " + cellLog.toString() + " https://www.ingress.com/intel?z=15&ll="+cellp.latDegrees()+","+cellp.lngDegrees());
-
-				modifiedCells.add(cellOuter);
-
-			}
-			else
-			{
-				try {
-					UniformDistribution oldMU = new UniformDistribution(cellmu.getDistribution());
-					if (cellmu.refine(mus)){  // this only returns true if the cell is modified.
-						//cellmu.setDistribution();
-						S2LatLng cellp = cellOuter.toLatLng();
-						System.out.println("UPDATE " + cellLog.toString() + " https://www.ingress.com/intel?z=15&ll="+cellp.latDegrees()+","+cellp.lngDegrees());
-						em.merge(cellmu);
-						modifiedCells.add(cellOuter);
-						/*						
-						initCellQueue();
-						Message msg = queueSession.createTextMessage(cellOuter.toToken());
-						sender.send(msg);*/
-						
-						// add cell to modified array
-						// nah, just dump it straight on the cell queue. 
-						//  a xenomorph may be involved.
-					}
-				} catch (ArithmeticException ae) {
-					// field error
-					System.out.println(ae.getMessage() + " " + cellLog.toString());
-					// something something, out of range error
-					// mark field as invalid 
-				} catch (Exception e) {
-					// we should throw something?
-				}
+			try {
+				if(muBean.refineMU(cellOuter,mus))
+					modifiedCells.add(cellOuter);
+			} catch (UniformDistributionException ae) {
+				// field error
+				System.out.println(ae.getMessage() + " " + cellLog.toString());
+				// something something, out of range error
+				// mark field as invalid 
+				// logic to find invalid field for cell
 			}
 		}
 		//	em.getTransaction().commit(); // I hope this works. 

@@ -15,44 +15,67 @@ import javax.persistence.NamedQueries;
 import javax.persistence.NamedQuery;
 import javax.persistence.Table;
 import javax.persistence.Transient;
+import javax.persistence.UniqueConstraint;
 import javax.validation.constraints.NotNull;
 import javax.xml.bind.annotation.XmlRootElement;
 import net.silicontrip.UniformDistribution;
+import net.silicontrip.UniformDistributionException;
 
 /**
  *
  * @author mark
  */
 @Entity
-@Table(name = "mucell")
+@Table(name = "mucell",uniqueConstraints={@UniqueConstraint(columnNames={"cellid"})})
 @XmlRootElement
 @NamedQueries({
 	@NamedQuery(name = "CellMUEntity.findAll", query = "SELECT m FROM CellMUEntity m"),
-	@NamedQuery(name = "CellMUEntity.findByCellid", query = "SELECT m FROM CellMUEntity m WHERE m.id = :cellid")
+	@NamedQuery(name = "CellMUEntity.findByCellid", query = "SELECT m FROM CellMUEntity m WHERE m.id = :cellid"),
+	@NamedQuery(name = "CellMUEntity.findByUnion", query = "SELECT m from CellMUEntity m WHERE m.id in :cellUnion")
 })
 public class CellMUEntity implements Serializable {
 
 	private static final long serialVersionUID = 1L;
 	@Id
-	@Column(name = "cellid")
+	@Column(name = "cellid",unique=true)
 	@Basic(optional = false)
 	@NotNull
-
-	private Long id;
+	private String id;
 	
 	@Basic(optional = false)
 	@NotNull
 	@Column(name = "mu_low")
-	private double min;
+	private double min = 0;
 	@Basic(optional = false)
 
 	@NotNull
 	@Column(name = "mu_high")
-	private double max;
+	private double max = Double.MAX_VALUE;
 	
 	// @Transient private UniformDistribution distribution;
 	
 	@Transient private S2CellId s2id = null;
+
+	public CellMUEntity() { super(); }
+
+	public CellMUEntity(S2CellId token)
+	{
+		super();
+		setId(token);
+	}
+
+	public CellMUEntity (S2CellId id, UniformDistribution ud)
+	{
+		super();
+		setDistribution(ud);
+		setId(id);
+	}
+
+	public CellMUEntity(String token)
+	{
+		super();
+		setId(token);
+	}
 	
 	public double getMin() {
 		return min;
@@ -73,28 +96,24 @@ public class CellMUEntity implements Serializable {
 		this.max = max;
 	}
 
-	public Long getId() {
+	public String getId() {
 		return id;
 	}
 
-	public void setId(Long id) {
+	public void setId(String id) {
 		this.id = id;
-		this.s2id = new S2CellId(id);
-	}
-
-	public void setId(String token) {
-		this.s2id = S2CellId.fromToken(token);
-		this.id = s2id.id();
+		this.s2id =  S2CellId.fromToken(id);
 	}
 
 	public void setId(S2CellId cellid) {
 		this.s2id = cellid;
-		this.id = s2id.id();
+		this.id = s2id.toToken();
+
 	}
 
 	public S2CellId getS2CellId() {
 		if (s2id == null) {
-			s2id = new S2CellId(id);
+			s2id = S2CellId.fromToken(id);
 		}
 		return s2id;
 	}
@@ -104,7 +123,7 @@ public class CellMUEntity implements Serializable {
 		return new UniformDistribution(min,max);
 	}
 
-	public boolean refine (UniformDistribution ud)
+	public boolean refine (UniformDistribution ud) throws UniformDistributionException
 	{
 		UniformDistribution thisDistribution = getDistribution();
 		if (thisDistribution.refine(ud))

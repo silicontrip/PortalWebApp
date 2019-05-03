@@ -351,9 +351,9 @@ public class UniformDistribution implements Serializable {
 	 *
 	 * @return boolean indicating if this UD was improved
 	 *
-	 * @throws ArithmeticException if there was no overlap between the two UD
+	 * @throws UniformDistributionException if there was no overlap between the two UD
 	 */
-	public boolean refine (UniformDistribution a) throws ArithmeticException { 
+	public boolean refine (UniformDistribution a) throws UniformDistributionException { 
 
 		// sanity check
 
@@ -379,7 +379,7 @@ public class UniformDistribution implements Serializable {
 					changed=true;
 			}
 		} else {
-			throw new ArithmeticException( "REFINE Sanity check Exception : " + toString() + " x " + a);
+			throw new UniformDistributionException( "REFINE Sanity check Exception : " + toString() + " x " + a);
 		}
 		return changed;
 	}

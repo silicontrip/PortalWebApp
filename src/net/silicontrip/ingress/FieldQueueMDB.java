@@ -27,16 +27,22 @@ public class FieldQueueMDB implements MessageListener {
 	@EJB
 	private FieldSessionBean fieldBean;
 
+	@EJB
+	private CellSessionBean cellBean;
+
 	@Override
 	public void onMessage(Message message) {
 		TextMessage textMessage = (TextMessage) message;
 		String tm = "";
+		boolean refield = false;
 		try {
 			tm= textMessage.getText();
 			JSONObject pobj = new JSONObject (textMessage.getText());
 
 			if (pobj.has("mu")) {
 			//System.out.println("field has mu");
+
+				refield = pobj.has("refield");
 
 				// unwrap the JSON message
 
@@ -61,7 +67,8 @@ public class FieldQueueMDB implements MessageListener {
 
 				//System.out.println("Check for duplicates");
 				
-				if (fieldBean.hasFieldGuid(guid))
+				
+				if (!refield && fieldBean.hasFieldGuid(guid))
 				{
 				//  System.out.println("field exists: " + guid);
 					return;
@@ -85,6 +92,8 @@ public class FieldQueueMDB implements MessageListener {
 				// check for validity
 				// EJB???
 				S2Polygon S2Field = fi.getS2Polygon();
+
+				//cellBean.createCellsForField(S2Field);
 
 				boolean[] valid = new boolean[mu.length()];
 				
@@ -116,8 +125,14 @@ public class FieldQueueMDB implements MessageListener {
 					if (mu.length() == 1 || (valid[i] && (valid[0] ^ valid[1])))
 					{
 						// above business logic decribed in 1 if statement
-						fieldBean.submitField(fi,valid[i]);
 						submit = true;
+						if (refield)
+						{
+							//System.out.println("//IUIIIII//Resubmit: " + fi );
+							fieldBean.processField(fi);
+						} else {
+							fieldBean.submitField(fi,valid[i]);
+						} 
 					}
 				}
 				// maybe set up an invalid table with split MU
@@ -130,6 +145,7 @@ public class FieldQueueMDB implements MessageListener {
 		} catch (JMSException e) {
 			System.out.println( "Error while trying to consume messages: " + e.getMessage());
 		} catch (Exception e) {
+			System.out.println("FQB: exception");
 			System.out.println(tm);
 			e.printStackTrace();
 		}

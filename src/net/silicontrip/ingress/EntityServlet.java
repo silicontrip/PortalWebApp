@@ -138,8 +138,16 @@ public class EntityServlet extends HttpServlet {
 				JSONArray fa = new JSONArray(req.getParameter("fields"));
 				insertAgent(fa,userName);
 				jsonResponse.put("fields_submitted",submit((Queue)ctx.lookup("jms/fieldQueue"),fa));
-			} else {
 			}
+			if (req.getParameter("refields") != null)
+			{
+				JSONArray fa = new JSONArray(req.getParameter("refields"));
+				insertAgent(fa,userName);
+				for (Object ent : fa)
+					((JSONObject) ent).put("refield",true);
+				jsonResponse.put("fields_resubmitted",submit((Queue)ctx.lookup("jms/fieldQueue"),fa));
+			}
+			
 
 			//System.out.println(jsonResponse.toString());
 

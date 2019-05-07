@@ -342,7 +342,18 @@ public class UniformDistribution implements Serializable {
 	
 		return new UniformDistribution(l,u);
 	}
-
+	
+	/**
+	 * returns true if a refine operation will pass without an exception
+	 * 
+	 * @param a the uniformDistribution to compare
+	 * @return true if the uniformdistributions overlap
+	 */
+	public boolean intersects (UniformDistribution a)
+	{
+		return ((upper > a.getUpper() || upper > a.getLower()) && ( lower < a.getLower() || lower < a.getUpper()));
+	}
+	
 	/**
 	 * Performs an intersection with another Uniform Distribution and updates this one in place
 	 * The idea is that improves the accuracy of the current UD

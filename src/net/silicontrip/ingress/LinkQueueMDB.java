@@ -145,10 +145,10 @@ public class LinkQueueMDB implements MessageListener {
         } catch (JSONException e) {
 			System.out.println("LinkQueueMDB::"+tm);
 			e.printStackTrace();
-		} catch (Exception e) {
+	} catch (Exception e) {
 			System.out.println("LinkQueueMDBException: " + e.getMessage());
 			System.out.println(exceptionLog);
 			e.printStackTrace();
-		}
-    }
+	}
+	}
 }

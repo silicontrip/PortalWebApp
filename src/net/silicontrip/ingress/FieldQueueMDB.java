@@ -30,6 +30,35 @@ public class FieldQueueMDB implements MessageListener {
 	@EJB
 	private CellSessionBean cellBean;
 
+	private Field makeField (JSONObject pobj)
+	{
+		// unwrap the JSON message
+
+		JSONObject options = pobj.getJSONObject("options");
+		JSONArray ent = options.getJSONArray("ent");
+		JSONArray entPoints = ent.getJSONArray(2);
+		JSONArray points = options.getJSONObject("data").getJSONArray("points");
+		JSONObject p1 = points.getJSONObject(0);
+		JSONObject p2 = points.getJSONObject(1);
+		JSONObject p3 = points.getJSONObject(2);
+
+		String guid = pobj.getString("guid");
+				
+
+		return new Field (
+			pobj.getString("creator"),
+			pobj.getString("agent"),
+			-1, // place holder
+			guid,
+			options.getInt("timestamp"),
+			entPoints.getString(1),
+			p1.getString("guid"),p1.getLong("latE6"),p1.getLong("lngE6"),
+			p2.getString("guid"),p2.getLong("latE6"),p2.getLong("lngE6"),
+			p3.getString("guid"),p3.getLong("latE6"),p3.getLong("lngE6")
+		);
+	}
+
+
 	@Override
 	public void onMessage(Message message) {
 		TextMessage textMessage = (TextMessage) message;
@@ -43,24 +72,9 @@ public class FieldQueueMDB implements MessageListener {
 			//System.out.println("field has mu");
 
 				refield = pobj.has("refield");
-
-				// unwrap the JSON message
-
-				JSONObject options = pobj.getJSONObject("options");
-				JSONArray ent = options.getJSONArray("ent");
-				JSONArray entPoints = ent.getJSONArray(2);
-				JSONArray points = options.getJSONObject("data").getJSONArray("points");
-				JSONObject p1 = points.getJSONObject(0);
-				JSONObject p2 = points.getJSONObject(1);
-				JSONObject p3 = points.getJSONObject(2);
-
-				String guid = pobj.getString("guid");
-				
-				// PLUGIN isn't sending arrays yet.
-				//JSONArray mu =  new JSONArray();
-				//mu.put(pobj.getInt("mu"));
-				// or is it?
 				JSONArray mu = pobj.getJSONArray("mu");
+
+				Field fi = makeField(pobj);
 
 				// perform business logic...
 				// check for duplicates
@@ -68,7 +82,7 @@ public class FieldQueueMDB implements MessageListener {
 				//System.out.println("Check for duplicates");
 				
 				
-				if (!refield && fieldBean.hasFieldGuid(guid))
+				if (!refield && fieldBean.hasFieldGuid(fi.getGuid()))
 				{
 				//  System.out.println("field exists: " + guid);
 					return;
@@ -77,17 +91,6 @@ public class FieldQueueMDB implements MessageListener {
 
 				//  System.out.println("new Field: " + guid);
 
-				Field fi = new Field (
-					pobj.getString("creator"),
-					pobj.getString("agent"),
-					-1, // place holder
-					guid,
-					options.getInt("timestamp"),
-					entPoints.getString(1),
-					p1.getString("guid"),p1.getLong("latE6"),p1.getLong("lngE6"),
-					p2.getString("guid"),p2.getLong("latE6"),p2.getLong("lngE6"),
-					p3.getString("guid"),p3.getLong("latE6"),p3.getLong("lngE6")
-				);
 				
 				// check for validity
 				// EJB???
@@ -128,7 +131,7 @@ public class FieldQueueMDB implements MessageListener {
 						submit = true;
 						if (refield)
 						{
-							//System.out.println("//IUIIIII//Resubmit: " + fi );
+							//System.out.println("Resubmit: " + fi );
 							fieldBean.processField(fi);
 						} else {
 							fieldBean.submitField(fi,valid[i]);
@@ -138,9 +141,9 @@ public class FieldQueueMDB implements MessageListener {
 				// maybe set up an invalid table with split MU
 				if (!submit)
 					if(mu.length()==2)
-						System.out.println ("not Submitting field: " + guid + "MU: [" + valid[0] + ": " +mu.getLong(0) + ", "+valid[1] + ": "+mu.getLong(1)+"]");
+						System.out.println ("not Submitting field: " + fi.getGuid() + "MU: [" + valid[0] + ": " +mu.getLong(0) + ", "+valid[1] + ": "+mu.getLong(1)+"]");
 					else
-						System.out.println ("not Submitting field: " + guid + "MU: " + valid[0] + ": " +mu.getLong(0));
+						System.out.println ("not Submitting field: " + fi.getGuid() + "MU: " + valid[0] + ": " +mu.getLong(0));
 			} 
 		} catch (JMSException e) {
 			System.out.println( "Error while trying to consume messages: " + e.getMessage());

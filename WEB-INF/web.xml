@@ -29,6 +29,10 @@
 		<servlet-name>JavaScriptServlet</servlet-name>
 		<servlet-class>net.silicontrip.ingress.JSServlet</servlet-class>
 	</servlet>
+	<servlet>
+		<servlet-name>LayerServlet</servlet-name>
+		<servlet-class>net.silicontrip.ingress.LayerServlet</servlet-class>
+	</servlet>
 	<servlet-mapping>
 		<servlet-name>PortalServlet</servlet-name>
 		<url-pattern>/getPortals</url-pattern>
@@ -48,5 +52,9 @@
 	<servlet-mapping>
 		<servlet-name>JavaScriptServlet</servlet-name>
 		<url-pattern>/loader</url-pattern>
+	</servlet-mapping>
+	<servlet-mapping>
+		<servlet-name>LayerServlet</servlet-name>
+		<url-pattern>/layer</url-pattern>
 	</servlet-mapping>
 </web-app>

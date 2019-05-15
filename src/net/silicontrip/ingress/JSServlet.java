@@ -31,10 +31,12 @@ public class JSServlet extends HttpServlet {
 			System.out.println("user: " + userName + " key: "+apiKey);
 					
 			
-			String jsPath[] = new String[3];
-			jsPath[0] = "/WEB-INF/db_portal.js";
-			jsPath[1] = "/WEB-INF/db_edge.js";
-			jsPath[2] = "/WEB-INF/db_region.js";
+			String[] jsPath = new String[]{
+				"/WEB-INF/db_portal.js",
+				"/WEB-INF/db_edge.js",
+				"/WEB-INF/db_region.js",
+				"/WEB-INF/db_layer.js",
+			};
 
 			String baseUrl = "https://quadrant.silicontrip.net/portalApi/";
 			if (req.getRemoteAddr().startsWith("10.15.240.")) 

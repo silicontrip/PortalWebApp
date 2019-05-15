@@ -39,6 +39,7 @@ public interface EntityDAO {
 
 //PORTALS
 	//public ArrayList<Portal> getPortalsInRegion (S2Region reg) throws EntityDAOException;
+	public ArrayList<Portal> getPortalsAll() throws EntityDAOException;
 	public ArrayList<Portal> getPortalsInRect (S2LatLngRect bound) throws EntityDAOException;
 	//public S2LatLng getPortalLocation (String s) throws EntityDAOException;
 	public S2LatLng getPortalLocationFromTitle (String title) throws EntityDAOException;

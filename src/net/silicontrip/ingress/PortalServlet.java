@@ -45,7 +45,10 @@ public class PortalServlet extends HttpServlet {
 
 		if (pr != null && p1 != null)
 		{
-			S1Angle rangeAngle =  S1Angle.radians(Double.parseDouble(pr) / 6367.0);
+			double radius = Double.parseDouble(pr) ;
+			System.out.println("Radius: " + radius);
+			if (radius<0.0001) radius=0.0001; // because 0 doesn't work
+			S1Angle rangeAngle =  S1Angle.radians(radius / 6367.0);
 			searchRegion = S2Cap.fromAxisAngle(p1.toPoint(),rangeAngle);
 		}
 
@@ -61,9 +64,12 @@ public class PortalServlet extends HttpServlet {
 		if (p1 !=null && p2 !=null)
 			searchRegion = S2LatLngRect.fromPointPair(p1,p2);
 
-		if (searchRegion != null) {
-			ArrayList<Portal> portalList = entBean.getPortalInRegion(searchRegion);
-			
+		ArrayList<Portal> portalList;
+		if (searchRegion != null) 
+			portalList = entBean.getPortalInRegion(searchRegion);
+		 else 
+			portalList = entBean.getPortalAll();
+
 			JSONObject jsonResponse = new JSONObject();
 			for (Portal pt : portalList)
 			{
@@ -76,6 +82,7 @@ public class PortalServlet extends HttpServlet {
 			}
 			writer.println(jsonResponse.toString());
 			writer.close(); 
+			/*
 		} else {
 			resp.setStatus(400);
 			JSONObject jsonResponse = new JSONObject();
@@ -83,11 +90,11 @@ public class PortalServlet extends HttpServlet {
 			writer.println(jsonResponse.toString());
 			writer.close(); 
 		}
-		
+		*/
 	}
-	catch (Exception e) {
+	catch (EntityDAOException e) {
 		JSONObject jsonResponse = new JSONObject();
-		e.printStackTrace();
+		// e.printStackTrace();
 		jsonResponse.put("error",  e.getMessage());
 		jsonResponse.put("errorType",  e.getClass().getName());
 		try {
@@ -99,9 +106,11 @@ public class PortalServlet extends HttpServlet {
 		} catch (Exception e2) {
 			// sending the error caused an error.
 			// is there anything else we can do?
-			;
+			e2.printStackTrace();;
 		}
-	}  
+	}  catch (IOException e) {
+		e.printStackTrace();
+	}
   }
 
   public void doGet(HttpServletRequest req, HttpServletResponse resp){

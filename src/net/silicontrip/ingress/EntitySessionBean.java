@@ -40,9 +40,9 @@ public class EntitySessionBean {
  * @param s the description of a portals location.
  *
  * @return S2LatLng of the location.
- *
+ * @throws EntityDAOException if there is a problem locating the portal
  */
-	public S2LatLng getPortalLocation(String s)
+	public S2LatLng getPortalLocation(String s) throws EntityDAOException
 	{
 		if (s==null)
 			return null;
@@ -62,15 +62,21 @@ public class EntitySessionBean {
 		}
 		return dao.getPortalLocationFromTitle(s);
 	}
+	
+	public ArrayList<Portal> getPortalAll() throws EntityDAOException
+	{
+		return dao.getPortalsAll();
+	}
+	
 	/**
  * Gets all Portals within an S2Region.
  *
  * @param reg S2Region describing the area which contains the portals
  *
  * @return ArrayList of the portals
- *
+ * @throws EntityDAOException if a problem occurs finding portal
  */
-	public ArrayList<Portal> getPortalInRegion(S2Region reg)
+	public ArrayList<Portal> getPortalInRegion(S2Region reg) throws EntityDAOException
 	{
 		ArrayList<Portal> ret = new ArrayList<Portal>();
 

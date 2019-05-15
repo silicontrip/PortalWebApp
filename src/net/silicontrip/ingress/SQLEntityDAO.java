@@ -111,6 +111,7 @@ public class SQLEntityDAO implements EntityDAO {
 	protected static String FIELD_FIND_FROM_CELL = "select field_guid  from fieldcells where cellid=?";
 
 	protected static String PORTAL_GET_FROM_BOX = "select guid,title,latE6,lngE6 from portals where latE6>=? and latE6<=? and lngE6>=? and lngE6<=? and deleted!=true";
+	protected static String PORTAL_GET = "select guid,title,latE6,lngE6 from portals where deleted!=true";
 	protected static String PORTAL_GET_LOCATION_FROM_TITLE = "select guid,latE6,lngE6 from portals where title=? and deleted!=true";
 	protected static String PORTAL_GET_LOCATION_FROM_GUID = "select latE6,lngE6 from portals where guid=? and deleted!=true";
 	protected static String PORTAL_GET_LOCATION_FROM_LOCATION = "select latE6,lngE6 from portals where latE6=? and lngE6=? and deleted!=true";
@@ -126,6 +127,7 @@ public class SQLEntityDAO implements EntityDAO {
 
 	/**
 	 * Constructor
+	 * @throws EntityDAOException if there is a problem with the jdbc resource
 	 */
 	public SQLEntityDAO() throws EntityDAOException {
 		try {
@@ -941,6 +943,42 @@ public class SQLEntityDAO implements EntityDAO {
 
 	}
 
+	@Override
+	public ArrayList<Portal> getPortalsAll() throws EntityDAOException {
+		PreparedStatement ps = null;
+		ResultSet rs=null;
+		ArrayList<Portal> ret = new ArrayList<>();
+		//Connection c;
+
+		try {
+			c = spdDs.getConnection();
+			ps = c.prepareStatement(PORTAL_GET, ResultSet.CONCUR_READ_ONLY);
+			rs = ps.executeQuery();
+
+			while (rs.next()) {
+				Portal p = new Portal(rs.getString("guid"),
+						rs.getString("title"),
+						rs.getLong("latE6"),
+						rs.getLong("lngE6"));
+				ret.add(p);
+			}
+
+		} catch (SQLException se) {
+			throw new EntityDAOException("SQLException: " + se.getMessage());
+		} finally {
+			try {
+				if(rs!=null)
+					rs.close();
+				if (ps!=null)
+					ps.close();
+				c.close();
+			} catch (SQLException se) {
+				throw new EntityDAOException("SQLException: " + se.getMessage());
+			}
+		}
+		return ret;
+	}
+	
 	/**
 	 * Gets Portals within an S2LatLngRect.
 	 *

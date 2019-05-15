@@ -6,7 +6,7 @@ package net.silicontrip.ingress;
  * component when there is some irrecoverable error (like SQLException)
  */
 
-public class EntityDAOException extends RuntimeException {
+public class EntityDAOException extends Exception {
 
     /**
      * Constructor

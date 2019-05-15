@@ -43,6 +43,13 @@ public class Field implements Serializable {
 		plat3 = pa3; plng3 = po3;
 	}
 
+	public Field(double pa1, double po1,double pa2, double po2,double pa3, double po3)
+	{
+		plat1 = Math.round(pa1 * 1000000); plng1 = Math.round(po1 * 1000000);
+		plat2 = Math.round(pa2 * 1000000); plng2 = Math.round(po2 * 1000000);
+		plat3 = Math.round(pa3 * 1000000); plng3 = Math.round(po3 * 1000000);
+	}
+
 	public void setCreator(String s) { creator = s;}
 	public void setAgent(String s) { agent = s;}
 	public void setMU(int i) { mu = i; }

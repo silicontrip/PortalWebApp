@@ -9,6 +9,7 @@ import java.util.List;
 
 import javax.annotation.PostConstruct;
 
+import javax.ejb.LocalBean;
 import javax.ejb.Singleton;
 import javax.ejb.Startup;
 import javax.ejb.Lock;
@@ -18,40 +19,52 @@ import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import javax.persistence.Query;
 
-@Startup
 @Singleton
+@LocalBean
 public class MUSessionBean {  
 
 	@PersistenceContext(unitName="net.silicontrip.ingress.persistence")
 	private EntityManager em;
 
-	private HashMap<S2CellId,CellMUEntity> cells;
+//	private HashMap<S2CellId,CellMUEntity> cells;
 
+/*
 	@PostConstruct
 	void init() {
-		System.out.println ("MUSessionBean:: init");
+		System.out.println ("MUSessionBean:: init: " + em);
 		Query queryAll = em.createNamedQuery("CellMUEntity.findAll");
 		List<CellMUEntity> allCells = queryAll.getResultList();
 		this.cells = new HashMap<>();
+		int count=0;
 		for (CellMUEntity cell : allCells)
+		{
+			count++;
 			this.cells.put(S2CellId.fromToken(cell.getId()),cell);
-
+		}
+		System.out.println("MUSessionBean::init: items loaded: "+ count);
 	}
+*/
 	
 	public UniformDistribution getMU(S2CellId id)  { 
-		if (cells.get(id) != null)
-			return cells.get(id).getDistribution(); 
+		CellMUEntity c = getMUEntity(id);
+		if (c != null)
+			return c.getDistribution(); 
 		return null;
 	}
-	public CellMUEntity getMUEntity(S2CellId id)  { return cells.get(id); }
+	public CellMUEntity getMUEntity(S2CellId id)  { return em.find(CellMUEntity.class, id.toToken()); }
 	
 	public boolean refineMU(S2CellId id, UniformDistribution ud) throws UniformDistributionException {
 		//System.out.println(">>> refineMU");
-		boolean updated = false;
-		if (cells.containsKey(id)) 
+		CellMUEntity c = getMUEntity(id);
+		boolean updated;
+		if (c != null) 
 		{
-			updated =  cells.get(id).refine(ud);
-			em.flush();
+			//System.out.println ("" + id.toToken() + " managed: " + em.contains(c)); // tree, bark, right?
+
+			updated =  c.refine(ud);
+			if (updated)
+				System.out.println(""+ id.toToken() + " -> " + c.getDistribution());
+			//em.flush();
 		}
 		else
 		{
@@ -68,13 +81,16 @@ public class MUSessionBean {
 	@Lock(LockType.WRITE)
 	public void createMU (S2CellId id, UniformDistribution ud) throws UniformDistributionException {
 		System.out.println(">>> createMU");
-		if (cells.containsKey(id))
-			cells.get(id).refine(ud);
+		
+		CellMUEntity c = getMUEntity(id);
+		if (c != null)
+			c.refine(ud);
 		else
-        {
+		{
 			CellMUEntity newMU = new CellMUEntity(id,ud);
+			System.out.println("CREATE: " + id.toToken() + " -> " + ud);
 			em.persist(newMU);
-			cells.put(id,newMU);
+			//cells.put(id,newMU);
 		}
 		System.out.println("<<< createMU");
 

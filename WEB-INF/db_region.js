@@ -832,6 +832,11 @@ window.plugin.muScraper = {
 		$('#toolbox').append('<a onclick="window.plugin.muScraper.layerReport();return false;" >Layer Report</a>');
 		$('#toolbox').append('<a onclick="window.plugin.muScraper.findSuitableFields();return false;" >Find Suitable Fields</a>');
 		$('#toolbox').append('<a onclick="window.plugin.muScraper.copyFields();return false;" >Copy Fields</a>');
+		// check that drawtools exists
+
+		if (window.plugin.drawTools) {
+			$('#toolbox').append('<a onclick="window.plugin.muScraper.dtReport();return false;" >Drawtools MU</a>');
+		}
 
 		window.$('#sidebar').append('<div id="hz_field_grabber" style="padding: 5px; font-size: 12px">' +
 								  '<strong>Fields: </strong> ' +
@@ -844,6 +849,54 @@ window.plugin.muScraper = {
 		// this doesn't work.  still need to click on the first field twice.
 		setTimeout( function() { window.plugin.muScraper.getFieldsContainingLatLng({'lat':0,'lng':0}); }, 1000);
 		window.plugin.muScraper.readLoadedFields();
+
+	},
+
+	dtReport: function()
+	{
+		var data = localStorage['plugin-draw-tools-layer'];
+		//console.log( window.plugin.muScraper.mu_use + "?apikey=" + window.PLAYER.apikey +"&agent="+ window.PLAYER.nickname +"&dtreport="+ JSON.stringify(data));
+		$.post( window.plugin.muScraper.mu_use,
+			{apikey: window.PLAYER.apikey, agent: window.PLAYER.nickname, dtreport: data},
+			window.plugin.muScraper.showReport);
+	},
+	showReport: function(res)
+	{
+		//console.log(res);
+		var fields = res.result;
+		console.log(fields);
+		var html= "";
+
+		var tt_min = 0;
+		var tt_max = 0;
+		for (var fc in fields) {
+			console.log(fields[fc]);
+			var fieldReport = fields[fc];
+			var area = 0;
+			for (var cc in fieldReport.cells)
+			{
+				cell = fieldReport.cells[cc];
+				area += cell.area;
+				if (fields.length == 1) {
+					html += "<tt>" + cc + ": [" + cell.min + "-" + cell.max + "] x " + cell.area + "</tt><br/>";
+				}
+			}
+			html += "<tt>" + fc + ": [" + fieldReport.mu_min + "-" + fieldReport.mu_max + "] : " + area +  "</tt><br/>"; 
+			tt_min += fieldReport.mu_min;
+			tt_max += fieldReport.mu_max;
+
+		}
+		if (fields.length > 1) {
+			html += "<tt>Total: [" + tt_min + "-" + tt_max + "]</tt><br/>";
+		}
+
+		dialog({
+			html: '<div id="dtreport">' + html + '</div>',
+			dialogClass: 'ui-dialog-portal',
+			title: 'DrawTools Report',
+			id: 'drawtools-report',
+			width: 550
+		});
 
 	},
 	readLoadedFields: function()
@@ -1527,7 +1580,8 @@ window.plugin.muScraper = {
 				for (var pts=0; pts < 3; pts++) dtpoints.push({"lat": points[pts].latE6/1000000.0, "lng": points[pts].lngE6/1000000.0});
 				dt.push({"type": "polygon", "color": "#a24ac3", "latLngs": dtpoints});
 			}
-                       // window.plugin.drawTools.import(dt);
+			// why is this breaking.
+                        // window.plugin.drawTools.import(dt);
 			window.plugin.drawTools.save();
 
 		}

@@ -122,6 +122,7 @@ public class EntityServlet extends HttpServlet {
 				Queue submitQueue = (Queue)ctx.lookup("jms/linkQueue");
 				// due to links being destroyed and recreated with new GUIDs, old links must be deleted before new ones added.
 				// as the old links will cause DB constraint failures.
+				System.out.println("bounds: " + req.getParameter("bounds"));
 				JSONObject bounds = new JSONObject(req.getParameter("bounds"));
 				//System.out.println("edges bounds: " + bounds.toString());
 				

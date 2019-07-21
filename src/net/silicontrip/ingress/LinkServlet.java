@@ -50,13 +50,26 @@ public class LinkServlet extends HttpServlet {
 		resp.addHeader("Access-Control-Allow-Origin","https://intel.ingress.com");
 		PrintWriter writer = resp.getWriter();
 
-		S2LatLng p1 = fromE6String(req.getParameter("ll"));
+		S2LatLng p1 =  entBean.getPortalLocation(req.getParameter("ll"));
 		S2LatLng p2 = fromE6String(req.getParameter("l2"));
+                String pr =  req.getParameter("rr");
+
+                S2LatLngRect searchRegion = null;
+
+                if (pr != null && p1 != null)
+                {
+                        double radius = Double.parseDouble(pr) ;
+                        S1Angle rangeAngle =  S1Angle.radians(radius / 6367.0);
+
+			// can't have a point area...
+                        //if (radius<0.0001) radius=0.0001; // because 0 doesn't work
+			// has to be a rectangle.
+                        searchRegion = (S2Cap.fromAxisAngle(p1.toPoint(),rangeAngle)).getRectBound();
+                }
 
 	//	if (p1 != null && p2 != null)
 	//		System.out.println("query: " + req.getQueryString() +" Search area: " + p1.toStringDegrees() + " - " +p2.toStringDegrees());
 		
-		S2LatLngRect searchRegion = null;
 
 		if (p1 !=null && p2 !=null)
 		{

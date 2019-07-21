@@ -126,7 +126,7 @@ public class FieldServlet extends HttpServlet {
 	// damn copy and paste from use()
 	// will find common code and move to another method.
 	private JSONObject dtReport(String s) throws NamingException {
-//		System.out.println("useField -> " + s);
+		System.out.println("dtreport -> " + s);
 
 		JSONObject response = new JSONObject();
 		JSONArray resarr = new JSONArray();
@@ -150,7 +150,7 @@ public class FieldServlet extends HttpServlet {
 			// common with use
 				int known_mu = fieldBean.muKnownField(searchField);
 
-				response.put("mu_known",known_mu);
+				entres.put("mu_known",known_mu);
 
 				// getCellsForField
 				S2Polygon s2Field = searchField.getS2Polygon();

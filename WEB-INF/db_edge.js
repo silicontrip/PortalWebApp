@@ -77,7 +77,11 @@
 
 			// need to put map bounds in here, as intel submits more links than are visible
 			// this causes DB constraint issues
-			window.$.post(window.plugin.dbEdgeGrabber.hz_url, {apikey: window.PLAYER.apikey, agent: window.PLAYER.nickname, bounds: JSON.stringify(window.map.getBounds()), edges: JSON.stringify(window.plugin.dbEdgeGrabber.hz_edges), edges_deleted: JSON.stringify(deleted_links)} )
+			var mapBounds = window.map.getBounds();
+			console.log("BOUNDS {");
+			console.log(mapBounds);
+			console.log("} BOUNDS");
+			window.$.post(window.plugin.dbEdgeGrabber.hz_url, {apikey: window.PLAYER.apikey, agent: window.PLAYER.nickname, bounds: JSON.stringify(mapBounds), edges: JSON.stringify(window.plugin.dbEdgeGrabber.hz_edges), edges_deleted: JSON.stringify(deleted_links)} )
 				.fail(function(xhr, status, error) {
 					alert("Technology Journey - Error submitting links");
 					console.log(JSON.stringify(xhr) +" " + status + " " + error );

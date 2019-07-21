@@ -10,6 +10,8 @@ import javax.servlet.*;
 import java.io.*;
 
 import javax.ejb.EJB;
+import java.util.Base64;
+import java.util.Base64.*;
 
 public class LayerServlet extends HttpServlet {
 
@@ -29,7 +31,25 @@ public class LayerServlet extends HttpServlet {
 		return response;
 	}
 
-  public void doPost(HttpServletRequest req, HttpServletResponse resp){
+	private JSONObject getDefaultStyle() {
+
+		JSONArray dash = new JSONArray();
+		dash.put(6);
+		dash.put(4);
+		JSONObject defaultStyle = new JSONObject();
+
+		defaultStyle.put("stroke", true);
+		defaultStyle.put("opacity", 1);
+		defaultStyle.put("weight", 1.0);
+		defaultStyle.put("fill", true);
+		defaultStyle.put("fillOpacity", 0.6);
+		defaultStyle.put("color", "#ff4444");
+	//	defaultStyle.put("dashArray", dash);
+
+		return defaultStyle;
+	}
+
+	public void doPost(HttpServletRequest req, HttpServletResponse resp){
 	try {
 		resp.setCharacterEncoding("UTF-8");
 		resp.setContentType("text/json");
@@ -44,23 +64,11 @@ public class LayerServlet extends HttpServlet {
 		
 		String type=null;
 		JSONArray ll=null;
-		JSONArray dash = new JSONArray();
-		dash.put(6);
-		dash.put(4);
-		JSONObject defaultStyle = new JSONObject();
-
-		defaultStyle.put("stroke", true);
-		defaultStyle.put("opacity", 1);
-		defaultStyle.put("weight", 1.0);
-		defaultStyle.put("fill", true);
-		defaultStyle.put("fillOpacity", 0.6);
-		defaultStyle.put("color", "#ff4444");
-	//	defaultStyle.put("dashArray", dash);
 
 		if (pr != null && p1 != null)
 		{
 			type = "circle";
-			defaultStyle.put("radius",Double.parseDouble(pr) * 1000); 
+			//defaultStyle.put("radius",Double.parseDouble(pr) * 1000); 
 			ll = latLng(p1);
 		}
 
@@ -90,7 +98,7 @@ public class LayerServlet extends HttpServlet {
 
 			object.put("type", type);
 			object.put("latLng", ll);
-			object.put("options", defaultStyle);
+			object.put("options", getDefaultStyle());
 
 			jsonResponse.put(object);
 
@@ -132,7 +140,62 @@ public class LayerServlet extends HttpServlet {
   }
 
   public void doGet(HttpServletRequest req, HttpServletResponse resp){
-	doPost(req,resp);
+	//doPost(req,resp);
+
+		if (req.getParameter("pls") != null)
+		{
+			DrawTools dt = DrawTools.fromIntelQuery(req.getParameter("pls"));
+			//byte[] dtb = dt.asLinesPack();
+
+			//Encoder b64enc = Base64.getUrlEncoder();
+			try {
+				PrintWriter writer = resp.getWriter();
+				writer.println("<tt>");
+				writer.println(dt.toString());
+				
+				writer.println("</tt>"); writer.println("<hr/>"); writer.println("<tt>");
+				writer.println(dt.asIntelLink());
+				writer.println("</tt>"); writer.println("<hr/>"); writer.println("<tt>");
+				writer.println(dt.asLinesPack());
+				writer.println("</tt>");
+			} catch (IOException e) {
+				// how can we print that an error occurred if an error occurred in the thing that prints the error.  I'm sure there's a Douglas Adams story in that.
+				e.printStackTrace();
+			}
+			
+		} else {
+			try {
+				//Decoder b64dec = Base64.getUrlDecoder();
+				DrawTools dt = DrawTools.fromStringEncoding(req.getQueryString());
+				//DrawTools dt = new DrawTools();
+				try {
+					PrintWriter writer = resp.getWriter();
+					writer.println("<tt>");
+					//writer.println(req.getQueryString());
+					//writer.println("</pre>"); writer.println("<hr/>"); writer.println("<pre>");
+						writer.println(dt.toString());
+					writer.println("</tt>"); writer.println("<hr/>"); writer.println("<tt>");
+					writer.println("<a href=\"" + dt.asIntelLink() + "\">INTEL</a>");
+					writer.println("</tt>");
+				} catch (IOException e) {
+					// how can we print that an error occurred if an error occurred in the thing that prints the error.  I'm sure there's a Douglas Adams story in that.
+					e.printStackTrace();
+				}
+			} catch (Exception e) {
+				try {
+					PrintWriter writer = resp.getWriter();
+					writer.println("<pre>");
+					writer.println(e.getMessage());
+					writer.println("</pre>");
+				} catch (IOException e2) {
+					// how can we print that an error occurred if an error occurred in the thing that prints the error.  I'm sure there's a Douglas Adams story in that.
+					e2.printStackTrace();
+				}
+			
+
+			}
+		}
+		
   }
 }
 

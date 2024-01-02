@@ -3,7 +3,7 @@
  
     <path id="compile.classpath">
         <fileset dir="WEB-INF/lib"> <include name="*.jar"/> </fileset>
-        <fileset dir="/Users/mark/Developer/ingress-j2ee/glassfish4/glassfish/lib"> <include name="*.jar"/> </fileset>
+        <fileset dir="/Users/mheath/glassfish7/glassfish/lib"> <include name="*.jar"/> </fileset>
     </path>
      
     <target name="init">
@@ -12,14 +12,18 @@
     </target>
      
     <target name="compile" depends="init" >
-        <javac destdir="build/classes" debug="true" srcdir="src">
+        <javac destdir="build/classes" debug="true" srcdir="src" >
             <classpath refid="compile.classpath"/>
         </javac>
+	<copy todir="build/classes">
+		<fileset dir="WEB-INF/classes" includes="**/*.xml" />
+	</copy>
     </target>
      
     <target name="war" depends="compile">
         <war destfile="dist/portalApi.war" webxml="WEB-INF/web.xml">
             <fileset dir="WebContent"/>
+            <metainf dir="build/classes/META-INF"/>
             <lib dir="WEB-INF/lib"/>
             <classes dir="build/classes"/>
         </war>

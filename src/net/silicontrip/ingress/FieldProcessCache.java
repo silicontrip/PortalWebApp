@@ -52,4 +52,8 @@ public class FieldProcessCache {
 		return null;
 	}
 	
+	public int size()
+	{
+		return fieldCache.size();
+	}
 }

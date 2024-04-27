@@ -14,6 +14,10 @@ import javax.naming.*;
 
 import jakarta.ejb.EJB;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+
 public class PortalServlet extends HttpServlet {
 
 	@EJB
@@ -78,6 +82,9 @@ public class PortalServlet extends HttpServlet {
 				jsonPortal.put("title",pt.getTitle());
 				jsonPortal.put("lat",pt.getLatE6()); // would love to move these to the E6 naming
 				jsonPortal.put("lng",pt.getLngE6()); // E6
+				jsonPortal.put("health",pt.getHealth());
+				jsonPortal.put("team",pt.getTeam());
+				jsonPortal.put("level",pt.getLevel());
 				jsonResponse.put(pt.getGuid(),jsonPortal);	
 			}
 			writer.println(jsonResponse.toString());
@@ -108,6 +115,8 @@ public class PortalServlet extends HttpServlet {
 			// is there anything else we can do?
 			e2.printStackTrace();;
 		}
+		//Logger.getLogger(PortalServlet.class.getName()).log(Level.SEVERE, null, e);
+
 	}  catch (IOException e) {
 		e.printStackTrace();
 	}

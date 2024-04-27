@@ -9,6 +9,9 @@ import jakarta.ejb.*;
 import org.json.*;
 import com.google.common.geometry.*;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 
 
 @MessageDriven(
@@ -28,7 +31,14 @@ public class FieldQueueMDB implements MessageListener {
 	private FieldSessionBean fieldBean;
 
 	@EJB
-	private CellSessionBean cellBean;
+	private SQLEntityDAO dao;
+
+	@EJB
+	private FieldsCellsBean fieldsCells;
+
+	@EJB
+	FieldProcessCache fpCache;
+
 
 	private Field makeField (JSONObject pobj)
 	{
@@ -66,6 +76,9 @@ public class FieldQueueMDB implements MessageListener {
 		boolean refield = false;
 		try {
 			tm= textMessage.getText();
+
+			//Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.INFO, "process: " + tm);
+
 			JSONObject pobj = new JSONObject (textMessage.getText());
 
 			if (pobj.has("mu")) {
@@ -94,14 +107,19 @@ public class FieldQueueMDB implements MessageListener {
 				
 				// check for validity
 				// EJB???
-				S2Polygon S2Field = fi.getS2Polygon();
 
 				//cellBean.createCellsForField(S2Field);
 
 				boolean[] valid = new boolean[mu.length()];
 				
-				for (int i =0; i < mu.length(); i++)
-					valid[i] = fieldBean.muFieldValid(S2Field,mu.getInt(i));
+				for (int i =0; i < mu.length(); i++) {
+					try { 
+						valid[i] = fieldBean.muFieldValid(fi,mu.getInt(i));
+					} catch (Exception e) {
+						Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.WARNING, null, e);
+						valid[i]=false;
+					}
+				}
 
 			//what to do if different MU are valid?
 			// which one is more accurate?
@@ -132,9 +150,33 @@ public class FieldQueueMDB implements MessageListener {
 						if (refield)
 						{
 							//System.out.println("Resubmit: " + fi );
-							fieldBean.processField(fi);
+							fieldBean.processField(fi.getGuid());
 						} else {
-							fieldBean.submitField(fi,valid[i]);
+							if (!fieldBean.hasFieldGuid(fi.getGuid()))
+							{
+								dao.insertField(fi.getCreator(),
+									fi.getAgent(),
+									fi.getMU(),
+									fi.getGuid(),
+									fi.getTimestamp(),
+									fi.getTeam(),
+									fi.getPGuid1(),
+									fi.getPLat1(),
+									fi.getPLng1(),
+									fi.getPGuid2(),
+									fi.getPLat2(),
+									fi.getPLng2(),
+									fi.getPGuid3(),
+									fi.getPLat3(),
+									fi.getPLng3(),
+									true);
+								//S2CellUnion fieldCells = getCellsForField(field.getS2Polygon());
+								S2CellUnion fieldCells = fi.getCells();
+								fieldsCells.insertCellsForField(fi.getGuid(),fieldCells);
+
+								fpCache.addFieldGuid(fi.getGuid());
+								fieldBean.beginProcessing();	
+							}
 						} 
 					}
 				}
@@ -146,8 +188,10 @@ public class FieldQueueMDB implements MessageListener {
 						System.out.println ("not Submitting field: " + fi.getGuid() + "MU: " + valid[0] + ": " +mu.getLong(0));
 			} 
 		} catch (JMSException e) {
+			Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.SEVERE, null, e);
 			System.out.println( "Error while trying to consume messages: " + e.getMessage());
 		} catch (Exception e) {
+			Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.SEVERE, null, e);
 			System.out.println("FQB: exception");
 			System.out.println(tm);
 			e.printStackTrace();

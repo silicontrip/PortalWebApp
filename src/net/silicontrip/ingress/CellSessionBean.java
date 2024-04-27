@@ -83,21 +83,6 @@ public class CellSessionBean {
 		pb.addEdge(v3,v1);
 		return pb.assemblePolygon();
 	}
-	/**
-	 * Generates a list of cells for the specified polygon.
-	 * Uses Ingress specific values for the cell covering generation.
-	 * @param thisField The S2Polygon of the region to be covered
-	 * @return S2CellUnion of the cells
-	 */
-	public static S2CellUnion getCellsForField(S2Polygon thisField)
-	{
-		S2RegionCoverer rc = new S2RegionCoverer();
-		// ingress mu calculation specifics
-		rc.setMaxLevel(13);
-		rc.setMinLevel(0);
-		rc.setMaxCells(20);
-		return rc.getCovering (thisField);
-	}
 
 		/**
 	 * Get the area of the intersection between a polygon and cell.
@@ -114,9 +99,10 @@ public class CellSessionBean {
 		return intPoly.getArea() * 6367 * 6367 ;
 	}
 
-	public void createCellsForField (S2Polygon field)
+	//public void createCellsForField (S2Polygon field)
+	public void createCellsForField (Field field)
 	{
-		S2CellUnion cells = getCellsForField(field);
+		S2CellUnion cells = field.getCells();
 		for (S2CellId cellid : cells)
 		{
 			System.out.println("CHECK FOR: " + cellid.toToken());

@@ -11,6 +11,9 @@ import java.util.HashSet;
 import javax.naming.*;
 import jakarta.jms.*;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 public class EntityServlet extends HttpServlet {
 
 	private QueueConnectionFactory qcf = null;
@@ -26,6 +29,7 @@ public class EntityServlet extends HttpServlet {
 			queueCon = qcf.createQueueConnection();
 			queueSession = queueCon.createQueueSession(false, Session.AUTO_ACKNOWLEDGE);
 		} catch (Exception e) {
+			Logger.getLogger(EntityServlet.class.getName()).log(Level.SEVERE, null, e);
 			throw new ServletException(e.getMessage());
 		}
 	}
@@ -78,6 +82,7 @@ public class EntityServlet extends HttpServlet {
 							//submittedGuid.add(guid);
 					//}
 				} catch (Exception e) {
+					Logger.getLogger(EntityServlet.class.getName()).log(Level.SEVERE, null, e);
 					System.out.println(e.getMessage() + ": " + ((JSONObject)ent));
 				}
 			}
@@ -157,6 +162,8 @@ public class EntityServlet extends HttpServlet {
 			writer.println(jsonResponse.toString());
 			writer.close();
 		} catch (ServletException e) {
+			Logger.getLogger(EntityServlet.class.getName()).log(Level.SEVERE, null, e);
+
 			JSONObject jsonResponse = new JSONObject();
 			jsonResponse.put("error",  e.getMessage());
 			jsonResponse.put("errorType",  e.getClass().getName());
@@ -171,7 +178,9 @@ public class EntityServlet extends HttpServlet {
 			} catch (IOException e2) {
 				// :-P
 			}
-		} 	catch (Exception e) {
+		} catch (Exception e) {
+			Logger.getLogger(EntityServlet.class.getName()).log(Level.SEVERE, null, e);
+
 			JSONObject jsonResponse = new JSONObject();
 			jsonResponse.put("error",  e.getMessage());
 			e.printStackTrace();

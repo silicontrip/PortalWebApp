@@ -3,7 +3,7 @@
  
     <path id="compile.classpath">
         <fileset dir="WEB-INF/lib"> <include name="*.jar"/> </fileset>
-        <fileset dir="/Users/mheath/glassfish7/glassfish/lib"> <include name="*.jar"/> </fileset>
+        <fileset dir="/Users/mark/glassfish7/glassfish/lib"> <include name="*.jar"/> </fileset>
     </path>
      
     <target name="init">
@@ -26,6 +26,7 @@
             <metainf dir="build/classes/META-INF"/>
             <lib dir="WEB-INF/lib"/>
             <classes dir="build/classes"/>
+            <zipfileset dir="userscripts" prefix="WEB-INF"/>
         </war>
     </target>
      

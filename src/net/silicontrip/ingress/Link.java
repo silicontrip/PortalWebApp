@@ -77,7 +77,6 @@ public class Link implements Serializable {
 	public long getoLatE6() { return o_latE6; }
 	public long getoLngE6() { return o_lngE6; }
 
-
 	public void setGuid(String g) { guid = g; }
 	public void setTeam(String t) { team = t; }
 

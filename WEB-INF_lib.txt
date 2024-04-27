@@ -1,0 +1,8 @@
+drwxrwxrwx   7 mark  staff      224  2 Jan 16:50 .
+drwxr-xr-x  11 mark  staff      352 27 Apr 17:50 ..
+-rwxrwxrwx   1 mark  staff  1891110  3 May  2019 guava.jar
+-rwxrwxrwx   1 mark  staff    50288 29 Mar  2019 json-java.jar
+-rwxrwxrwx   1 mark  staff  1007502 28 Mar  2019 mysql-connector-java-5.1.47.jar
+-rwxrwxrwx   1 mark  staff    86552 28 Mar  2019 s2-geometry-java.jar
+-rwxrwxrwx   1 mark  staff   787524 20 May  2017 yuicompressor-2.4.8.jar
+

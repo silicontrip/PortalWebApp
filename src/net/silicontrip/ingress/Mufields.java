@@ -5,6 +5,9 @@
  */
 package net.silicontrip.ingress;
 
+import com.google.common.geometry.*;
+
+
 import java.io.Serializable;
 import jakarta.persistence.Basic;
 import jakarta.persistence.Column;
@@ -277,5 +280,34 @@ public class Mufields implements Serializable {
     public String toString() {
         return "net.silicontrip.ingress.Mufields[ guid=" + guid + " ]";
     }
+
+        public S2LatLng getP1LatLng() { return S2LatLng.fromE6(plat1,plng1); }
+        public S2LatLng getP2LatLng() { return S2LatLng.fromE6(plat2,plng2); }
+        public S2LatLng getP3LatLng() { return S2LatLng.fromE6(plat3,plng3); }
+        public S2Point getP1Point() { return getP1LatLng().toPoint(); }
+        public S2Point getP2Point() { return getP2LatLng().toPoint(); }
+        public S2Point getP3Point() { return getP3LatLng().toPoint(); }
+
+
+        public S2Polygon getS2Polygon ()
+        {
+                S2PolygonBuilder pb = new S2PolygonBuilder(S2PolygonBuilder.Options.UNDIRECTED_UNION);
+                pb.addEdge(getP1Point(),getP2Point());
+                pb.addEdge(getP2Point(),getP3Point());
+                pb.addEdge(getP3Point(),getP1Point());
+                return pb.assemblePolygon();
+        }
+
     
+        public S2CellUnion getCells()
+        {
+                S2RegionCoverer rc = new S2RegionCoverer();
+                // ingress mu calculation specifics
+                rc.setMaxLevel(13);
+                rc.setMinLevel(0);
+                rc.setMaxCells(20);
+                return rc.getCovering (getS2Polygon());
+        }
+
+
 }

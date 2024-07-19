@@ -63,32 +63,33 @@ public class PortalServlet extends HttpServlet {
 			pb.addEdge(p2.toPoint(),p3.toPoint());
 			pb.addEdge(p3.toPoint(),p1.toPoint());
 			searchRegion=pb.assemblePolygon();
-		}
-
-		if (p1 !=null && p2 !=null)
+		} else if (p1 !=null && p2 !=null) {
 			searchRegion = S2LatLngRect.fromPointPair(p1,p2);
-
+		} else if (p1 != null) {
+			S1Angle rangeAngle =  S1Angle.radians(0.0001 / 6367.0);
+			searchRegion = S2Cap.fromAxisAngle(p1.toPoint(),rangeAngle);
+		}
 		ArrayList<Portal> portalList;
 		if (searchRegion != null) 
 			portalList = entBean.getPortalInRegion(searchRegion);
 		 else 
 			portalList = entBean.getPortalAll();
 
-			JSONObject jsonResponse = new JSONObject();
-			for (Portal pt : portalList)
-			{
-				JSONObject jsonPortal = new JSONObject();
-				jsonPortal.put("guid",pt.getGuid());
-				jsonPortal.put("title",pt.getTitle());
-				jsonPortal.put("lat",pt.getLatE6()); // would love to move these to the E6 naming
-				jsonPortal.put("lng",pt.getLngE6()); // E6
-				jsonPortal.put("health",pt.getHealth());
-				jsonPortal.put("team",pt.getTeam());
-				jsonPortal.put("level",pt.getLevel());
-				jsonResponse.put(pt.getGuid(),jsonPortal);	
-			}
-			writer.println(jsonResponse.toString());
-			writer.close(); 
+		JSONObject jsonResponse = new JSONObject();
+		for (Portal pt : portalList)
+		{
+			JSONObject jsonPortal = new JSONObject();
+			jsonPortal.put("guid",pt.getGuid());
+			jsonPortal.put("title",pt.getTitle());
+			jsonPortal.put("lat",pt.getLatE6()); // would love to move these to the E6 naming
+			jsonPortal.put("lng",pt.getLngE6()); // E6
+			jsonPortal.put("health",pt.getHealth());
+			jsonPortal.put("team",pt.getTeam());
+			jsonPortal.put("level",pt.getLevel());
+			jsonResponse.put(pt.getGuid(),jsonPortal);	
+		}
+		writer.println(jsonResponse.toString());
+		writer.close(); 
 			/*
 		} else {
 			resp.setStatus(400);

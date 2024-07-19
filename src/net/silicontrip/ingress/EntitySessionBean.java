@@ -46,6 +46,7 @@ public class EntitySessionBean {
  */
 	public S2LatLng getPortalLocation(String s) throws EntityDAOException
 	{
+		S2LatLng result = null;
 		if (s==null)
 			return null;
 		if (s.matches("^[0-9a-fA-F]{32}\\.1[16]$"))
@@ -62,7 +63,12 @@ public class EntitySessionBean {
 		
 			//return getDAO().getPortalLocationFromLocation(latE6,lngE6);
 		}
-		return dao.getPortalLocationFromTitle(s);
+		result =  dao.getPortalLocationFromTitle(s);
+		if (result == null)
+			throw new EntityDAOException("Portal Title not found: " + s);
+
+		return result;
+
 	}
 	
 	public ArrayList<Portal> getPortalAll() throws EntityDAOException

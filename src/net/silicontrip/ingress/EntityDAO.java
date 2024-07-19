@@ -44,8 +44,10 @@ public interface EntityDAO {
 	public ArrayList<Portal> getPortalsInRect (S2LatLngRect bound) throws EntityDAOException;
 	//public S2LatLng getPortalLocation (String s) throws EntityDAOException;
 	public S2LatLng getPortalLocationFromTitle (String title) throws EntityDAOException;
-	public S2LatLng getPortalLocationFromGuid (String Guid) throws EntityDAOException;
+	public S2LatLng getPortalLocationFromGuid (String guid) throws EntityDAOException;
 	public S2LatLng getPortalLocationFromLocation (long latE6, long lngE6) throws EntityDAOException;
+	public Portal getPortalFromTitle (String title) throws EntityDAOException;
+	public Portal getPortalFromGuid (String guid) throws EntityDAOException;
 	public void deletePortal (String guid) throws EntityDAOException;
 //	public void updateTitle(String guid, String title) throws EntityDAOException;
 //	public void updateLocation(String guid, long latE6, long lngE6) throws EntityDAOException;

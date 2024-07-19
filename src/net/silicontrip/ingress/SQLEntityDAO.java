@@ -128,6 +128,9 @@ public class SQLEntityDAO implements EntityDAO {
 	protected static String PORTAL_GET_LOCATION_FROM_GUID = "select latE6,lngE6 from portals where guid=? and deleted!=true";
 	protected static String PORTAL_GET_LOCATION_FROM_LOCATION = "select latE6,lngE6 from portals where latE6=? and lngE6=? and deleted!=true";
 	protected static String PORTAL_UPDATE_DELETED = "update portals set deleted=true where guid=?";
+	protected static String PORTAL_GET_PORTAL_FROM_TITLE = "select guid,title,latE6,lngE6,health,team,level from portals where title=? and deleted!=true";
+	protected static String PORTAL_GET_PORTAL_FROM_GUID = "select guid,title,latE6,lngE6,health,team,level from portals where guid=? and deleted!=true";
+
 	//protected static String PORTAL_UPDATE_TITLE = "update portals set title=? where guid=?";
 	//protected static String PORTAL_UPDATE_LOCATION = "update portals set latE6=?,lngE6=? where guid=?";
 	protected static String PORTAL_INSERT_FULL = "insert into portals (guid,title,latE6,lngE6,team,level,res_count,health,image,deleted) values (?,?,?,?,?,?,?,?,?,false)";
@@ -1328,6 +1331,135 @@ public class SQLEntityDAO implements EntityDAO {
 		}
 		 */
 	}
+
+	/**
+	 * Get the portal from the portal's title.
+	 *
+	 * As titles are not unique, this method will throw an error describing all
+	 * the matching portals. The description contains the guid and lat,long of
+	 * each matching entry.
+	 *
+	 * @param title The Portal title.
+	 *
+	 * @return Portal the portal object
+	 *
+	 * @throws EntityDAOException containing the ambiguous portal description or
+	 * an SQL Exception message
+	 *
+	 *
+	 */
+	@Override
+	public Portal getPortalFromTitle(String title) throws EntityDAOException {
+		//Connection c = null;
+		PreparedStatement ps = null;
+		ResultSet rs = null;
+		Portal ret = null;
+
+		try {
+			c = spdDs.getConnection();
+			ps = c.prepareStatement(PORTAL_GET_PORTAL_FROM_TITLE);
+			ps.setString(1, title);
+			rs = ps.executeQuery();
+
+			/* this whole code block is horrible pwease we wite it */
+			boolean searchError = false;
+			String err =""; 
+			while (rs.next()) {
+				if (ret != null) {
+					searchError = true;
+					err = title +": " + rs.getLong("latE6") + "," + rs.getLong("lngE6") + " ";
+				}
+
+				ret = new Portal(rs.getString("guid"),
+					rs.getString("title"),
+					rs.getLong("latE6"),
+					rs.getLong("lngE6"),
+					rs.getInt("health"),
+					rs.getString("team"),
+					rs.getInt("level")
+				);
+
+				if (searchError)
+					err = err + rs.getString("guid") + " ";
+			}
+			if (searchError) {
+				//if (ret != null)
+				err = err + ret.getLatE6()+","+ret.getLngE6();
+				throw new EntityDAOException("Ambiguous Title: " + err);
+			}
+			/* end of horrible code block */
+
+		} catch (SQLException se) {
+			se.printStackTrace();
+			throw new EntityDAOException("SQLException: " + se.getMessage());
+		} finally {
+			try {
+				if(rs!=null)
+					rs.close();
+				if (ps!=null)
+					ps.close();
+				c.close();
+			} catch (SQLException se) {
+				throw new EntityDAOException("SQLException: " + se.getMessage());
+			}
+		}
+		return ret;
+	}
+
+/**
+	 * Get the portal from the portal's guid.
+	 *
+	 *
+	 * @param guid The Portal guid.
+	 *
+	 * @return Portal the portal object
+	 *
+	 * @throws EntityDAOException containing an SQL Exception message
+	 *
+	 *
+	 */
+	@Override
+	public Portal getPortalFromGuid(String guid) throws EntityDAOException {
+		//Connection c = null;
+		PreparedStatement ps = null;
+		ResultSet rs = null;
+		Portal ret = null;
+
+		try {
+			c = spdDs.getConnection();
+			ps = c.prepareStatement(PORTAL_GET_PORTAL_FROM_GUID);
+			ps.setString(1, guid);
+			rs = ps.executeQuery();
+
+			// should only ever be one, so doesn't need the multiple row handling code.
+			while (rs.next()) {
+				ret = new Portal(rs.getString("guid"),
+					rs.getString("title"),
+					rs.getLong("latE6"),
+					rs.getLong("lngE6"),
+					rs.getInt("health"),
+					rs.getString("team"),
+					rs.getInt("level")
+				);
+			}
+
+		} catch (SQLException se) {
+			se.printStackTrace();
+			throw new EntityDAOException("SQLException: " + se.getMessage());
+		} finally {
+			try {
+				if(rs!=null)
+					rs.close();
+				if (ps!=null)
+					ps.close();
+				c.close();
+			} catch (SQLException se) {
+				throw new EntityDAOException("SQLException: " + se.getMessage());
+			}
+		}
+		return ret;
+	}
+
 
 	/**
 	 * Flag the portal as deleted in the database identified by its guid.

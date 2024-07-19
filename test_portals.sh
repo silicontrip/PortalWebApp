@@ -1,0 +1,2 @@
+curl http://localhost:8080/portalApi/getPortals\?ll=-37.859946717594056,145.26298999786377\&l2=-37.834022250047155,145.31702041625977\&agent=silicontrip
+

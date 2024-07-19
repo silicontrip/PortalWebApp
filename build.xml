@@ -26,6 +26,7 @@
             <metainf dir="build/classes/META-INF"/>
             <lib dir="WEB-INF/lib"/>
             <classes dir="build/classes"/>
+            <zipfileset dir="userscripts" prefix="WEB-INF"/>
         </war>
     </target>
      

@@ -136,7 +136,18 @@ public class UniformDistribution implements Serializable {
 	 *
 	 * @return boolean if value was clamped
 	 */
-	public boolean clampLower(double d) { if (lower < d) {lower=d; return true;} return false; }
+	public boolean clampLower(double d) throws UniformDistributionException
+ 	{ 
+		if (upper < d) 
+			throw new UniformDistributionException( "clamp lower Sanity check Exception : " + toString() + " x ["+d+","+upper+"]");
+
+		if (lower < d) 
+		{
+			lower=d; 
+			return true;
+		} 
+		return false; 
+	}
 	// never implemented a clampUpper, maybe one day for completeness
 	public boolean clampUpper(double d) { if (upper > d) {upper=d; return true;} return false; }
 	// one day seriously? copy... paste... s/lower/upper/i s/</>/ 

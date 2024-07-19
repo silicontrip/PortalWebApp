@@ -14,6 +14,8 @@ import com.google.common.geometry.*;
 import jakarta.ejb.Stateless;
 import jakarta.ejb.EJB;
 import jakarta.ejb.LocalBean;
+import jakarta.ejb.TransactionAttribute;
+import jakarta.ejb.TransactionAttributeType;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
 import jakarta.persistence.PersistenceContext;
@@ -98,7 +100,6 @@ public class EntitySessionBean {
 	public ArrayList<Link> getLinkInRect(S2LatLngRect rect)
 	{
 
-
 		Collection<Link> all  = getLinkAll();
 		ArrayList<Link> ret = new ArrayList<Link>();
 		// should I just copy the getAll method to save memory.
@@ -120,8 +121,14 @@ public class EntitySessionBean {
 	{
 		return em.find(Link.class, guid);
 	}
-	
-	public void removeLink(Link link) { em.remove(link); }	
+
+	@TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
+	public void removeLink(Link link) { 
+		Link tempLink = getLinkGuid(link.getGuid());
+		em.remove(tempLink); 
+	}
+
+	@TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
 	public void insertLink(Link link) { em.persist(link); }	
 	public boolean existsLinkGuid(String guid)
 	{

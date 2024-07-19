@@ -64,7 +64,7 @@ public class CellMUEntity implements Serializable {
 		setId(token);
 	}
 
-	public CellMUEntity (S2CellId id, UniformDistribution ud)
+	public CellMUEntity (String id, UniformDistribution ud)
 	{
 		super();
 		setDistribution(ud);

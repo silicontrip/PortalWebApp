@@ -8,6 +8,10 @@ import java.io.*;
 import com.yahoo.platform.yui.compressor.*;
 import org.mozilla.javascript.ErrorReporter;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+
 public class JSServlet extends HttpServlet {
 		
 	@Override
@@ -23,6 +27,8 @@ public class JSServlet extends HttpServlet {
 			resp.setContentType("text/javascript");
 			resp.setCharacterEncoding("UTF-8");
 			resp.addHeader("Access-Control-Allow-Origin","https://intel.ingress.com");
+
+			Logger.getLogger(JSServlet.class.getName()).log(Level.INFO, "user: " + userName + " key: "+apiKey);
 
 			// authentication code
 			req.login(userName,apiKey);
@@ -41,10 +47,16 @@ public class JSServlet extends HttpServlet {
 			String baseUrl = "https://quadrant.silicontrip.net/portalApi/";
 			if (req.getRemoteAddr().startsWith("10.101.222.")) 
 				baseUrl = "https://quadrant.silicontrip.net:8181/portalApi/";
-			
+			if (req.getRemoteAddr().startsWith("127.")) 
+				baseUrl = "http://localhost:8080/portalApi/";
+			if (req.getRemoteAddr().startsWith("192.168.0.")) 
+				baseUrl = "https://192.168.0.20:8181/portalApi/";
+
+
+
 			PrintWriter writer = resp.getWriter();
 
-			writer.print("var silicontrip_ingress_url=\""+baseUrl+"\";");
+			writer.print("window.silicontrip_ingress_url=\""+baseUrl+"\";");
 			
 			for (String file : jsPath)
 			{
@@ -68,7 +80,7 @@ public class JSServlet extends HttpServlet {
 			try {
 				resp.setStatus(500);
 				PrintWriter writer = resp.getWriter();
-				writer.println("alert (\"" + e.getMessage()+"\");");
+				writer.println("alert (\"" + e.toString() +"\");");
 				writer.close();
 			} catch (Exception e2) {
 				// sending the error caused an error.

@@ -20,6 +20,8 @@ public class Field implements Serializable {
 	private String pguid3=null; 
 	private long plat3; 
 	private long plng3;
+	
+	private boolean valid = true;
 
 	
 	public Field(String c,String a,int m, String g,long t,String tm, String pg1, long pa1, long po1, String pg2, long pa2, long po2, String pg3, long pa3, long po3)
@@ -33,6 +35,20 @@ public class Field implements Serializable {
 		pguid1 = pg1; plat1 = pa1; plng1 = po1;
 		pguid2 = pg2; plat2 = pa2; plng2 = po2;
 		pguid3 = pg3; plat3 = pa3; plng3 = po3;
+	}
+
+	public Field(String c,String a,int m, String g,long t,String tm, String pg1, long pa1, long po1, String pg2, long pa2, long po2, String pg3, long pa3, long po3, boolean va)
+	{
+		creator = c;
+		agent = a;
+		mu = m;
+		guid = g;
+		timestamp=t;
+		team = tm;
+		pguid1 = pg1; plat1 = pa1; plng1 = po1;
+		pguid2 = pg2; plat2 = pa2; plng2 = po2;
+		pguid3 = pg3; plat3 = pa3; plng3 = po3;
+		valid = va;
 	}
 
 	// purely geometric constructor
@@ -59,6 +75,7 @@ public class Field implements Serializable {
 	public void setPGuid1(String s) { pguid1 = s;} public void setPLat1(long l) { plat1 = l; } public void setPLng1(long l) { plng1 = l; }
 	public void setPGuid2(String s) { pguid2 = s;} public void setPLat2(long l) { plat2 = l; } public void setPLng2(long l) { plng2 = l; }
 	public void setPGuid3(String s) { pguid3 = s;} public void setPLat3(long l) { plat3 = l; } public void setPLng3(long l) { plng3 = l; }
+	public void setValid(boolean b) { valid = b; }
 	
 	public String getCreator() { return creator; }
 	public String getAgent() { return agent; }
@@ -69,6 +86,8 @@ public class Field implements Serializable {
 	public String getPGuid1() { return pguid1; } public long getPLat1() { return plat1; } public long getPLng1() { return plng1; }
 	public String getPGuid2() { return pguid2; } public long getPLat2() { return plat2; } public long getPLng2() { return plng2; }
 	public String getPGuid3() { return pguid3; } public long getPLat3() { return plat3; } public long getPLng3() { return plng3; }
+	public boolean isValid() { return valid; }
+	
 	
 	// and some S2 utility methods here
 	// maybe cache these, because writing occurs once but reading may occur several times.
@@ -87,4 +106,15 @@ public class Field implements Serializable {
 		pb.addEdge(getP3Point(),getP1Point());
 		return pb.assemblePolygon();
 	}
+
+	public S2CellUnion getCells()
+        {
+                S2RegionCoverer rc = new S2RegionCoverer();
+                // ingress mu calculation specifics
+                rc.setMaxLevel(13);
+                rc.setMinLevel(0);
+                rc.setMaxCells(20);
+                return rc.getCovering (getS2Polygon());
+        }
+
 }

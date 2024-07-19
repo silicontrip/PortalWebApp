@@ -71,6 +71,38 @@ public class EntitySessionBean {
 
 	}
 	
+	/**
+ * get the S2LatLng location of a portal description.
+ *
+ *This is a conditional logic method which compares the description with a few known formats
+ *and calls the appropriate method to determine the location.
+ *
+ * @param s the description of a portals location. title, lat/lng or guid
+ *
+ * @return the Portal object.
+ * @throws EntityDAOException if there is a problem locating the portal
+ */
+	public Portal getPortal(String s) throws EntityDAOException
+	{
+		Portal result = null;
+		if (s==null)
+			return null;
+		if (s.matches("^[0-9a-fA-F]{32}\\.1[16]$"))
+			return dao.getPortalFromGuid(s);
+		if (s.matches("(\\+|-)?([0-9]+(\\.[0-9]+)),(\\+|-)?([0-9]+(\\.[0-9]+))"))
+		{
+			// not implemented
+			return null;
+			//return getDAO().getPortalLocationFromLocation(latE6,lngE6);
+		}
+		result =  dao.getPortalFromTitle(s);
+		if (result == null)
+			throw new EntityDAOException("Portal Title not found: " + s);
+
+		return result;
+
+	}
+
 	public ArrayList<Portal> getPortalAll() throws EntityDAOException
 	{
 		return dao.getPortalsAll();

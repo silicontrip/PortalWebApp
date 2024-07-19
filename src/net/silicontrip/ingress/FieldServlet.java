@@ -112,6 +112,9 @@ public class FieldServlet extends HttpServlet {
 		response.put("fieldGuids",fieldGuids);
 		return response;
 	}
+
+	// processes fields that only have this cell.
+	
 	private JSONObject processCellExact(String s) {
 		JSONArray cells = new JSONArray(s);
 		JSONObject response = new JSONObject();
@@ -167,7 +170,7 @@ public class FieldServlet extends HttpServlet {
 		{
 			JSONObject jsonField = new JSONObject();
 			try {
-                                Logger.getLogger(FieldServlet.class.getName()).log(Level.INFO,"getField for guid: " + cobj);
+				Logger.getLogger(FieldServlet.class.getName()).log(Level.INFO,"getField for guid: " + cobj);
 
 				Field fi = dao.getField((String)cobj);
 
@@ -209,7 +212,7 @@ public class FieldServlet extends HttpServlet {
 		return response;
 	}
 	private String celldiag(String s) {
-                StringBuilder response = new StringBuilder();
+		StringBuilder response = new StringBuilder();
 		JSONArray cells = new JSONArray(s);
 		//JSONObject response = new JSONObject();
 		JSONArray dt = new JSONArray();

@@ -44,7 +44,8 @@ public class PortalServlet extends HttpServlet {
 		S2LatLng p2 =  entBean.getPortalLocation(req.getParameter("l2"));
 		S2LatLng p3 =  entBean.getPortalLocation(req.getParameter("l3"));
 		String pr =  req.getParameter("rr");
-		
+		String portalsString = req.getParameter("portals");
+
 		S2Region searchRegion = null;
 
 		if (pr != null && p1 != null)
@@ -72,9 +73,28 @@ public class PortalServlet extends HttpServlet {
 		ArrayList<Portal> portalList;
 		if (searchRegion != null) 
 			portalList = entBean.getPortalInRegion(searchRegion);
-		 else 
-			portalList = entBean.getPortalAll();
-
+		 else
+		 {
+		 	if (portalsString != null)
+			{
+				portalList = new ArrayList<Portal>();
+				// I really should make an SQL DAO query getPortalWithTitle
+				S1Angle rangeAngle =  S1Angle.radians(0.0001 / 6367.0);
+				JSONArray portalsJSON = new JSONArray(portalsString);
+				for (Object obj: portalsJSON)
+				{
+					String portalTitle = (String)obj;
+					S2LatLng pt =  entBean.getPortalLocation(portalTitle);
+					S2Region sr = S2Cap.fromAxisAngle(pt.toPoint(),rangeAngle);
+					ArrayList<Portal> pl = entBean.getPortalInRegion(sr);
+					// should only ever return 1 
+					for (Portal po : pl)
+						portalList.add(po);
+				}
+			} else {
+				portalList = entBean.getPortalAll();
+			}
+		 }
 		JSONObject jsonResponse = new JSONObject();
 		for (Portal pt : portalList)
 		{

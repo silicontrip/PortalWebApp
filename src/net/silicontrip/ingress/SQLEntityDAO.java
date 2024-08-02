@@ -1131,11 +1131,24 @@ public class SQLEntityDAO implements EntityDAO {
 		try {
 			c = spdDs.getConnection();
 			//ps = c.prepareStatement(PORTAL_GET_FROM_BOX, ResultSet.CONCUR_READ_ONLY);
+
+			//"select guid,title,latE6,lngE6,health,team,level from portals where latE6>=? and latE6<=? and lngE6>=? and lngE6<=? and deleted!=true";
+
 			ps = c.prepareStatement(PORTAL_GET_FROM_BOX);
 			ps.setString(1, Long.toString(bound.latLo().e6()));
 			ps.setString(2, Long.toString(bound.latHi().e6()));
 			ps.setString(3, Long.toString(bound.lngLo().e6()));
 			ps.setString(4, Long.toString(bound.lngHi().e6()));
+
+
+//		Logger.getLogger(SQLEntityDAO.class.getName()).log(Level.INFO, "get portals in Rect. " + 
+//			"latlo: " + Long.toString(bound.latLo().e6()) +
+//			" lathi: " + Long.toString(bound.latHi().e6()) +
+//			" lnglo: " + Long.toString(bound.lngLo().e6()) +
+//			" lnghi: " + Long.toString(bound.lngHi().e6()) 
+//		  );
+
+
 			rs = ps.executeQuery();
 
 			while (rs.next()) {

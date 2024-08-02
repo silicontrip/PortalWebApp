@@ -21,6 +21,9 @@ import jakarta.persistence.LockModeType;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.Query;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 @Stateless
 @LocalBean
 public class EntitySessionBean {
@@ -121,6 +124,7 @@ public class EntitySessionBean {
 		ArrayList<Portal> ret = new ArrayList<Portal>();
 
 		ArrayList<Portal> rectPortals = dao.getPortalsInRect(reg.getRectBound());
+		//Logger.getLogger(EntitySessionBean.class.getName()).log(Level.INFO, "get portals in Rect: " + reg.getRectBound() + " size: " + rectPortals.size() );
 		for (Portal p : rectPortals) {
 			long plat = p.getLatE6();
 			long plng = p.getLngE6();

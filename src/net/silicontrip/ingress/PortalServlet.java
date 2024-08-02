@@ -51,13 +51,14 @@ public class PortalServlet extends HttpServlet {
 		if (pr != null && p1 != null)
 		{
 			double radius = Double.parseDouble(pr) ;
-			System.out.println("Radius: " + radius);
+			//Logger.getLogger(PortalServlet.class.getName()).log(Level.INFO, "Radius: " + radius );
+
+			//System.out.println("Radius: " + radius);
 			if (radius<0.0001) radius=0.0001; // because 0 doesn't work
 			S1Angle rangeAngle =  S1Angle.radians(radius / 6367.0);
 			searchRegion = S2Cap.fromAxisAngle(p1.toPoint(),rangeAngle);
 		}
-
-		if (p1 != null && p2 != null && p3 != null)
+		else if (p1 != null && p2 != null && p3 != null)
 		{
 			S2PolygonBuilder pb = new S2PolygonBuilder(S2PolygonBuilder.Options.UNDIRECTED_UNION);
 			pb.addEdge(p1.toPoint(),p2.toPoint());

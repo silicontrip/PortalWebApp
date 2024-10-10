@@ -130,6 +130,7 @@ public class SQLEntityDAO implements EntityDAO {
 	protected static String PORTAL_UPDATE_DELETED = "update portals set deleted=true where guid=?";
 	protected static String PORTAL_GET_PORTAL_FROM_TITLE = "select guid,title,latE6,lngE6,health,team,level from portals where title=? and deleted!=true";
 	protected static String PORTAL_GET_PORTAL_FROM_GUID = "select guid,title,latE6,lngE6,health,team,level from portals where guid=? and deleted!=true";
+	protected static String PORTAL_GET_PORTAL_FROM_LOCATION = "select guid,title,latE6,lngE6,health,team,level from portals where latE6=? and lngE6=? and deleted!=true";
 
 	//protected static String PORTAL_UPDATE_TITLE = "update portals set title=? where guid=?";
 	//protected static String PORTAL_UPDATE_LOCATION = "update portals set latE6=?,lngE6=? where guid=?";
@@ -1473,6 +1474,49 @@ public class SQLEntityDAO implements EntityDAO {
 		return ret;
 	}
 
+	@Override
+	public Portal getPortalFromLocation (long latE6, long lngE6) throws EntityDAOException
+	{
+		PreparedStatement ps = null;
+		ResultSet rs = null;
+		Portal ret = null;
+
+		try {
+			c = spdDs.getConnection();
+			ps = c.prepareStatement(PORTAL_GET_PORTAL_FROM_LOCATION);
+
+			ps.setString(1, Long.toString(latE6));
+			ps.setString(2, Long.toString(lngE6));
+			rs = ps.executeQuery();
+
+			// should only ever be one, so doesn't need the multiple row handling code.
+			while (rs.next()) {
+				ret = new Portal(rs.getString("guid"),
+					rs.getString("title"),
+					rs.getLong("latE6"),
+					rs.getLong("lngE6"),
+					rs.getInt("health"),
+					rs.getString("team"),
+					rs.getInt("level")
+				);
+			}
+
+		} catch (SQLException se) {
+			se.printStackTrace();
+			throw new EntityDAOException("SQLException: " + se.getMessage());
+		} finally {
+			try {
+				if(rs!=null)
+					rs.close();
+				if (ps!=null)
+					ps.close();
+				c.close();
+			} catch (SQLException se) {
+				throw new EntityDAOException("SQLException: " + se.getMessage());
+			}
+		}
+		return ret;
+	}
 
 	/**
 	 * Flag the portal as deleted in the database identified by its guid.

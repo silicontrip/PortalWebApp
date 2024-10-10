@@ -95,8 +95,14 @@ public class EntitySessionBean {
 		if (s.matches("(\\+|-)?([0-9]+(\\.[0-9]+)),(\\+|-)?([0-9]+(\\.[0-9]+))"))
 		{
 			// not implemented
-			return null;
-			//return getDAO().getPortalLocationFromLocation(latE6,lngE6);
+			// return null;
+			// or is it?
+			String[] ll = s.split(",");
+			Double lat = Double.parseDouble(ll[0]);
+			Double lng = Double.parseDouble(ll[1]);
+			long latE6 = Math.round(lat * 1000000);
+			long lngE6 = Math.round(lng * 1000000);			
+			return dao.getPortalFromLocation(latE6,lngE6);
 		}
 		result =  dao.getPortalFromTitle(s);
 		if (result == null)

@@ -140,7 +140,16 @@ public class EntitySessionBean {
 			if (reg.contains(cell))
 			{
 				ret.add(p);
+			} else if (reg instanceof com.google.common.geometry.S2Polygon)
+			{
+				S2Polygon preg = (S2Polygon)reg;
+				S1Angle ang = preg.getDistance(latLng.toPoint());
+				if (ang.e6() == 0)
+				{
+					ret.add(p);
+				}
 			}
+			
 		}
 		return ret;
 	}

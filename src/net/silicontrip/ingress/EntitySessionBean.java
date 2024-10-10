@@ -91,8 +91,10 @@ public class EntitySessionBean {
 		if (s==null)
 			return null;
 		if (s.matches("^[0-9a-fA-F]{32}\\.1[16]$"))
-			return dao.getPortalFromGuid(s);
-		if (s.matches("(\\+|-)?([0-9]+(\\.[0-9]+)),(\\+|-)?([0-9]+(\\.[0-9]+))"))
+		{
+			result = dao.getPortalFromGuid(s);
+		} 
+		else if (s.matches("(\\+|-)?([0-9]+(\\.[0-9]+)),(\\+|-)?([0-9]+(\\.[0-9]+))"))
 		{
 			// not implemented
 			// return null;
@@ -102,9 +104,12 @@ public class EntitySessionBean {
 			Double lng = Double.parseDouble(ll[1]);
 			long latE6 = Math.round(lat * 1000000);
 			long lngE6 = Math.round(lng * 1000000);			
-			return dao.getPortalFromLocation(latE6,lngE6);
+			result =  dao.getPortalFromLocation(latE6,lngE6);
+			if (result == null)
+				throw new EntityDAOException("Portal not found at Location: " + s);
+		} else {
+			result =  dao.getPortalFromTitle(s);
 		}
-		result =  dao.getPortalFromTitle(s);
 		if (result == null)
 			throw new EntityDAOException("Portal Title not found: " + s);
 

@@ -408,7 +408,7 @@ public class FieldSessionBean {
 		else
 			mu = new UniformDistribution(score,range);
 							
-		S2CellUnion fieldsCells = field.getCells();
+		S2CellUnion fieldsCells = fi.getCells();
 		
 		for (S2CellId innerCell : fieldsCells)
 		{
@@ -421,7 +421,7 @@ public class FieldSessionBean {
 				if (cellInnerMU != null)
 				{
 					UniformDistribution cma = cellInnerMU.mul(areaInner);
-					mu = mus.sub(cma);
+					mu = mu.sub(cma);
 				}
 				else
 				{
@@ -433,7 +433,7 @@ public class FieldSessionBean {
 		return mu;
 	}
 
-	public int disagreements(Field field)
+	public int disagreements(Field field) throws EntityDAOException
 	{
 		int disagree = 0;
 		final S2CellUnion cells = field.getCells();
@@ -469,7 +469,7 @@ public class FieldSessionBean {
 			return missing;
 	}
 
-	public bool improvesModel(Field field)
+	public boolean improvesModel(Field field) throws EntityDAOException
 	{
 		S2CellUnion cellsOuter = field.getCells();
 		if (countMissingCells(cellsOuter) == 0)

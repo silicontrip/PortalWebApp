@@ -31,6 +31,7 @@ public interface EntityDAO {
 	//public ArrayList<Field> getFieldAll() throws EntityDAOException;
 	public Field getField(String guid) throws EntityDAOException;
 	public ArrayList<Field> findField (Field f) throws EntityDAOException;
+	public ArrayList<Field> findField (Link l) throws EntityDAOException;
 	public void updateFieldMU(String guid,int mu) throws EntityDAOException;
 	public void deleteField(String guid) throws EntityDAOException;
 	public void insertField(String creator,String agent,int mu, String guid,long timestamp,String team, String pguid1, long plat1, long plng1, String pguid2, long plat2, long plng2, String pguid3, long plat3, long plng3, boolean valid) throws EntityDAOException;

@@ -115,7 +115,7 @@ public class SQLEntityDAO implements EntityDAO {
 	protected static String FIELD_DELETE = "delete from mufields where guid=?";
 	protected static String FIELD_INSERT = "insert into mufields (creator,agent,mu,guid,timestamp,team,pguid1,plat1,plng1,pguid2,plat2,plng2,pguid3,plat3,plng3,valid) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 	protected static String FIELD_FIND = "select * from mufields where (((plat1=? and plng1=?) or (plat2=? and plng2=?) or (plat3=? and plng3=?)) and ((plat1=? and plng1=?) or (plat2=? and plng2=?) or (plat3=? and plng3=?)) and ((plat1=? and plng1=?) or (plat2=? and plng2=?) or (plat3=? and plng3=?))) and valid=true";
-
+	protected static String FIELD_FIND_LINK = "SELECT * FROM mufields WHERE valid = true AND ((plat1 = ? AND plng1 = ? AND ((plat2 = ? AND plng2 = ?) OR (plat3 = ? AND plng3 = ?))) OR (plat2 = ? AND plng2 = ? AND ((plat1 = ? AND plng1 = ?) OR (plat3 = ? AND plng3 = ?))) OR (plat3 = ? AND plng3 = ? AND ((plat1 = ? AND plng1 = ?) OR (plat2 = ? AND plng2 = ?))))";
 	// moving to cached EJB
 	protected static String FIELD_INSERT_CELLS = "insert into fieldcells (field_guid,cellid) values (?,?)";
 	protected static String FIELD_FIND_FROM_CELL = "select field_guid  from fieldcells where cellid=?";
@@ -595,6 +595,7 @@ public class SQLEntityDAO implements EntityDAO {
 
 		try {
 			c = spdDs.getConnection();
+//	protected static String FIELD_FIND = "select * from mufields where (((plat1=? and plng1=?) or (plat2=? and plng2=?) or (plat3=? and plng3=?)) and ((plat1=? and plng1=?) or (plat2=? and plng2=?) or (plat3=? and plng3=?)) and ((plat1=? and plng1=?) or (plat2=? and plng2=?) or (plat3=? and plng3=?))) and valid=true";			
 			ps = c.prepareStatement(FIELD_FIND);
 
 			ps.setLong(1, f.getPLat1());
@@ -650,6 +651,81 @@ public class SQLEntityDAO implements EntityDAO {
 		}
 		return ret;
 	}
+
+	/**
+	 * Gets a Field matching the specified geometry from the database
+	 *
+	 * @param l The Link to find matching fields with.
+	 * 
+	 *
+	 * @return ArrayList of Fields
+	 *
+	 * @throws EntityDAOException containing an SQL Exception message
+	 */
+	@Override
+	public ArrayList<Field> findField(Link l) throws EntityDAOException {
+		PreparedStatement ps = null;
+		ResultSet rs = null;
+		ArrayList<Field> ret = new ArrayList<>();
+
+		try {
+			c = spdDs.getConnection();
+			ps = c.prepareStatement(FIELD_FIND_LINK);
+
+			ps.setLong(1, l.getoLatE6());
+			ps.setLong(2, l.getoLngE6());
+			ps.setLong(3, l.getdLatE6());
+			ps.setLong(4, l.getdLngE6());
+			ps.setLong(5, l.getdLatE6());
+			ps.setLong(6, l.getdLngE6());
+
+			ps.setLong(7, l.getoLatE6());
+			ps.setLong(8, l.getoLngE6());
+			ps.setLong(9, l.getdLatE6());
+			ps.setLong(10, l.getdLngE6());
+			ps.setLong(11, l.getdLatE6());
+			ps.setLong(12, l.getdLngE6());
+
+			ps.setLong(13, l.getoLatE6());
+			ps.setLong(14, l.getoLngE6());
+			ps.setLong(15, l.getdLatE6());
+			ps.setLong(16, l.getdLngE6());
+			ps.setLong(17, l.getdLatE6());
+			ps.setLong(18, l.getdLngE6());
+			
+			rs = ps.executeQuery();
+
+			while (rs.next()) {
+				Field fi = new Field(
+						rs.getString("creator"),
+						rs.getString("agent"),
+						rs.getInt("mu"),
+						rs.getString("guid"),
+						rs.getLong("timestamp"),
+						rs.getString("team"),
+						rs.getString("pguid1"), rs.getLong("plat1"), rs.getLong("plng1"),
+						rs.getString("pguid2"), rs.getLong("plat2"), rs.getLong("plng2"),
+						rs.getString("pguid3"), rs.getLong("plat3"), rs.getLong("plng3"),
+						rs.getBoolean("valid")
+				);
+				ret.add(fi);
+			}
+		} catch (SQLException e) {
+			throw new EntityDAOException(e.getMessage());
+		} finally {
+			try {
+				if(rs!=null)
+					rs.close();
+				if (ps!=null)
+					ps.close();
+				c.close();
+			} catch (SQLException se) {
+				throw new EntityDAOException("SQLException: " + se.getMessage());
+			}
+		}
+		return ret;
+	}
+
 
 	/**
 	 * Checks if a field already exists in the database from its guid. Fields of

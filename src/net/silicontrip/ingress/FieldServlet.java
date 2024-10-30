@@ -195,6 +195,57 @@ public class FieldServlet extends HttpServlet {
 		response.put("fields",fields);
 		return response;
 	}
+
+	private JSONObject findSplit(String s)
+	{
+		JSONObject response = new JSONObject();
+		JSONArray guids = new JSONArray();
+		try {
+			Field fi = dao.getField(s);
+
+			guids.put(fi.getGuid());
+
+			Link l1 = new Link("", "", fi.getPLat1(), fi.getPLng1(), "", fi.getPLat2(), fi.getPLng2(), "");
+			Link l2 = new Link("", "", fi.getPLat2(), fi.getPLng2(), "", fi.getPLat3(), fi.getPLng3(), "");
+			Link l3 = new Link("", "", fi.getPLat3(), fi.getPLng3(), "", fi.getPLat1(), fi.getPLng1(), "");
+
+			ArrayList<Field>f1 = dao.findField(l1);
+			ArrayList<Field>f2 = dao.findField(l2);
+			ArrayList<Field>f3 = dao.findField(l3);
+
+			for (Field f: f1)
+			{
+				JSONObject fid = new JSONObject();
+				fid.put ("mu",f.getMU());
+				JSONObject muest = getEstMu(f);
+				fid.put ("muest", muest);
+				response.put(f.getGuid(),fid);
+			}
+			for (Field f: f2)
+			{
+				JSONObject fid = new JSONObject();
+				fid.put ("mu",f.getMU());
+				JSONObject muest = getEstMu(f);
+				fid.put ("muest", muest);
+				response.put(f.getGuid(),fid);
+			}
+			for (Field f: f3)
+			{
+				JSONObject fid = new JSONObject();
+				fid.put ("mu",f.getMU());
+				JSONObject muest = getEstMu(f);
+				fid.put ("muest", muest);
+				response.put(f.getGuid(),fid);
+			}
+
+
+		} catch (Exception e) {
+			Logger.getLogger(FieldServlet.class.getName()).log(Level.WARNING, null, e);
+			;
+		}
+		return response;	
+	}
+
 	private JSONObject fields(String s) {
 		JSONArray cells = new JSONArray(s);
 		JSONObject response = new JSONObject();
@@ -287,33 +338,10 @@ public class FieldServlet extends HttpServlet {
 		//System.out.println("<- " + response.toString());
 		return response;
 	}
-	private JSONObject use(String s) throws NamingException {
-//		System.out.println("useField -> " + s);
 
-		JSONObject response = new JSONObject();
-
-		JSONObject iitc_field = new JSONObject(s);
-		JSONArray pts = iitc_field.getJSONObject("data").getJSONArray("points");
-
-		Field searchField = new Field(
-			pts.getJSONObject(0).getLong("latE6"),
-			pts.getJSONObject(0).getLong("lngE6"),
-			pts.getJSONObject(1).getLong("latE6"),
-			pts.getJSONObject(1).getLong("lngE6"),
-			pts.getJSONObject(2).getLong("latE6"),
-			pts.getJSONObject(2).getLong("lngE6"));
-
-		int known_mu = fieldBean.muKnownField(searchField);
-
-		response.put("mu_known",known_mu);
-
-		// getCellsForField
-		//S2Polygon s2Field = searchField.getS2Polygon();
-		//S2CellUnion cellu = cellBean.getCellsForField(s2Field);
-
-		// getIntersectionMU
+	private JSONObject getEstMu(Field searchField) {
 		HashMap<S2CellId,AreaDistribution> area = fieldBean.getIntersectionMU(searchField);
-
+		JSONObject response = new JSONObject();
 		// calc mu
 		double min_mu = 0;
 		double max_mu = 0;
@@ -324,6 +352,7 @@ public class FieldServlet extends HttpServlet {
 			AreaDistribution mu = entry.getValue();
 			JSONObject areaDist = new JSONObject();
 			areaDist.put("area",mu.area);
+			areaDist.put("cell",entry.getKey().toToken());
 			if (mu.mu != null)
 			{
 				areaDist.put("min",mu.mu.getLower());
@@ -346,6 +375,30 @@ public class FieldServlet extends HttpServlet {
 		response.put("mu_max", max_mu);
 		//response.put("cells", cells); // future expansion
 		//System.out.println("<- " + response.toString());
+		return response;
+	}
+
+	private JSONObject use(String s) throws NamingException {
+//		System.out.println("useField -> " + s);
+
+		JSONObject response = new JSONObject();
+
+		JSONObject iitc_field = new JSONObject(s);
+		JSONArray pts = iitc_field.getJSONObject("data").getJSONArray("points");
+
+		Field searchField = new Field(
+			pts.getJSONObject(0).getLong("latE6"),
+			pts.getJSONObject(0).getLong("lngE6"),
+			pts.getJSONObject(1).getLong("latE6"),
+			pts.getJSONObject(1).getLong("lngE6"),
+			pts.getJSONObject(2).getLong("latE6"),
+			pts.getJSONObject(2).getLong("lngE6"));
+
+		int known_mu = fieldBean.muKnownField(searchField);
+
+		response = getEstMu(searchField);
+
+		response.put("mu_known",known_mu);
 		return response;
 	}
 
@@ -498,49 +551,10 @@ public class FieldServlet extends HttpServlet {
 
 			// common with use
 				int known_mu = fieldBean.muKnownField(searchField);
+				entres = getEstMu(searchField);
 
 				entres.put("mu_known",known_mu);
 
-				// getCellsForField
-				//S2Polygon s2Field = searchField.getS2Polygon();
-				//S2CellUnion cellu = cellBean.getCellsForField(s2Field);
-
-				// getIntersectionMU
-				HashMap<S2CellId,AreaDistribution> area = fieldBean.getIntersectionMU(searchField);
-
-				// calc mu
-				double min_mu = 0;
-				double max_mu = 0;
-				boolean undefined = false;
-				JSONObject cells = new JSONObject();
-				for (Map.Entry<S2CellId, AreaDistribution> entry : area.entrySet()) {
-					//System.out.println (entry.getKey().toToken() + ": " + entry.getValue().toString());
-					AreaDistribution mu = entry.getValue();
-					JSONObject areaDist = new JSONObject();
-					areaDist.put("area",mu.area);
-					if (mu.mu != null)
-					{
-						areaDist.put("min",mu.mu.getLower());
-						areaDist.put("max",mu.mu.getUpper());
-						min_mu += mu.area * mu.mu.getLower();
-						max_mu += mu.area * mu.mu.getUpper();
-					} else {
-						undefined=true;
-						areaDist.put("lower",-1);
-						areaDist.put("upper",-1);
-					}
-					cells.put(entry.getKey().toToken(),areaDist);
-				}
-				if (undefined)
-				{
-					min_mu=-1;
-					max_mu=-1;
-				}
-				entres.put("mu_min", min_mu);
-				entres.put("mu_max", max_mu);
-				entres.put("cells", cells); // future expansion
-		// common code ends
-				//System.out.println("<- " + response.toString());
 			}
 			resarr.put(entres);
 		}
@@ -598,6 +612,8 @@ public class FieldServlet extends HttpServlet {
 			jsonResponse = new JSONObject();
 			String textResponse = celldiag(req.getParameter("celldiag"));
 			writer.println(textResponse);
+		} else if (req.getParameter("findsplit") != null) {
+			jsonResponse = findSplit(req.getParameter("findsplit"));
 		} else {
 			System.out.println("Field Servlet - invalid request");
 			resp.setStatus(400);

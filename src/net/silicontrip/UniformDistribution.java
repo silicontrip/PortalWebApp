@@ -405,6 +405,18 @@ public class UniformDistribution implements Serializable {
 		}
 		return changed;
 	}
+
+	/**
+	 *  return true if the supplied UD could or could have contributed to improving the accuracy of this UD
+	 * 
+	 *  @return boolean true if the supplied UD can or had improved this UD
+	 */
+	public boolean edgeWithin (UniformDistribution a)
+	{
+		return (Math.abs(lower - a.getLower()) < epsilon || Math.abs(upper - a.getUpper()) < epsilon || (lower <= a.getLower() && a.getLower() <= upper) || (lower <= a.getUpper() && a.getUpper() <= upper));
+	}
+
+
 	/**
 	 * 	return a printable string, it's also a compatible JSON array.
 	 *

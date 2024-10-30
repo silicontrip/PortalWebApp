@@ -395,6 +395,108 @@ public class FieldSessionBean {
 		return fieldmu;
 	}
 	
+	private UniformDistribution remaining(Field fi, S2CellId cell)
+	{
+		UniformDistribution mu;
+					
+
+		Integer score = fi.getMU();
+		double area = CellSessionBean.getIntersectionArea(fi.getS2Polygon(),cell);
+
+		if (score==1) 
+			mu = new UniformDistribution(0.0,1.5);
+		else
+			mu = new UniformDistribution(score,range);
+							
+		S2CellUnion fieldsCells = field.getCells();
+		
+		for (S2CellId innerCell : fieldsCells)
+		{
+			if (innerCell != cell)
+			{
+				double areaInner = CellSessionBean.getIntersectionArea(fi.getS2Polygon(),innerCell);
+			
+				UniformDistribution cellInnerMU = muBean.getMU(innerCell.toToken());
+
+				if (cellInnerMU != null)
+				{
+					UniformDistribution cma = cellInnerMU.mul(areaInner);
+					mu = mus.sub(cma);
+				}
+				else
+				{
+					mu.setLower(0.0);
+				}
+			}
+		}
+		mu = mu.div(area);
+		return mu;
+	}
+
+	public int disagreements(Field field)
+	{
+		int disagree = 0;
+		final S2CellUnion cells = field.getCells();
+		for (S2CellId cell : cells)
+		{
+
+			UniformDistribution outerRemaining = remaining(field, cell);
+
+			ArrayList<String> fieldGuids = fieldsCells.fieldGuidsForCell(cell);
+
+			for (String fguid : fieldGuids)
+			{
+				if (fguid != field.getGuid())
+				{
+					Field fi = dao.getField(fguid);
+
+					UniformDistribution innerRemaining = remaining(fi, cell);
+					
+					if (!outerRemaining.intersects(innerRemaining))
+						disagree++;
+				}
+			}
+		}
+		return disagree;
+	}
+
+	private int countMissingCells (S2CellUnion c)
+	{
+			int missing = 0;
+			for (S2CellId cid: c)
+				if (muBean.getMU(cid.toToken()) == null)
+					missing++;
+			return missing;
+	}
+
+	public bool improvesModel(Field field)
+	{
+		S2CellUnion cellsOuter = field.getCells();
+		if (countMissingCells(cellsOuter) == 0)
+        {
+			for (S2CellId cell: cellsOuter) 
+			{
+				ArrayList<String> fieldGuids = fieldsCells.fieldGuidsForCell(cell);
+
+				for (String fguid : fieldGuids)
+				{
+					if (fguid != field.getGuid())
+					{
+						Field fi = dao.getField(fguid);
+
+						UniformDistribution innerRemaining = remaining(fi, cell);
+
+						// this shouldn't return null as we did a countMissingCells check earlier
+						if (muBean.getMU(cell.toToken()).edgeWithin(innerRemaining))
+							return true;
+					}
+				}
+			}
+			return false;
+		}
+		return true;
+	}
+
 	public void findInvalid(Field field)
 	{
 		Double area;
@@ -409,31 +511,10 @@ public class FieldSessionBean {
 
 				for (String fguid : fieldGuids)
 				{
-					UniformDistribution initialMU;
-					
 					Field fi = dao.getField(fguid);
 
-					Integer score = fi.getMU();
-
-					if (score==1) 
-						initialMU = new UniformDistribution(0.0,1.5);
-					else
-						initialMU = new UniformDistribution(score,range);
-							
-					S2CellUnion fieldsCells = field.getCells();
-							
-					UniformDistribution mu = new UniformDistribution(initialMU);
-							
-					for (S2CellId innerCell : fieldsCells)
-					{
-						if (innerCell != cell)
-						{
-							double areaInner = CellSessionBean.getIntersectionArea(fi.getS2Polygon(),innerCell);
-							UniformDistribution cellInnerMU = muBean.getMU(innerCell.toToken()); 
-							UniformDistribution cma = cellInnerMU.mul(areaInner);
-							mu = mu.sub(cma);
-						}
-					}
+					UniformDistribution mu = remaining(fi, cell);
+					
 					//System.out.println(cell.toToken() + ": " + fguid + " -> " + mu);
 					resultMap.put(fguid,mu);
 				}	
@@ -478,48 +559,10 @@ public class FieldSessionBean {
 		{
 			try {
 				Field field = dao.getField(fieldGuid);
-				final S2CellUnion cells = field.getCells();
-
-				UniformDistribution initialMU;
-				Double area;
-
-				Integer score = field.getMU();
-				S2Polygon thisField = field.getS2Polygon();
-
-				if (score==1) 
-					initialMU = new UniformDistribution(0.0,1.5);
-				else
-					initialMU = new UniformDistribution(score,0.5);
-
-				UniformDistribution mus = new UniformDistribution(initialMU);
-				
-				for (S2CellId cellInner: cells)
-				{
-						// if not cell from outer loop
-					if (!cellInner.equals(cell))
-					{
-						// System.out.println("i<->o: " + cellOuter.toToken() + " - "+ cellInner.toToken());
-						double areaInner = CellSessionBean.getIntersectionArea(thisField,cellInner);
-						UniformDistribution cellInnerMU = muBean.getMU(cellInner.toToken()); // em.find(CellMUEntity.class, cellInner.id());
-
-						if (cellInnerMU != null)
-						{
-							UniformDistribution cma = cellInnerMU.mul(areaInner);
-							mus = mus.sub(cma);
-						}
-						else
-						{
-							mus.setLower(0.0);
-						}
-					}
-				}
-
-				double areaOuter = CellSessionBean.getIntersectionArea(thisField,cell);
-				mus=mus.div(areaOuter);
+				UniformDistribution mus = remaining(field, cell);
 				results.put(fieldGuid,mus);
 			} catch (EntityDAOException e) {
-                                Logger.getLogger(FieldSessionBean.class.getName()).log(Level.WARNING, "cannot find field guid: " + fieldGuid);
-
+				Logger.getLogger(FieldSessionBean.class.getName()).log(Level.WARNING, "cannot find field guid: " + fieldGuid);
 			}
 		}
 		return results;

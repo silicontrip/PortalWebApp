@@ -154,28 +154,39 @@ public class FieldQueueMDB implements MessageListener {
 						} else {
 							if (!fieldBean.hasFieldGuid(fi.getGuid()))
 							{
-								dao.insertField(fi.getCreator(),
-									fi.getAgent(),
-									fi.getMU(),
-									fi.getGuid(),
-									fi.getTimestamp(),
-									fi.getTeam(),
-									fi.getPGuid1(),
-									fi.getPLat1(),
-									fi.getPLng1(),
-									fi.getPGuid2(),
-									fi.getPLat2(),
-									fi.getPLng2(),
-									fi.getPGuid3(),
-									fi.getPLat3(),
-									fi.getPLng3(),
-									true);
-								//S2CellUnion fieldCells = getCellsForField(field.getS2Polygon());
-								S2CellUnion fieldCells = fi.getCells();
-								fieldsCells.insertCellsForField(fi.getGuid(),fieldCells);
+								// same geo field with different guid
+								if (fieldBean.muKnownField(fi) == -1) {
+									// validate this field against others.
+									if (fieldBean.disagreements(fi) == 0)
+									{
+										// does this field improve (or is unknown) the cell model.
+										if (fieldBean.improvesModel(fi)) 
+										{
+											dao.insertField(fi.getCreator(),
+												fi.getAgent(),
+												fi.getMU(),
+												fi.getGuid(),
+												fi.getTimestamp(),
+												fi.getTeam(),
+												fi.getPGuid1(),
+												fi.getPLat1(),
+												fi.getPLng1(),
+												fi.getPGuid2(),
+												fi.getPLat2(),
+												fi.getPLng2(),
+												fi.getPGuid3(),
+												fi.getPLat3(),
+												fi.getPLng3(),
+												true);
+											//S2CellUnion fieldCells = getCellsForField(field.getS2Polygon());
+											S2CellUnion fieldCells = fi.getCells();
+											fieldsCells.insertCellsForField(fi.getGuid(),fieldCells);
 
-								fpCache.addFieldGuid(fi.getGuid());
-								fieldBean.beginProcessing();	
+											fpCache.addFieldGuid(fi.getGuid());
+											fieldBean.beginProcessing();
+										}
+									}
+								}
 							}
 						} 
 					}

@@ -45,8 +45,7 @@ public class FieldsCellsBean {
 	@EJB
 	private SQLEntityDAO dao;
 
-
-        @PersistenceContext(unitName="net.silicontrip.ingress.persistence")
+    @PersistenceContext(unitName="net.silicontrip.ingress.persistence")
 	private EntityManager em;
 
 	//private HashMap<S2CellId,HashSet<String>>fieldCellCache;
@@ -87,44 +86,27 @@ public class FieldsCellsBean {
 	}
 	*/
 	public ArrayList<String> fieldGuidsForCell(S2CellId cell)  {
-		//ArrayList<String> ret = new ArrayList<String>();
-		//if (fieldCellCache.containsKey(cell)) {
-	//		return new ArrayList<String>(fieldCellCache.get(cell));
-	//	}
-	//	return new ArrayList<String>();
+
 		try {
 			return dao.fieldGuidsForCell(cell);
 		} catch (EntityDAOException e) {
-                        Logger.getLogger(FieldsCellsBean.class.getName()).log(Level.SEVERE, null, e);
-                }
+			Logger.getLogger(FieldsCellsBean.class.getName()).log(Level.SEVERE, null, e);
+		}
 		return new ArrayList<String>();
 	}
 
 // wondering if I should get the field and calculate the cells myself
 	@Lock(LockType.WRITE)
-        @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW) 
+	@TransactionAttribute(TransactionAttributeType.REQUIRES_NEW) 
 	public void insertCellsForField(String guid, S2CellUnion cells) {
 		// foreach cells
 		try {
 			dao.deleteFieldGuidCells(guid);
 			dao.insertCellsForField(guid,cells);
 		} catch (EntityDAOException e) {
-                        Logger.getLogger(FieldsCellsBean.class.getName()).log(Level.SEVERE, null, e);
-                }
-
-/*
-		for (S2CellId cellid : cells)
-		{
-			if (fieldCellCache.containsKey(cellid)) {
-				fieldCellCache.get(cellid).add(guid);
-			} else {
-				HashSet<String> newSet = new HashSet<String>();
-				newSet.add(guid);
-				fieldCellCache.put(cellid,newSet);
-			}
+			Logger.getLogger(FieldsCellsBean.class.getName()).log(Level.SEVERE, null, e);
 		}
-*/
-		//    fieldCellCache[cellid].HashSet.add(guid)
+
 	}
 	
 }

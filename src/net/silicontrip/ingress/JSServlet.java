@@ -49,13 +49,15 @@ public class JSServlet extends HttpServlet {
 				baseUrl = "https://quadrant.silicontrip.net:8181/portalApi/";
 			if (req.getRemoteAddr().startsWith("127.")) 
 				baseUrl = "http://localhost:8080/portalApi/";
+			if (req.getRemoteAddr().startsWith("0:0:0:0:0:0:0:1"))
+				baseUrl = "http://localhost:8080/portalApi/";
 			if (req.getRemoteAddr().startsWith("192.168.0.")) 
 				baseUrl = "https://192.168.0.20:8181/portalApi/";
 
 
 
 			PrintWriter writer = resp.getWriter();
-
+			writer.print("window.silicontrip_ingress_debug_remote_addr=\""+req.getRemoteAddr()+"\";");
 			writer.print("window.silicontrip_ingress_url=\""+baseUrl+"\";");
 			
 			for (String file : jsPath)

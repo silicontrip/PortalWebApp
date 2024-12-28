@@ -15,6 +15,8 @@
 		},
 		setup: function() {
 			console.log('dbEdgeGrabber::setup');
+			console.log('dbEdgeGrabber::url: '+window.silicontrip_ingress_url);
+			console.log('dbEdgeGrabber::remote: '+window.silicontrip_ingress_debug_remote_addr );
 
 			window.addHook('linkAdded', window.plugin.dbEdgeGrabber.edgeAdded);
 			window.addHook('mapDataRefreshEnd', window.plugin.dbEdgeGrabber.pushedges);
@@ -52,6 +54,13 @@
 		loadJSON: function (json) {
 			window.plugin.dbEdgeGrabber.dbLinks = json;
 		},
+		chunkArray: function(array, size) {
+			var chunks = [];
+			for (var i = 0; i < array.length; i += size) {
+				chunks.push(array.slice(i, i + size));
+			}
+			return chunks;
+		},
 		pushedges: function()
 		{
 			if(!window.plugin.dbEdgeGrabber.hz_edges.length)
@@ -75,17 +84,45 @@
 			window.$('#hz_edges').html('Pushing.. '+window.plugin.dbEdgeGrabber.hz_edges.length);
 			//console.log('edgeGrabber - Pushing edges - ' + window.plugin.dbEdgeGrabber.hz_edges.length);
 
+			// Define chunk size
+			const chunkSize = 100; // You can adjust this value as needed
+
+			// Chunk the edges and deleted_links arrays
+			var edgesChunks = window.plugin.dbEdgeGrabber.chunkArray(window.plugin.dbEdgeGrabber.hz_edges, chunkSize);
+			var deletedLinksChunks = window.plugin.dbEdgeGrabber.chunkArray(deleted_links, chunkSize);
+			
 			// need to put map bounds in here, as intel submits more links than are visible
 			// this causes DB constraint issues
 			var mapBounds = window.map.getBounds();
 			console.log("BOUNDS {");
 			console.log(mapBounds);
 			console.log("} BOUNDS");
-			window.$.post(window.plugin.dbEdgeGrabber.hz_url, {apikey: window.PLAYER.apikey, agent: window.PLAYER.nickname, bounds: JSON.stringify(mapBounds), edges: JSON.stringify(window.plugin.dbEdgeGrabber.hz_edges), edges_deleted: JSON.stringify(deleted_links)} )
-				.fail(function(xhr, status, error) {
-					alert("Technology Journey - Error submitting links");
-					console.log(JSON.stringify(xhr) +" " + status + " " + error );
-				});
+
+			for (let chunk=0; chunk < Math.max(edgesChunks.length,deletedLinksChunks.length); chunk++)
+			{
+				let post_data = {
+					apikey: window.PLAYER.apikey, 
+					agent: window.PLAYER.nickname, 
+					bounds: JSON.stringify(mapBounds)
+				};
+				if (chunk < edgesChunks.length)
+					post_data["edges"] = JSON.stringify(edgesChunks[chunk]);
+				else 
+					post_data["edges"] = "[]";
+				if (chunk < deletedLinksChunks.length)
+					post_data["edges_deleted"] = JSON.stringify(deletedLinksChunks[chunk]);
+				else
+					post_data["edges_deleted"] = "[]";
+
+				console.log('edgeGrabber - Pushing edge chunk - ' + chunk + " of " + Math.max(edgesChunks.length,deletedLinksChunks.length));
+
+				//console.log(post_data);
+
+ 				window.$.post(window.plugin.dbEdgeGrabber.hz_url, post_data).fail(function(xhr, status, error) {
+						alert("Technology Journey - Error submitting links");
+						console.log(JSON.stringify(xhr) +" " + status + " " + error );
+					});
+			}
 			window.plugin.dbEdgeGrabber.hz_edges = [];
 			window.$('#hz_edge_grabber').css('background-color', 'green');
 			window.$('#hz_edges').html(window.plugin.dbEdgeGrabber.hz_edges.length);

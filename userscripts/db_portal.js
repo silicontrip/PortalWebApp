@@ -123,6 +123,13 @@
 			}
 			//console.log(window.plugin.dbPortals.layer);
 		},
+		chunkArray: function(array, size) {
+			var chunks = [];
+			for (var i = 0; i < array.length; i += size) {
+				chunks.push(array.slice(i, i + size));
+			}
+			return chunks;
+		},
 		pushPortals: function()
 		{
 			if(!window.plugin.dbPortalGrabber.hz_portals.length)
@@ -148,11 +155,38 @@
 			}
 			window.$('#hz_portals').html('Pushing.. '+window.plugin.dbPortalGrabber.hz_portals.length);
 			console.log('portalGrabber - Pushing portals - ' + window.plugin.dbPortalGrabber.hz_portals.length);
-			console.log(window.plugin.dbPortalGrabber.hz_portals);
-			window.$.post(window.plugin.dbPortalGrabber.hz_submit_url, {apikey: window.PLAYER.apikey, agent: window.PLAYER.nickname, portals: JSON.stringify(window.plugin.dbPortalGrabber.hz_portals), portals_deleted: JSON.stringify(deleted_portals)} )
-				.fail(function() {
-					alert("Technology Journey - error submitting portals");
-			});
+			//console.log(window.plugin.dbPortalGrabber.hz_portals);
+
+			// Define chunk size
+			const chunkSize = 100; // You can adjust this value as needed
+
+			// Chunk the edges and deleted_links arrays
+			var portalChunks = window.plugin.dbPortalGrabber.chunkArray(window.plugin.dbPortalGrabber.hz_portals, chunkSize);
+			var deletedPortalChunks = window.plugin.dbPortalGrabber.chunkArray(deleted_portals, chunkSize);
+
+			for (let chunk=0; chunk < Math.max(portalChunks.length,deletedPortalChunks.length); chunk++)
+			{
+				let post_data = {
+					apikey: window.PLAYER.apikey, 
+					agent: window.PLAYER.nickname, 
+				};
+				if (chunk < portalChunks.length)
+					post_data["portals"] = JSON.stringify(portalChunks[chunk]);
+				else
+					post_data["portals"] = "[]";
+
+				if (chunk < deletedPortalChunks.length)
+					post_data["portals_deleted"] = JSON.stringify(deletedPortalChunks[chunk]);
+				else
+					post_data["portals_deleted"] = "[]";
+				
+				console.log('portalGrabber - Pushing portals chunk - ' + chunk + " of " + Math.max(portalChunks.length,deletedPortalChunks.length));
+
+				window.$.post(window.plugin.dbPortalGrabber.hz_submit_url, post_data ).fail(function(xhr, status, error) {
+						alert("Technology Journey - error submitting portals");
+						console.log(JSON.stringify(xhr) +" " + status + " " + error );
+				});
+			}
 			window.plugin.dbPortalGrabber.hz_portals = [];
 			window.$('#hz_portal_grabber').css('background-color', 'green');
 			window.$('#hz_portals').html(window.plugin.dbPortalGrabber.hz_portals.length);

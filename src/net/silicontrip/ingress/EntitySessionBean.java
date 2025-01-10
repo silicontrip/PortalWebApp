@@ -153,6 +153,14 @@ public class EntitySessionBean {
 				{
 					ret.add(p);
 				}
+			} else if (reg instanceof com.google.common.geometry.S2LatLngRect)
+			{
+				S2LatLngRect preg = (S2LatLngRect)reg;
+				S1Angle ang = preg.getDistance(latLng);
+				if (ang.e6() == 0)
+				{
+					ret.add(p);
+				}
 			}
 			
 		}

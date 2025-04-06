@@ -98,6 +98,7 @@ public class FieldQueueMDB implements MessageListener {
 				if (!refield && fieldBean.hasFieldGuid(fi.getGuid()))
 				{
 				//  System.out.println("field exists: " + guid);
+					Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.WARNING, "Field Exists: " + fi.getGuid());
 					return;
 				} 
 			//  System.out.println("FieldQueue: " + tm);
@@ -143,6 +144,7 @@ public class FieldQueueMDB implements MessageListener {
 				{
 					//System.out.println ("submit field");
 					fi.setMU(mu.getInt(i));
+
 					if (mu.length() == 1 || (valid[i] && (valid[0] ^ valid[1])))
 					{
 						// above business logic decribed in 1 if statement
@@ -152,7 +154,7 @@ public class FieldQueueMDB implements MessageListener {
 							//System.out.println("Resubmit: " + fi );
 							fieldBean.processField(fi.getGuid());
 						} else {
-							if (!fieldBean.hasFieldGuid(fi.getGuid()))
+							if (!fieldBean.hasFieldGuid(fi.getGuid())) // this is handled above
 							{
 								// same geo field with different guid
 								if (fieldBean.muKnownField(fi) == -1) {
@@ -162,6 +164,10 @@ public class FieldQueueMDB implements MessageListener {
 										// does this field improve (or is unknown) the cell model.
 										if (fieldBean.improvesModel(fi)) 
 										{
+
+											Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.INFO, "INSERTING: " + tm);
+
+
 											dao.insertField(fi.getCreator(),
 												fi.getAgent(),
 												fi.getMU(),
@@ -184,11 +190,19 @@ public class FieldQueueMDB implements MessageListener {
 
 											fpCache.addFieldGuid(fi.getGuid());
 											fieldBean.beginProcessing();
+										} else {
+											Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.WARNING, "Does not improve model: " + fi.getGuid());
 										}
+									} else {
+										Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.WARNING, "Has Disagreements: " + fi.getGuid());
 									}
+								} else {
+									Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.WARNING, "Already Known: " + fi.getGuid());
 								}
 							}
 						} 
+					} else {
+						Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.WARNING, "Fails valid logic: " + fi.getGuid());
 					}
 				}
 				// maybe set up an invalid table with split MU

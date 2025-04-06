@@ -9,7 +9,7 @@
 package net.silicontrip.ingress;
 
 import com.google.common.geometry.*;
-import com.mysql.jdbc.exceptions.MySQLIntegrityConstraintViolationException;
+//import com.mysql.jdbc.exceptions.MySQLIntegrityConstraintViolationException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -472,26 +472,37 @@ public class FieldSessionBean {
 	public boolean improvesModel(Field field) throws EntityDAOException
 	{
 		S2CellUnion cellsOuter = field.getCells();
+	//	if (cellsOuter.size() == 1 && field.getMU() > 1) {
+	//		return true;
+	//	}
+	//	int fieldCount = 0;
 		if (countMissingCells(cellsOuter) == 0)
         {
 			for (S2CellId cell: cellsOuter) 
 			{
-				ArrayList<String> fieldGuids = fieldsCells.fieldGuidsForCell(cell);
+	//			ArrayList<String> fieldGuids = fieldsCells.fieldGuidsForCell(cell);
 
-				for (String fguid : fieldGuids)
-				{
-					if (fguid != field.getGuid())
-					{
-						Field fi = dao.getField(fguid);
+	//			fieldCount += fieldGuids.size();
 
-						UniformDistribution innerRemaining = remaining(fi, cell);
+	//			for (String fguid : fieldGuids)
+	//			{
+	//				if (fguid != field.getGuid())
+	//				{
+	//					Field fi = dao.getField(fguid);
+
+						UniformDistribution innerRemaining = remaining(field, cell);
 
 						// this shouldn't return null as we did a countMissingCells check earlier
 						if (muBean.getMU(cell.toToken()).edgeWithin(innerRemaining))
 							return true;
-					}
-				}
+	//				}
+	//			}
 			}
+	//		if (fieldCount == 0)
+	//		{
+	//			Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.WARNING, "Cells exist but no field guids exist: " + field.getGuid());
+	//			return true;
+	//		}
 			return false;
 		}
 		return true;

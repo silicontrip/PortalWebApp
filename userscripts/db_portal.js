@@ -39,9 +39,6 @@
 
 			window.$('#toolbox').append('<a onclick="window.plugin.dbPortalGrabber.portalColour();return false;" accesskey="C" >DB Colour</a>');
 
-		window.$('#hz_portal_grabber').html('<strong>Portal post</strong> '
-					+'<a onclick="window.plugin.dbPortalGrabber.addKey();return false;">Update key</a>'
-					+' (<span id="hz_portals">0</span>)');
 		},
 		portalAdded: function(data)
 		{

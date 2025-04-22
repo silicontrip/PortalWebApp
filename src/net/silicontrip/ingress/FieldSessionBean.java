@@ -401,18 +401,27 @@ public class FieldSessionBean {
 					
 
 		Integer score = fi.getMU();
+		//if (score == 50)
+		//	Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.INFO, "Remaining required field: " + fi.getGuid() + " for cell: " + cell.toToken());
+
 		double area = CellSessionBean.getIntersectionArea(fi.getS2Polygon(),cell);
 
 		if (score==1) 
 			mu = new UniformDistribution(0.0,1.5);
 		else
 			mu = new UniformDistribution(score,range);
-							
+
 		S2CellUnion fieldsCells = fi.getCells();
 		
+		//if (score == 50)
+		//	Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.INFO, "Remaining MU: " + mu);
+
 		for (S2CellId innerCell : fieldsCells)
 		{
-			if (innerCell != cell)
+			//if (score == 50)
+			//	Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.INFO, "Remaining inner cell: " + innerCell.toToken());
+
+			if (innerCell.id() != cell.id())
 			{
 				double areaInner = CellSessionBean.getIntersectionArea(fi.getS2Polygon(),innerCell);
 			
@@ -429,7 +438,13 @@ public class FieldSessionBean {
 				}
 			}
 		}
+		//if (score == 50)
+		//	Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.INFO, "Remaining MU: " + mu);
+
 		mu = mu.div(area);
+		//if (score == 50)
+		//	Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.INFO, "Remaining MU/km: " + mu);
+
 		return mu;
 	}
 
@@ -476,6 +491,8 @@ public class FieldSessionBean {
 	//		return true;
 	//	}
 	//	int fieldCount = 0;
+	//if (field.getMU() == 50)
+	//	Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.INFO, "Processing required field: " + field.getGuid());
 		if (countMissingCells(cellsOuter) == 0)
         {
 			for (S2CellId cell: cellsOuter) 
@@ -491,9 +508,11 @@ public class FieldSessionBean {
 	//					Field fi = dao.getField(fguid);
 
 						UniformDistribution innerRemaining = remaining(field, cell);
-
+						UniformDistribution cellMU = muBean.getMU(cell.toToken());
+						//if (field.getMU() == 50)
+						//	Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.INFO, "Remaining: " + innerRemaining + " cell mu: "+cellMU + " for cell " + cell.toToken());
 						// this shouldn't return null as we did a countMissingCells check earlier
-						if (muBean.getMU(cell.toToken()).edgeWithin(innerRemaining))
+						if (cellMU.edgeWithin(innerRemaining))
 							return true;
 	//				}
 	//			}

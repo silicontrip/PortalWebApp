@@ -180,7 +180,7 @@ public class FieldSessionBean {
 					for (String guid : fieldGuids)
 					{
 				//Field fi = dao.getField(guid);
-						if (guid != fieldGuid)
+						if (!guid.equals(fieldGuid))
 							fpCache.addFieldGuid(guid);
 					}
 				}
@@ -421,7 +421,7 @@ public class FieldSessionBean {
 			//if (score == 50)
 			//	Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.INFO, "Remaining inner cell: " + innerCell.toToken());
 
-			if (innerCell.id() != cell.id())
+			if (!innerCell.equals(cell))
 			{
 				double areaInner = CellSessionBean.getIntersectionArea(fi.getS2Polygon(),innerCell);
 			
@@ -461,7 +461,7 @@ public class FieldSessionBean {
 
 			for (String fguid : fieldGuids)
 			{
-				if (fguid != field.getGuid())
+				if (!fguid.equals(field.getGuid()))
 				{
 					Field fi = dao.getField(fguid);
 

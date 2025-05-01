@@ -85,14 +85,17 @@ public class EntitySessionBean {
  * @return the Portal object.
  * @throws EntityDAOException if there is a problem locating the portal
  */
-	public Portal getPortal(String s) throws EntityDAOException
+	public ArrayList<Portal> getPortals(String s) throws EntityDAOException
 	{
-		Portal result = null;
+		ArrayList<Portal> result = new ArrayList<Portal>();
 		if (s==null)
 			return null;
 		if (s.matches("^[0-9a-fA-F]{32}\\.1[16]$"))
 		{
-			result = dao.getPortalFromGuid(s);
+			Portal p = dao.getPortalFromGuid(s);
+			if (p == null)
+				throw new EntityDAOException("Portal GUID not found: " + s);
+			result.add(p);
 		} 
 		else if (s.matches("(\\+|-)?([0-9]+(\\.[0-9]+)),(\\+|-)?([0-9]+(\\.[0-9]+))"))
 		{
@@ -104,14 +107,18 @@ public class EntitySessionBean {
 			Double lng = Double.parseDouble(ll[1]);
 			long latE6 = Math.round(lat * 1000000);
 			long lngE6 = Math.round(lng * 1000000);			
-			result =  dao.getPortalFromLocation(latE6,lngE6);
-			if (result == null)
-				throw new EntityDAOException("Portal not found at Location: " + s);
+			Portal p =  dao.getPortalFromLocation(latE6,lngE6);
+			if (p == null)
+				throw new EntityDAOException("Portal Location not found: " + s);
+			result.add(p);
+
 		} else {
-			result =  dao.getPortalFromTitle(s);
+			ArrayList<Portal> pa = dao.getPortalsFromTitle(s);
+			if (pa == null)
+				throw new EntityDAOException("Portal Title not found: " + s);
+			for (Portal p : pa)
+				result.add(p);	
 		}
-		if (result == null)
-			throw new EntityDAOException("Portal Title not found: " + s);
 
 		return result;
 

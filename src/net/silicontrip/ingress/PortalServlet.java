@@ -90,10 +90,26 @@ public class PortalServlet extends HttpServlet {
 			{
 				portalList = new ArrayList<Portal>();
 				JSONArray portalsJSON = new JSONArray(portalsString);
-				for (Object obj: portalsJSON)
+				if (portalsJSON.length() == 1)
 				{
-					String portalTitle = (String)obj;
-					portalList.add(entBean.getPortal(portalTitle));
+					portalList = entBean.getPortals(portalsJSON.getString(0));
+				} else {
+					for (Object obj: portalsJSON)
+					{
+						String portalTitle = (String)obj;
+						ArrayList<Portal> res = entBean.getPortals(portalTitle);
+						if (res.size() > 1)
+						{
+							String message = "Ambiguous Portal Title: " + portalTitle + ": ";
+							for (Portal p : res)
+							{
+								message = message + (p.getLatE6() / 1000000) + "," + (p.getLngE6() / 1000000) + " ";
+							}
+							throw new ServletException(message);
+						}
+
+						portalList.add(res.get(0));
+					}
 				}
 			} else {
 				portalList = entBean.getPortalAll();
@@ -124,7 +140,9 @@ public class PortalServlet extends HttpServlet {
 		}
 		*/
 	}
-	catch (EntityDAOException e) {
+	 catch (IOException e) {
+		e.printStackTrace();
+	} catch (Exception e) {
 		JSONObject jsonResponse = new JSONObject();
 		// e.printStackTrace();
 		jsonResponse.put("error",  e.getMessage());
@@ -142,9 +160,7 @@ public class PortalServlet extends HttpServlet {
 		}
 		//Logger.getLogger(PortalServlet.class.getName()).log(Level.SEVERE, null, e);
 
-	}  catch (IOException e) {
-		e.printStackTrace();
-	}
+	} 
   }
 
   public void doGet(HttpServletRequest req, HttpServletResponse resp){

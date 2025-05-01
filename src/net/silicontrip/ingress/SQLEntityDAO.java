@@ -1497,6 +1497,66 @@ public class SQLEntityDAO implements EntityDAO {
 	}
 
 /**
+ * Get the portal(s) from the portal's title.
+ *
+ * As titles are not unique, this method will return an array of all
+ * the matching portals. 
+ *
+ * @param title The Portal title.
+ *
+ * @return ArrayList<Portal> the portal object(s)
+ *
+ * @throws EntityDAOException containing an SQL Exception message
+ *
+ *
+ */
+@Override
+public ArrayList<Portal> getPortalsFromTitle(String title) throws EntityDAOException {
+	//Connection c = null;
+	PreparedStatement ps = null;
+	ResultSet rs = null;
+	ArrayList<Portal> ret = new ArrayList<>();
+
+	try {
+		c = spdDs.getConnection();
+		ps = c.prepareStatement(PORTAL_GET_PORTAL_FROM_TITLE);
+		ps.setString(1, title);
+		rs = ps.executeQuery();
+
+		while (rs.next()) {
+
+			Portal row = new Portal(rs.getString("guid"),
+				rs.getString("title"),
+				rs.getLong("latE6"),
+				rs.getLong("lngE6"),
+				rs.getInt("health"),
+				rs.getString("team"),
+				rs.getInt("level")
+			);
+
+			ret.add(row);
+
+		}
+
+	} catch (SQLException se) {
+		se.printStackTrace();
+		throw new EntityDAOException("SQLException: " + se.getMessage());
+	} finally {
+		try {
+			if(rs!=null)
+				rs.close();
+			if (ps!=null)
+				ps.close();
+			c.close();
+		} catch (SQLException se) {
+			throw new EntityDAOException("SQLException: " + se.getMessage());
+		}
+	}
+	return ret;
+}
+
+
+/**
 	 * Get the portal from the portal's guid.
 	 *
 	 *

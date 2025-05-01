@@ -48,6 +48,7 @@ public interface EntityDAO {
 	public S2LatLng getPortalLocationFromGuid (String guid) throws EntityDAOException;
 	public S2LatLng getPortalLocationFromLocation (long latE6, long lngE6) throws EntityDAOException;
 	public Portal getPortalFromTitle (String title) throws EntityDAOException;
+	public ArrayList<Portal> getPortalsFromTitle (String title) throws EntityDAOException;
 	public Portal getPortalFromGuid (String guid) throws EntityDAOException;
 	public Portal getPortalFromLocation (long latE6, long lngE6) throws EntityDAOException;
 	public void deletePortal (String guid) throws EntityDAOException;

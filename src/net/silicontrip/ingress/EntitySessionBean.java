@@ -75,7 +75,7 @@ public class EntitySessionBean {
 	}
 	
 	/**
- * get the S2LatLng location of a portal description.
+ * get the Portal object from a portal description.
  *
  *This is a conditional logic method which compares the description with a few known formats
  *and calls the appropriate method to determine the location.

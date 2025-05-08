@@ -40,16 +40,19 @@ public class PortalServlet extends HttpServlet {
 
 	//	PortalDAO pdao = new SQLPortalDAO();
 
-		S2LatLng p1 =  entBean.getPortalLocation(req.getParameter("ll"));
-		S2LatLng p2 =  entBean.getPortalLocation(req.getParameter("l2"));
-		S2LatLng p3 =  entBean.getPortalLocation(req.getParameter("l3"));
+		// As portal titles are not unique. I'd like to change this logic.
+		String l1 = req.getParameter("ll");
+		String l2 = req.getParameter("l2");
+		String l3 = req.getParameter("l3");
+		
 		String pr =  req.getParameter("rr");
 		String portalsString = req.getParameter("portals");
 
 		S2Region searchRegion = null;
 
-		if (pr != null && p1 != null)
+		if (pr != null && l1 != null)
 		{
+			S2LatLng p1 =  entBean.getPortalLocation(l1);
 			double radius = Double.parseDouble(pr) ;
 			//Logger.getLogger(PortalServlet.class.getName()).log(Level.INFO, "Radius: " + radius );
 
@@ -58,18 +61,25 @@ public class PortalServlet extends HttpServlet {
 			S1Angle rangeAngle =  S1Angle.radians(radius / 6367.0);
 			searchRegion = S2Cap.fromAxisAngle(p1.toPoint(),rangeAngle);
 		}
-		else if (p1 != null && p2 != null && p3 != null)
+		else if (l1 != null && l2 != null && l3 != null)
 		{
+			S2LatLng p1 =  entBean.getPortalLocation(l1);
+			S2LatLng p2 =  entBean.getPortalLocation(l2);
+			S2LatLng p3 =  entBean.getPortalLocation(l3);
 			S2PolygonBuilder pb = new S2PolygonBuilder(S2PolygonBuilder.Options.UNDIRECTED_UNION);
 			pb.addEdge(p1.toPoint(),p2.toPoint());
 			pb.addEdge(p2.toPoint(),p3.toPoint());
 			pb.addEdge(p3.toPoint(),p1.toPoint());
 			searchRegion=pb.assemblePolygon();
-		} else if (p1 !=null && p2 !=null) {
+		} else if (l1 !=null && l2 !=null) {
+			S2LatLng p1 =  entBean.getPortalLocation(l1);
+			S2LatLng p2 =  entBean.getPortalLocation(l2);
 			searchRegion = S2LatLngRect.fromPointPair(p1,p2);
-		} else if (p1 != null) {
-			S1Angle rangeAngle =  S1Angle.radians(0.0001 / 6367.0);
-			searchRegion = S2Cap.fromAxisAngle(p1.toPoint(),rangeAngle);
+		} else if (l1 != null) {
+			//S1Angle rangeAngle =  S1Angle.radians(0.0001 / 6367.0);
+			//searchRegion = S2Cap.fromAxisAngle(p1.toPoint(),rangeAngle);
+			// This condition is the only one where we are not concerned with ambigious titles.
+			portalsString = "[\"" + l1 + "\"]";
 		}
 		ArrayList<Portal> portalList;
 		if (searchRegion != null) 

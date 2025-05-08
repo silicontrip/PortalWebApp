@@ -69,10 +69,12 @@ password (apikey passed in via post or get)
 for accessing the webapp pages
 
 create JMS Connection Factory:
+Resources/JMS Resources/Connection Factories
 JNDI Name: jms/QueueConnectionFactory
 Resource type: jakata.jms.QueueConnectionFactory
 
 create JMS Queue: 
+Resources/JMS Resources/Destination Resources
 JNDI name: jms/portalQueue
 physical destination name: portalQueue
 Resource Type: jakarta.jms.Queue
@@ -84,3 +86,18 @@ create JMS Queue: jms/cellQueue
 
 ./glassfish/bin/asadmin deploy dist/portalApi.war
 ./glassfish/bin/asadmin undeploy portalApi
+
+Configurations/server-config/JVM Settings
+JVM Options
+Replace -Xmx512m with -Xmx4096m
+
+-        <thread-pool name="http-thread-pool" max-thread-pool-size="32"></thread-pool>
+-        <jvm-options>-Xbootclasspath/a:${com.sun.aas.installRoot}/lib/grizzly-npn-api.jar</jvm-options>
+
+
+        <iiop-listener address="0.0.0.0" port="3700" lazy-init="true" id="orb-listener-1"/>
+        <iiop-listener address="0.0.0.0" port="3820" id="SSL" security-enabled="true">
+          <ssl classname="com.sun.enterprise.security.ssl.GlassfishSSLImpl" cert-nickname="s1as"/>
+        </iiop-listener>
+        <iiop-listener address="0.0.0.0" port="3920" id="SSL_MUTUALAUTH" security-enabled="true">
+

@@ -991,7 +991,7 @@ public class SQLEntityDAO implements EntityDAO {
 			ps.setString(1, guid);
 			for (S2CellId cell : cells) {
                         //Logger.getLogger(SQLEntityDAO.class.getName()).log(Level.INFO,"insert cell: " +cell.toToken() +" for guid: " +guid);
-				ps.setLong(2, cell.id());
+				ps.setLong(2, cell.id() >> 32); // DB only supports signed 64 bit
 				rs = ps.executeUpdate();
 			}
 		} catch (SQLException se) {
@@ -1028,7 +1028,7 @@ public class SQLEntityDAO implements EntityDAO {
 			c = spdDs.getConnection();
 			ps = c.prepareStatement(FIELD_FIND_FROM_CELL);
 
-			ps.setLong(1, cell.id());
+			ps.setLong(1, cell.id() >> 32);  // BIGINT is signed 64bit
 
 			rs = ps.executeQuery();
 

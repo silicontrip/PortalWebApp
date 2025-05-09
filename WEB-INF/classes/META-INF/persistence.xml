@@ -6,7 +6,7 @@
     <class>net.silicontrip.ingress.Link</class>
     <exclude-unlisted-classes>true</exclude-unlisted-classes>
     <properties>
-        <property name="eclipselink.target-database" value="MySQL"/>
+        <property name="eclipselink.target-database" value="JavaDB"/>
     </properties>
   </persistence-unit>
 </persistence>

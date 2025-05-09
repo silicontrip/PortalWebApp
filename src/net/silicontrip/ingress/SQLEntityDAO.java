@@ -110,7 +110,7 @@ public class SQLEntityDAO implements EntityDAO {
 	protected static String MUCELL_INSERT = "insert into mucell (cellid,mu_low,mu_high) values (?,?,?)";
 	 */
 	protected static String FIELD_GET = "select * from mufields";
-	protected static String FIELD_GET_GUID = "select * from mufields where guid=?";
+	protected static String FIELD_GET_GUID = "select * from mufields where guid=? and valid = true";
 	protected static String FIELD_UPDATE_MU = "update mufields set mu=? where guid=?";
 	protected static String FIELD_DELETE = "delete from mufields where guid=?";
 	protected static String FIELD_INSERT = "insert into mufields (creator,agent,mu,guid,timestamp,team,pguid1,plat1,plng1,pguid2,plat2,plng2,pguid3,plat3,plng3,valid) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";

@@ -100,10 +100,10 @@ public class PortalServlet extends HttpServlet {
 						ArrayList<Portal> res = entBean.getPortals(portalTitle);
 						if (res.size() > 1)
 						{
-							String message = "Ambiguous Portal Title: " + portalTitle + ": ";
+							String message = "Ambiguous Portal Title: " + portalTitle;
 							for (Portal p : res)
 							{
-								message = message + (p.getLatE6() / 1000000) + "," + (p.getLngE6() / 1000000) + " ";
+								message = message + " " + (p.getLatE6() / 1000000.0) + "," + (p.getLngE6() / 1000000.0);
 							}
 							throw new ServletException(message);
 						}

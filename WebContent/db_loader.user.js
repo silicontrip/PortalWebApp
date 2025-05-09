@@ -5,8 +5,8 @@
 // @version        0.1.2
 // @namespace      https://github.com/jonatkins/ingress-intel-total-conversion
 // @description
-// @updateURL      https://quadrant.silicontrip.net:8181/portalApi/db_loader.user.js
-// @downloadURL    https://quadrant.silicontrip.net:8181/portalApi/db_loader.user.js
+// @updateURL      http://localhost:8080/portalApi/db_loader.user.js
+// @downloadURL    http://localhost:8080/portalApi/db_loader.user.js
 // @include        https://intel.ingress.com/*
 // @include        http://intel.ingress.com/*
 // @match          https://intel.ingress.com/*

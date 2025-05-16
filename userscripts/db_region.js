@@ -882,8 +882,8 @@ window.plugin.muScraper = {
 				}
 			}
 			html += "<tt>" + fc + ": [" + fieldReport.mu_min + "-" + fieldReport.mu_max + "] : " + area +  "</tt><br/>"; 
-			tt_min += fieldReport.mu_min;
-			tt_max += fieldReport.mu_max;
+			tt_min += Math.round(fieldReport.mu_min);
+			tt_max += Math.round(fieldReport.mu_max);
 
 		}
 		if (fields.length > 1) {
@@ -909,8 +909,8 @@ window.plugin.muScraper = {
                 var result = data['result'];
                // console.log(JSON.stringify(result));
 		for (var count=0; count< result.length; count++) {
-                        var entry = result[count];  
-                        //console.log("ENTRY" + JSON.stringify(entry));
+			var entry = result[count];  
+			//console.log("ENTRY" + JSON.stringify(entry));
 			var read = entry[2].plext.text.split(" ");
 			var creator = read[2];
 			if ( read[3] === "linked")
@@ -1001,15 +1001,17 @@ window.plugin.muScraper = {
 		);
 	},
 	readField: function(data) {
-	//	console.log(">>> readField");
+		// console.log(">>> readField");
 		//console.log(data.field.options);
 		data.field.options.clickable=true;
+		data.field.options.interactive=true;
+
 		var area=window.plugin.muScraper.getAngArea(data.field.getLatLngs()) * 6367.0 * 6367.0;
 		window.plugin.muScraper.fieldList[data.field.options.guid]={area:area,options:data.field.options};
 		data.field.addEventListener('click',window.plugin.muScraper.clickField);
 	},
 	clickField: function(event) {
-		//console.log(">>> clickField");
+		// console.log(">>> clickField");
 		window.plugin.muScraper.clickLatLng = event.latlng;
 		window.plugin.muScraper.displayField(event.target);
 	},
@@ -1039,7 +1041,7 @@ window.plugin.muScraper = {
 	displayFieldGuid: function(guid)
 	{
 		//console.log(">>> displayFieldGuid");
-		//console.log("Select by guid: "+guid);
+		console.log("Select by guid: "+guid);
 		window.plugin.muScraper.displayField(window.fields[guid]);
 	},
 	displayField: function(field) {
@@ -1062,10 +1064,10 @@ window.plugin.muScraper = {
 			var fd = window.plugin.muScraper.fieldList[field.options.guid];
 			if (fd === undefined) { fd={}; }
 
-			//console.log("displayField::flayers");
 			var flayers = [];
 			if (window.plugin.muScraper.clickLatLng) { flayers = window.plugin.muScraper.getFieldsContainingLatLng(window.plugin.muScraper.clickLatLng); }
-
+			// console.log("displayField::flayers");
+			// console.log(flayers);
 			var layersHtml='';
 			layersHtml+='<select onchange="window.plugin.muScraper.displayFieldGuid(this.value)">';
 			var totalmu = 0;
@@ -1083,9 +1085,9 @@ window.plugin.muScraper = {
 				if (tfd) {
 					//console.log(tfd);
 					//console.log("tfd.mu");
-					if (tfd.mu) {
-						text += tfd.mu + ' MU';
-						totalmu += parseInt(tfd.mu);
+					if (tfd.mulabel) {
+						text += tfd.mulabel + ' MU';
+						totalmu += parseInt(tfd.mulabel);
 					} else {
 						unknown++;
 					}
@@ -1134,7 +1136,7 @@ window.plugin.muScraper = {
 			//console.log("displayField::end html");
 
 			var title = 'Mu: unknown';
-			if (fd.mu) title = "Mu: " + fd.mu;
+			if (fd.mulabel) title = "Mu: " + fd.mulabel;
 
 			// console.log("displayField::#portaldetails");
 
@@ -1157,6 +1159,8 @@ window.plugin.muScraper = {
 					window.plugin.muScraper.mu_use,
 					{apikey: window.PLAYER.apikey, agent: window.PLAYER.nickname, use: JSON.stringify(field.options)},
 					function(dd) {
+						console.log("MU unknown mu_use:");
+						console.log(dd);
 						//var dd = JSON.parse(data);
 						var title = "Mu: unknown";
 						if (dd.mu_known !== -1)
@@ -1214,6 +1218,7 @@ window.plugin.muScraper = {
 	labelSingle: function(fd,label)
 	{
 		// console.log("labelSingle: " + fd.guid+  ", " + JSON.stringify(fd.options.data.points) + ", " + label);
+		fd.mulabel = label;
 		window.plugin.muScraper.addLabel(fd.guid,fd.options.data.points,label + " mu");
 		//fd.mu = label;
 		if (window.plugin.muScraper.selectedField)
@@ -1258,7 +1263,7 @@ window.plugin.muScraper = {
 				if (window.plugin.muScraper.compareLinkAndField([comm.oPortal,comm.dPortal],fd.options.data.points)) {
 					var tsdiff = Math.abs(comm.ts - fd.options.timestamp);
 					//console.log("TS diff: " + tsdiff);
-					if (tsdiff < 2000) comm.field.push(fd);
+					if (tsdiff < 2000) comm.field.push(fd);  
 				}
 			}
 		}
@@ -1286,6 +1291,9 @@ window.plugin.muScraper = {
 					comm.field[0].creator = comm.fcomm[0].creator;
 					comm.field[1].creator = comm.fcomm[0].creator;
 					// a really bad way of assigning MU to split fields.
+					console.log(">>> Handling split field");
+					console.log("area[0] " + comm.field[0].area + " area[1] " + comm.field[1].area);
+					console.log("MU[0] " + mu0 + " MU[1] " + mu1);
 					if (mu0 > mu1)
 					{
 						if (comm.field[0].area > comm.field[1].area)
@@ -1465,7 +1473,7 @@ window.plugin.muScraper = {
 		var olat = ll2.lat * Math.PI / 180;
 		var dlat = ll1.lat * Math.PI / 180;
 
-		var a = (Math.sin(lat / 2.0) * Math.sin(lat/2.0)) + Math.cos(dlat) * Math.sin(lng / 2.0) * Math.sin(lng/2.0);
+		var a = (Math.sin(lat / 2.0) * Math.sin(lat/2.0)) + Math.cos(dlat) * Math.cos(olat) * (Math.sin(lng / 2.0) * Math.sin(lng/2.0));
 		return 2.0 * Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
 		//console.log("<<< getAngDistance");
 	},
@@ -1599,16 +1607,19 @@ window.plugin.muScraper = {
 			html = "<pre>";
 			var sflayers=[];
 			var ttmu=0;
+			console.log(">>> layer Report");
+
 			for (var i=0; i<flayers.length; i++)
 			{
-				//console.log("Layer : " + i);
 
 				tfd = window.plugin.muScraper.fieldList[flayers[i].options.guid];
-								var fa = window.plugin.muScraper.getAngArea(flayers[i].getLatLngs()) * 6367.0 * 6367.0;
+				console.log("Layer : " + i);
+				console.log(tfd);
+				var fa = window.plugin.muScraper.getAngArea(flayers[i].getLatLngs()) * 6367.0 * 6367.0;
 				var created=window.unixTimeToString(tfd.options.timestamp,true);
 
 
-				sflayers.push({ 'creator': tfd.creator, 'created_str': created, 'created': tfd.options.timestamp, 'area': fa, 'mu': tfd.mu });
+				sflayers.push({ 'creator': tfd.creator, 'created_str': created, 'created': tfd.options.timestamp, 'area': fa, 'mu': tfd.mulabel });
 
 				//html+="<tr>";
 				//html += "<td>" + tfd.creator + "</td>";

@@ -171,6 +171,8 @@ public class UniformDistribution implements Serializable {
 	 */
 	public double perror() { return (upper - lower) / (upper + lower); }
 
+	public double range() { return upper - lower; }
+
 	/**
 	 * gets the UniformDistribution as an ArrayList of Doubles
 	 *
@@ -363,8 +365,16 @@ public class UniformDistribution implements Serializable {
 	public boolean intersects (UniformDistribution a)
 	{
 		return ((upper > a.getUpper() || upper > a.getLower()) && ( lower < a.getLower() || lower < a.getUpper()));
+		//return (((upper - a.getUpper()) > epsilon) || ((upper - a.getLower()) > epsilon)) && (((a.getLower()- lower) > epsilon) || ((a.getUpper() - lower) > epsilon));
 	}
 	
+	public boolean improves (UniformDistribution a)
+	{
+
+		return ((upper - a.getUpper()) > epsilon && (a.getUpper() - lower) > epsilon) || 
+		((a.getLower() - lower)> epsilon && (upper - a.getLower())>epsilon);
+		//return (a.getUpper() < upper && a.getUpper() > lower) || (a.getLower() > lower && a.getLower() < upper);
+	}
 	/**
 	 * Performs an intersection with another Uniform Distribution and updates this one in place
 	 * The idea is that improves the accuracy of the current UD

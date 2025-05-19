@@ -79,7 +79,10 @@ public class PortalServlet extends HttpServlet {
 			//S1Angle rangeAngle =  S1Angle.radians(0.0001 / 6367.0);
 			//searchRegion = S2Cap.fromAxisAngle(p1.toPoint(),rangeAngle);
 			// This condition is the only one where we are not concerned with ambigious titles.
-			portalsString = "[\"" + l1 + "\"]";
+			//portalsString = "[\"" + l1 + "\"]";
+			JSONArray ja = new JSONArray();
+			ja.put(l1);
+			portalsString=ja.toString();
 		}
 		ArrayList<Portal> portalList;
 		if (searchRegion != null) 

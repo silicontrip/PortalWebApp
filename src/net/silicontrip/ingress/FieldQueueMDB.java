@@ -191,18 +191,18 @@ public class FieldQueueMDB implements MessageListener {
 											fpCache.addFieldGuid(fi.getGuid());
 											fieldBean.beginProcessing();
 										} else {
-											Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.WARNING, "Does not improve model: " + fi.getGuid());
+											Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.WARNING, "Does not improve model: " + fi.getGuid() + " " + fi.getCreator() + " " + fi.getMU());
 										}
 									} else {
-										Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.WARNING, "Has Disagreements: " + fi.getGuid());
+										Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.WARNING, "Has Disagreements: " + fi.getGuid() + " " + fi.getCreator() + " " + fi.getMU());
 									}
 								} else {
-									Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.WARNING, "Already Known: " + fi.getGuid());
+									Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.WARNING, "Already Known: " + fi.getGuid() + " " + fi.getCreator() + " " + fi.getMU());
 								}
 							}
 						} 
 					} else {
-						Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.WARNING, "Fails valid logic: " + fi.getGuid());
+						Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.WARNING, "Fails valid logic: " + fi.getGuid() + " " + fi.getCreator() +  " MU: [" + valid[0] + ": " +mu.getLong(0) + ", "+valid[1] + ": "+mu.getLong(1)+"]" );
 					}
 				}
 				// maybe set up an invalid table with split MU

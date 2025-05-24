@@ -26,7 +26,8 @@ window.plugin.muScraper = {
 		fillColor: '#CC44CC',
 		fillOpacity: 0.5,
 		weight: 4,
-		clickable: false
+		clickable: false,
+		interactive: false
 	},
 	hsvtorgb: function(h, s, v) {
 		//console.log("hsv: " + h + ", " + s +", " + v);
@@ -551,23 +552,23 @@ window.plugin.muScraper = {
 				},
 				getCellsForRegion: function(field){
 
-	var candidate = [
-		S2.S2Cell.FromLatLng({'lat': 0, 'lng': -90} , 0),
-		S2.S2Cell.FromLatLng({'lat': 0, 'lng': 0} , 0),
-		S2.S2Cell.FromLatLng({'lat': 0, 'lng': 90} , 0),
-		S2.S2Cell.FromLatLng({'lat': 0, 'lng': 180} , 0),
-		S2.S2Cell.FromLatLng({'lat': 90, 'lng': 0} , 0),
-		S2.S2Cell.FromLatLng({'lat': -90, 'lng': 0} , 0)
-	];
+					var candidate = [
+						S2.S2Cell.FromLatLng({'lat': 0, 'lng': -90} , 0),
+						S2.S2Cell.FromLatLng({'lat': 0, 'lng': 0} , 0),
+						S2.S2Cell.FromLatLng({'lat': 0, 'lng': 90} , 0),
+						S2.S2Cell.FromLatLng({'lat': 0, 'lng': 180} , 0),
+						S2.S2Cell.FromLatLng({'lat': 90, 'lng': 0} , 0),
+						S2.S2Cell.FromLatLng({'lat': -90, 'lng': 0} , 0)
+					];
 
 					var pts = field.getLatLngs();
-	// assuming the field is all on one face.
-	// this won't be true for all fields but just for testing.
-					/*
+			// assuming the field is all on one face.
+			// this won't be true for all fields but just for testing.
+				/*
 					var candidate = [
 						S2.S2Cell.FromLatLng(pts[0],0)
 					];
-*/
+				*/
 					var altcandidate = [];
 					var altcandidate2 = [];
 
@@ -1183,7 +1184,7 @@ window.plugin.muScraper = {
 							$('<span>').attr({
 								"class": 'close',
 								"title": 'Close [w]',
-								"onclick":'renderPortalDetails(null);',
+								"onclick":'window.plugin.muScraper.clearView();',
 								"accesskey": 'w'
 							}).text('X'),
 							html
@@ -1191,6 +1192,11 @@ window.plugin.muScraper = {
 					}
 				);
 		}, 1000);
+	},
+	clearView: function()
+	{
+		window.plugin.muScraper.fieldLayerGroup.clearLayers();
+		window.renderPortalDetails(null);
 	},
 	muEstCB: function()
 	{
@@ -1561,12 +1567,13 @@ window.plugin.muScraper = {
 
 									//window.plugin.muScraper.labelSingle(fd,dd.mu_known);
 								}
+								var completed = knownFields + estFields+ unknownFields;
+								$('#totalfields').html("completed " +completed + "/" + countFields);
 							}
 						);
 					}
 					countFields++;
-					var completed = knownFields + estFields+ unknownFields;
-									$('#totalfields').html("completed " +completed + "/" + countFields);
+
 
 				}
 			}
@@ -1578,9 +1585,9 @@ window.plugin.muScraper = {
 	copyFields: function()
 	{
 		var flayers = [];
+		var dt = [];
 		if (window.plugin.muScraper.clickLatLng) {
 			flayers = window.plugin.muScraper.getFieldsContainingLatLng(window.plugin.muScraper.clickLatLng);
-			var dt = [];
 			for (var i=0; i<flayers.length; i++)
 			{
 				var points = flayers[i].options.data.points;
@@ -1588,8 +1595,8 @@ window.plugin.muScraper = {
 				for (var pts=0; pts < 3; pts++) dtpoints.push({"lat": points[pts].latE6/1000000.0, "lng": points[pts].lngE6/1000000.0});
 				dt.push({"type": "polygon", "color": "#a24ac3", "latLngs": dtpoints});
 			}
-			// why is this breaking.
-                        // window.plugin.drawTools.import(dt);
+			// why is this breaking. ... import is a reserved keyword and is breaking yuicompressor.
+            window.plugin.drawTools["import"](dt);
 			window.plugin.drawTools.save();
 
 		}
@@ -1635,7 +1642,7 @@ window.plugin.muScraper = {
 				html += tfd.creator + " ";
 				html += tfd.created_str + " ";
 				html += tfd.area.toFixed(3) + "km ";
-				html += tfd.mu + "mu\n";
+				html += tfd.mu + " mu\n";
 				ttmu += parseInt(tfd.mu);
 
 			}

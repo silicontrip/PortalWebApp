@@ -145,7 +145,7 @@ public class FieldQueueMDB implements MessageListener {
 					//System.out.println ("submit field");
 					fi.setMU(mu.getInt(i));
 
-					if (mu.length() == 1 || (valid[i] && (valid[0] ^ valid[1])))
+					if (mu.length() == 1 || mu.getInt(0) == mu.getInt(1) || (valid[i] && (valid[0] ^ valid[1])))
 					{
 						// above business logic decribed in 1 if statement
 						submit = true;
@@ -202,7 +202,7 @@ public class FieldQueueMDB implements MessageListener {
 							}
 						} 
 					} else {
-						Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.WARNING, "Fails valid logic: " + fi.getGuid() + " " + fi.getCreator() +  " MU: [" + valid[0] + ": " +mu.getLong(0) + ", "+valid[1] + ": "+mu.getLong(1)+"]" );
+						Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.WARNING, "Fails valid logic: " + fi.getGuid() + " " + fi.getCreator() + " MU: [" + valid[0] + ": " +mu.getLong(0) + ", "+valid[1] + ": "+mu.getLong(1)+"]" );
 					}
 				}
 				// maybe set up an invalid table with split MU

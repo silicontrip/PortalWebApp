@@ -54,8 +54,10 @@ public class EntitySessionBean {
 			return null;
 		if (s.matches("^[0-9a-fA-F]{32}\\.1[16]$"))
 			return dao.getPortalLocationFromGuid(s);
-		if (s.matches("(\\+|-)?([0-9]+(\\.[0-9]+)),(\\+|-)?([0-9]+(\\.[0-9]+))"))
+		if (s.matches("(\\+|-)?([0-9]+(\\.[0-9]+)),(\\+|-)?([0-9]+(\\.[0-9]+)).*"))
 		{
+			String[] comment = s.split("#");
+			s=comment[0];
 			String[] ll = s.split(",");
 			Double lat = Double.parseDouble(ll[0]);
 			Double lng = Double.parseDouble(ll[1]);
@@ -92,16 +94,22 @@ public class EntitySessionBean {
 			return null;
 		if (s.matches("^[0-9a-fA-F]{32}\\.1[16]$"))
 		{
+			//Logger.getLogger(EntitySessionBean.class.getName()).log(Level.INFO, "get portal from guid: " + s );
+
 			Portal p = dao.getPortalFromGuid(s);
 			if (p == null)
 				throw new EntityDAOException("Portal GUID not found: " + s);
 			result.add(p);
 		} 
-		else if (s.matches("(\\+|-)?([0-9]+(\\.[0-9]+)),(\\+|-)?([0-9]+(\\.[0-9]+))"))
+		else if (s.matches("(\\+|-)?([0-9]+(\\.[0-9]+)),(\\+|-)?([0-9]+(\\.[0-9]+)).*"))
 		{
+			//Logger.getLogger(EntitySessionBean.class.getName()).log(Level.INFO, "get portal from lat/lng: " + s );
+
 			// not implemented
 			// return null;
 			// or is it?
+			String[] comment = s.split("#");
+			s = comment[0];
 			String[] ll = s.split(",");
 			Double lat = Double.parseDouble(ll[0]);
 			Double lng = Double.parseDouble(ll[1]);
@@ -113,9 +121,15 @@ public class EntitySessionBean {
 			result.add(p);
 
 		} else {
+
 			ArrayList<Portal> pa = dao.getPortalsFromTitle(s);
-			if (pa == null)
+			// Logger.getLogger(EntitySessionBean.class.getName()).log(Level.INFO, "get portal from Title: " + s + " found: " + pa.size() + " matches");
+
+			if (pa.size() == 0)
 				throw new EntityDAOException("Portal Title not found: " + s);
+
+			//Logger.getLogger(EntitySessionBean.class.getName()).log(Level.INFO, "If this says 0 java is screwed: " + pa.size() );
+
 			for (Portal p : pa)
 				result.add(p);	
 		}

@@ -109,6 +109,10 @@ public class PortalServlet extends HttpServlet {
 								message = message + " " + (p.getLatE6() / 1000000.0) + "," + (p.getLngE6() / 1000000.0);
 							}
 							throw new ServletException(message);
+						} else if (res.size() == 0) {
+							// I have no idea how we got here?
+							String message = "Portal search returned no results: " + portalTitle;
+							throw new ServletException(message);
 						}
 
 						portalList.add(res.get(0));
@@ -146,10 +150,16 @@ public class PortalServlet extends HttpServlet {
 	 catch (IOException e) {
 		e.printStackTrace();
 	} catch (Exception e) {
+
 		JSONObject jsonResponse = new JSONObject();
 		// e.printStackTrace();
 		jsonResponse.put("error",  e.getMessage());
 		jsonResponse.put("errorType",  e.getClass().getName());
+
+		Logger.getLogger(PortalServlet.class.getName()).log(Level.SEVERE, null, e);
+
+		//jsonResponse.put("stackTrace", sw.toString());
+		// end
 		try {
 			resp.setStatus(500);
 			PrintWriter writer = resp.getWriter();

@@ -13,7 +13,8 @@ window.plugin.muScraper = {
 	selectedField: null,
 	muSubmit: true,
 	submitKey: "",
-	hz_fields: [],
+	hz_fields: {},
+	hz_array: [],
 	hz_url: window.silicontrip_ingress_url+'submitEntity',
 	mu_url: window.silicontrip_ingress_url+'getMU',
 	mu_use: window.silicontrip_ingress_url+'getMU',
@@ -1204,22 +1205,23 @@ window.plugin.muScraper = {
 	},
 	pushFields: function()
 	{
-		if(!window.plugin.muScraper.hz_fields.length)
+		if(!Object.keys(window.plugin.muScraper.hz_fields).length)
 		{
 			$('#hz_field_grabber').css('background-color', 'green');
 			return;
 		}
-		$('#hz_field').html('Pushing.. '+window.plugin.muScraper.hz_fields.length);
-		console.log('muGrabber - Pushing fields - ' + window.plugin.muScraper.hz_fields.length);
-                console.log('muGrabber - hz_url: ' + window.plugin.muScraper.hz_url);
+		$('#hz_field').html('Pushing.. '+Object.keys(window.plugin.muScraper.hz_fields).length);
+		console.log('muGrabber - Pushing fields - ' + Object.keys(window.plugin.muScraper.hz_fields).length);
+        console.log('muGrabber - hz_url: ' + window.plugin.muScraper.hz_url);
 		console.log(window.plugin.muScraper.hz_fields);
-		$.post(window.plugin.muScraper.hz_url, {apikey: window.PLAYER.apikey, agent: window.PLAYER.nickname, fields: JSON.stringify(window.plugin.muScraper.hz_fields)} )
+		window.plugin.muScraper.hz_array = Object.values(window.plugin.muScraper.hz_fields);
+		$.post(window.plugin.muScraper.hz_url, {apikey: window.PLAYER.apikey, agent: window.PLAYER.nickname, fields: JSON.stringify(window.plugin.muScraper.hz_array)} )
 			.fail(function() {
 				alert("Technology Journey - error posting fields");
 		});
-		window.plugin.muScraper.hz_fields = [];
+		window.plugin.muScraper.hz_fields = {};
 		$('#hz_field_grabber').css('background-color', 'green');
-		$('#hz_field').html(window.plugin.muScraper.hz_fields.length);
+		$('#hz_field').html(Object.keys(window.plugin.muScraper.hz_fields).length);
 	},
 	labelSingle: function(fd,label)
 	{
@@ -1233,9 +1235,9 @@ window.plugin.muScraper = {
 	},
 	pushField: function(f) {
 		//console.log("push Field: " + JSON.stringify(f));
-		window.plugin.muScraper.hz_fields.push(f);
-                console.log("hz_fields.length="+window.plugin.muScraper.hz_fields.length);
-		$('#hz_field').html(window.plugin.muScraper.hz_fields.length);
+		window.plugin.muScraper.hz_fields[f["guid"]] = f;
+                console.log("hz_fields.length="+Object.keys(window.plugin.muScraper.hz_fields).length);
+		$('#hz_field').html(Object.keys(window.plugin.muScraper.hz_fields).length);
 	},
 	matchFieldsAndComms: function() {
 
@@ -1746,8 +1748,9 @@ window.plugin.muScraper = {
 			if (murange) {
 				//console.log(murange[0] + "..." + murange[1]);
 				var mean = (murange[0] + murange[1]) / 2.0;
-				var error = ((murange[1] - murange[0]) / 2.0) / mean * 100.0;
-				mus = mean.toFixed(2) + " mu/km<br/>\u00b1" + error.toFixed(2)+ "%";
+				var erange = (murange[1] - murange[0]) / 2.0;
+				var error = erange / mean * 100.0;
+				mus = mean.toFixed(2) + " mu/km<br/>\u00b1" + erange.toFixed(3) +"mu";
 				fc = window.plugin.muScraper.hsvtorgb(mean/3600.0, 1.0 - error/100.0, 1.0 - error/100.0);
 			}
 			name += "<br/>" + mus;

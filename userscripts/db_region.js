@@ -983,8 +983,8 @@ window.plugin.muScraper = {
 			maxLngE6=bounds.getEast()*1E6;
 		}
 		var created=fd.options.timestamp;
-		var minTsMs = created;
-		var maxTsMs = created + 2000; // comm messages are delayed
+		var minTsMs = created - 3000;
+		var maxTsMs = created + 3000; // comm messages are delayed
 		var d = {
 			minLatE6: Math.round(minLatE6)-1,
 			minLngE6: Math.round(minLngE6)-1,
@@ -1270,8 +1270,13 @@ window.plugin.muScraper = {
 				fd.guid = fdGuid;
 				if (window.plugin.muScraper.compareLinkAndField([comm.oPortal,comm.dPortal],fd.options.data.points)) {
 					var tsdiff = Math.abs(comm.ts - fd.options.timestamp);
-					//console.log("TS diff: " + tsdiff);
-					if (tsdiff < 2000) comm.field.push(fd);  
+					console.log("comm:");
+					console.log(comm);
+					console.log("field:");
+					console.log(fd.options);
+					console.log("TS diff: " + tsdiff);
+					console.log("");
+					if (tsdiff < 3000) comm.field.push(fd);  
 				}
 			}
 		}
@@ -1341,9 +1346,30 @@ window.plugin.muScraper = {
 					console.log("Searching for Split fields: more than 2 field created: " + comm.field.length);
 					//console.log(comm);
 				}
+			} else if (comm.field.length == 2 && comm.fcomm.length == 1) {
+				// going to pick the closest time stamp one
+				var fcommts = comm.fcomm[0].ts;
+				var mu = parseInt(comm.fcomm[0].mu);
+				fdiff0 = Math.abs(comm.field[0].options.timestamp - fcommts);
+				fdiff1 = Math.abs(comm.field[1].options.timestamp - fcommts);
+				if (fdiff0 < fdiff1)
+				{
+					comm.field[0].mu = [mu];
+					window.plugin.muScraper.labelSingle(comm.field[0],mu);
+					window.plugin.muScraper.pushField(comm.field[0]);
+					comm.field[0].creator = comm.fcomm[0].creator;
+
+				} else if (fdiff1 < fdiff0) {
+					comm.field[1].mu = [mu];
+					window.plugin.muScraper.labelSingle(comm.field[1],mu);
+					window.plugin.muScraper.pushField(comm.field[1]);
+					comm.field[1].creator = comm.fcomm[0].creator;
+
+				}
+				// don't do anything if equal.
 			} else {
 				// field matching mismatch
-				// console.log("field mismatch: " + comm.field.length + "!=" + comm.fcomm.length);
+				console.log("field mismatch: field.length " + comm.field.length + " != fcomm.length " + comm.fcomm.length);
 				//console.log(comm);
 			}
 		}
@@ -1353,7 +1379,8 @@ window.plugin.muScraper = {
 	},
 	compareLinkAndField: function(link,field){
 		//console.log(">>> compareLinkAndField");
-
+		//console.log("link: [" + link[0].latE6 + "," + link[0].lngE6 +"],[" + link[1].latE6 +","+link[1].lngE6 +"]");
+		//console.log("field: [" + field[0].latE6 + "," + field[0].lngE6+"],["+ field[1].latE6 +","+field[1].lngE6 + "],[" + field[2].latE6 + "," +field[2].lngE6+"]");
 		return ((link[0].latE6 === field[0].latE6 && link[0].lngE6 === field[0].lngE6) ||
 			(link[0].latE6 === field[1].latE6 && link[0].lngE6 === field[1].lngE6) ||
 			(link[0].latE6 === field[2].latE6 && link[0].lngE6 === field[2].lngE6) ) &&

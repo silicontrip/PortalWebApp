@@ -450,8 +450,11 @@ public class FieldSessionBean {
 
 	public int disagreements(Field field) throws EntityDAOException
 	{
+		if (field == null)
+			return 1;
 		int disagree = 0;
 		final S2CellUnion cells = field.getCells();
+		try {
 		for (S2CellId cell : cells)
 		{
 
@@ -464,14 +467,19 @@ public class FieldSessionBean {
 				if (!fguid.equals(field.getGuid()))
 				{
 					Field fi = dao.getField(fguid);
-
-					UniformDistribution innerRemaining = remaining(fi, cell);
+					if (fi != null) {
+						UniformDistribution innerRemaining = remaining(fi, cell);
 					
-					if (!outerRemaining.intersects(innerRemaining))
-						disagree++;
+						if (!outerRemaining.intersects(innerRemaining))
+							disagree++;
+					}
 				}
 			}
 		}
+	} catch (Exception e) {
+		Logger.getLogger(FieldSessionBean.class.getName()).log(Level.SEVERE, null, e);
+
+	}
 		return disagree;
 	}
 

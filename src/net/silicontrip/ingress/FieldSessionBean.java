@@ -76,6 +76,8 @@ public class FieldSessionBean {
 	@EJB
 	private SQLEntityDAO dao;
 	
+	@EJB
+	private FieldProcessor fieldProcessor;
 
 	private AtomicBoolean running;
 	
@@ -146,7 +148,7 @@ public class FieldSessionBean {
 			for (String guid : fieldGuids)
 			{
 				//Field fi = dao.getField(guid);
-				processField(guid);
+				fieldProcessor.processField(guid);
 			}
 		//} catch (EntityDAOException e) {
 		//	Logger.getLogger(FieldSessionBean.class.getName()).log(Level.SEVERE, null, e);
@@ -170,7 +172,7 @@ public class FieldSessionBean {
 			{
 				fpCache.removeFieldGuid(fieldGuid);
 
-				HashSet<S2CellId> modCells = processField(fieldGuid);
+				HashSet<S2CellId> modCells = fieldProcessor.processField(fieldGuid);
 
 				for (S2CellId cell : modCells)
 				{
@@ -198,134 +200,11 @@ public class FieldSessionBean {
 		
 	}
 
-	/**
-	 * This is the MU worker method converting fields into cell mu
-	 * Any cells which have been modified are placed into the cellQueue
-	 * which then resubmits any fields which use that cell.
-	 * Proof of concept for realtime cell updating. I'm excited.
-	 * @param field the field entity to process into cells
-	 */
-	@TransactionAttribute(TransactionAttributeType.REQUIRES_NEW) 
 	public HashSet<S2CellId> processField(String fieldGuid)
 	{
-
-		HashSet<S2CellId> modifiedCells = new HashSet<>();
-		try {
-			Field field = dao.getField(fieldGuid);
-			if (field == null)
-			{
-				Logger.getLogger(FieldSessionBean.class.getName()).log(Level.WARNING, "cannot find field guid: " + fieldGuid);
-				return modifiedCells;
-			}
-
-			UniformDistribution initialMU;
-			Double area;
-
-			Integer score = field.getMU();
-			S2Polygon thisField = field.getS2Polygon();
-
-			Logger.getLogger(FieldSessionBean.class.getName()).log(Level.INFO,null,field);
-
-			try {
-		
-				if (score==1) 
-					initialMU = new UniformDistribution(0.0,1.5);
-				else
-					initialMU = new UniformDistribution(score,range);
-
-			// an algorithmic version of the following equation
-			// mu[cell] = ( MU - intersectionArea[cell1] x mu[cell1] ... - intersectionArea[cellN] x mu[cellN]) / intersectionArea[cell]
-
-				final S2CellUnion cells = field.getCells();
-
-				for (S2CellId cellOuter: cells)
-				{
-					StringBuilder cellLog = new StringBuilder();
-					UniformDistribution mus = new UniformDistribution(initialMU);
-					cellLog.append("( ");
-					cellLog.append(mus.toString());
-					for (S2CellId cellInner: cells)
-					{
-						// if not cell from outer loop
-						if (!cellOuter.equals(cellInner))
-						{
-							// System.out.println("i<->o: " + cellOuter.toToken() + " - "+ cellInner.toToken());
-							double areaInner = CellSessionBean.getIntersectionArea(thisField,cellInner);
-							UniformDistribution cellInnerMU = muBean.getMU(cellInner.toToken()); // em.find(CellMUEntity.class, cellInner.id());
-
-							cellLog.append(" - ");
-							cellLog.append(areaInner);
-							cellLog.append(" x ");
-							cellLog.append(cellInner.toToken());
-							cellLog.append(":");
-
-							if (cellInnerMU != null)
-							{
-								cellLog.append(cellInnerMU);
-								UniformDistribution cma = cellInnerMU.mul(areaInner);
-								mus = mus.sub(cma);
-							}
-							else
-							{
-								cellLog.append("undefined");
-								mus.setLower(0.0);
-							}
-						}
-					}
-					cellLog.append(" ) / ");
-					double areaOuter = CellSessionBean.getIntersectionArea(thisField,cellOuter);
-					cellLog.append(areaOuter);
-					mus=mus.div(areaOuter);
-					cellLog.insert(0," = ");
-				
-					try {	
-						mus.clampLower(0.0);
-						cellLog.insert(0,mus);
-
-						UniformDistribution cellOuterMU = muBean.getMU(cellOuter.toToken());
-
-						cellLog.insert(0," => ");
-						if (cellOuterMU==null)
-							cellLog.insert(0,"null");
-						else
-							cellLog.insert(0,cellOuterMU.toString());
-						cellLog.insert(0,": ");
-						cellLog.insert(0,cellOuter.toToken());
-
-						if(muBean.refineMU(cellOuter.toToken(),mus))
-							modifiedCells.add(cellOuter);
-					} catch (UniformDistributionException ae) {
-					// field error
-						Logger.getLogger(FieldSessionBean.class.getName()).log(Level.WARNING,"Field: " + fieldGuid + " Cell: " + cellOuter.toToken()+" MU exception " + ae.getMessage());
-
-						System.out.println(ae.getMessage() + " " + cellLog.toString());
-					// findInvalid(field);
-					// something something, out of range error
-					// mark field as invalid 
-					// logic to find invalid field for cell
-					}
-				}
-		//	em.getTransaction().commit(); // I hope this works. 
-		
-		// unlock cells
-		
-		// it didn't work, it threw some error about being incompatible with JTA
-		// but I really think I need to control the transaction 
-		
-				StringBuilder fieldLog = new StringBuilder();
-				return modifiedCells;
-
-			} catch (Exception e) {
-				Logger.getLogger(FieldSessionBean.class.getName()).log(Level.SEVERE, null, e);
-
-				System.out.println("processFieldException: " + e.getMessage());
-				e.printStackTrace();
-			}
-		} catch (EntityDAOException e) {
-			Logger.getLogger(FieldSessionBean.class.getName()).log(Level.WARNING, "cannot find field guid: " + fieldGuid);
-		}
-		return modifiedCells;
+		return fieldProcessor.processField(fieldGuid);
 	}
+
 	/**
 	 * find the MU for a known field
 	 *

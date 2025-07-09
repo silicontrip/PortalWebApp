@@ -26,7 +26,7 @@
 		},
 		setup: function() {
 			console.log('dbPortalGrabber::setup');
-			console.log('this is a change. this is a change');
+			//console.log('this is a change. this is a change');
 
 			window.plugin.dbPortalGrabber.layer = new window.L.LayerGroup();
 			window.addLayerGroup('DB Portals', window.plugin.dbPortalGrabber.layer, true);
@@ -139,13 +139,19 @@
 			// check we are zoom 15 or higher
 			var deleted_portals =[];
 			//console.log("db_portal_grabber::pushPortals map zoom: "+window.map.getZoom());
+			console.log("db_portal_grabber::pushPortals map bounds:");
+			console.log(window.map.getBounds());
 			if (window.map.getZoom() >= 15)
 			{
 				for (var guid in window.plugin.dbPortalGrabber.dbPortals)
 				{
 					// does this guid exist?
 					if (!window.portals.hasOwnProperty(guid)) //no?
-					{ deleted_portals.push({"delete": guid}); }
+					{ 
+						console.log("deleting portal guid: " + guid);
+						console.log(window.plugin.dbPortalGrabber.dbPortals(guid));
+						deleted_portals.push({"delete": guid}); 
+					}
 				}
 				// add to deleted array
 			//console.log("db_portal_grabber::pushPortals deleted_portals: " +deleted_portals.length);

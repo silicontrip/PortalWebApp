@@ -367,6 +367,32 @@ public class UniformDistribution implements Serializable {
 		return ((upper > a.getUpper() || upper > a.getLower()) && ( lower < a.getLower() || lower < a.getUpper()));
 		//return (((upper - a.getUpper()) > epsilon) || ((upper - a.getLower()) > epsilon)) && (((a.getLower()- lower) > epsilon) || ((a.getUpper() - lower) > epsilon));
 	}
+
+	/**
+	 * Returns the intersection of this UniformDistribution with another.
+	 *
+	 * @param a the UniformDistribution to intersect with.
+	 * @return a new UniformDistribution representing the intersection, or an empty one if no overlap.
+	 */
+	public UniformDistribution intersection(UniformDistribution a) {
+		if (this.intersects(a)) {
+			double newLower = Math.max(this.lower, a.getLower());
+			double newUpper = Math.min(this.upper, a.getUpper());
+			return new UniformDistribution(newLower, newUpper);
+		} else {
+			// Return an empty distribution
+			return new UniformDistribution(1, 0);
+		}
+	}
+
+	/**
+	 * Checks if the distribution represents an empty interval.
+	 *
+	 * @return true if the distribution is empty (lower > upper).
+	 */
+	public boolean isEmpty() {
+		return this.lower > this.upper;
+	}
 	
 	public boolean improves (UniformDistribution a)
 	{

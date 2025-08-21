@@ -1,6 +1,8 @@
+*.sh
 build
 dist
 deprecated
 WEB-INF/lib
 iitc.user.js
 /nbproject/private/
+/WebContent/

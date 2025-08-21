@@ -149,7 +149,7 @@
 					if (!window.portals.hasOwnProperty(guid)) //no?
 					{ 
 						console.log("deleting portal guid: " + guid);
-						console.log(window.plugin.dbPortalGrabber.dbPortals(guid));
+						console.log(window.plugin.dbPortalGrabber.dbPortals[guid]);
 						deleted_portals.push({"delete": guid}); 
 					}
 				}

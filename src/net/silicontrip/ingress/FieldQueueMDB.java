@@ -32,7 +32,7 @@ public class FieldQueueMDB implements MessageListener {
 	private FieldSessionBean fieldBean;
 
 	@EJB
-	private SQLEntityDAO dao;
+	private EntityDAO dao;
 
 	@EJB
 	private FieldsCellsBean fieldsCells;

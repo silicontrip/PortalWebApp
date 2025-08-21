@@ -6,7 +6,6 @@
 package net.silicontrip.ingress;
 
 import jakarta.ejb.Singleton;
-import jakarta.ejb.LocalBean;
 import java.util.HashSet;
 
 
@@ -15,7 +14,6 @@ import java.util.HashSet;
  * @author mark
  */
 @Singleton
-@LocalBean
 public class FieldProcessCache {
 
 	private HashSet<String>fieldCache;

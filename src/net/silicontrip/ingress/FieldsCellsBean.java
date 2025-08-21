@@ -9,7 +9,6 @@ import com.google.common.geometry.*;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.ejb.EJB;
-import jakarta.ejb.LocalBean;
 import jakarta.ejb.Lock;
 import jakarta.ejb.LockType;
 import jakarta.ejb.Singleton;
@@ -39,11 +38,10 @@ import java.util.logging.Logger;
  */
 @Startup
 @Singleton
-@LocalBean
 public class FieldsCellsBean {
 
 	@EJB
-	private SQLEntityDAO dao;
+	private EntityDAO dao;
 
     @PersistenceContext(unitName="net.silicontrip.ingress.persistence")
 	private EntityManager em;

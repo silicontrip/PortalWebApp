@@ -1,6 +1,6 @@
 
 /**
-* The CellSessionBean contains all code for working with fields and cells
+* The FieldSessionBean contains all code for working with fields
 *
 * @author  Silicon Tripper
 * @version 1.0
@@ -24,7 +24,6 @@ import jakarta.ejb.Asynchronous;
 import jakarta.ejb.EJB;
 import jakarta.ejb.Lock;
 import jakarta.ejb.LockType;
-import jakarta.ejb.LocalBean;
 import jakarta.ejb.Singleton;
 import jakarta.ejb.Stateless;
 import jakarta.ejb.TransactionAttribute;
@@ -57,7 +56,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 @Stateless
-@LocalBean
 //@Singleton
 public class FieldSessionBean {
 	
@@ -76,11 +74,8 @@ public class FieldSessionBean {
 	private FieldsCellsBean fieldsCells;
 
 	@EJB
-	private SQLEntityDAO dao;
+	private EntityDAO dao;
 	
-	@EJB
-	private FieldProcessor fieldProcessor;
-
 	private AtomicBoolean running;
 	
 	@PostConstruct
@@ -88,7 +83,7 @@ public class FieldSessionBean {
 		running = new AtomicBoolean(false);
 	}
 
-		/**
+	/**
 	 * Generates an intersection map of a Field and its cells.
 	 * Returns a HashMap of the S2CellId and its area in Km^2 and the min and max MU for that cell.
 	 * @param thisField the S2Polygon
@@ -291,7 +286,7 @@ public class FieldSessionBean {
 					}
 				}
 				cellLog.append(" ) / ");
-				double areaOuter = CellSessionBean.getIntersectionArea(thisField,cellOuter);
+				double areaOuter = getIntersectionArea(thisField,cellOuter);
 				cellLog.append(areaOuter);
 				mus=mus.div(areaOuter);
 				cellLog.insert(0," = ");
@@ -423,7 +418,7 @@ public class FieldSessionBean {
 		//if (score == 50)
 		//	Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.INFO, "Remaining required field: " + fi.getGuid() + " for cell: " + cell.toToken());
 
-		double area = CellSessionBean.getIntersectionArea(fi.getS2Polygon(),cell);
+		double area = getIntersectionArea(fi.getS2Polygon(),cell);
 
 		if (score==1) 
 			mu = new UniformDistribution(0.0,1.5);
@@ -442,7 +437,7 @@ public class FieldSessionBean {
 
 			if (!innerCell.equals(cell))
 			{
-				double areaInner = CellSessionBean.getIntersectionArea(fi.getS2Polygon(),innerCell);
+				double areaInner = getIntersectionArea(fi.getS2Polygon(),innerCell);
 			
 				UniformDistribution cellInnerMU = muBean.getMU(innerCell.toToken());
 

@@ -20,7 +20,7 @@ activationConfig = {
 public class PortalQueueMDB implements MessageListener {
  
 	@EJB
-	private	SQLEntityDAO dao;
+	private	EntityDAO dao;
 	
 	@Override
     public void onMessage(Message message) {

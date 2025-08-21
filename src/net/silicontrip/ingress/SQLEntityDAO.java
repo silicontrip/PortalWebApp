@@ -69,7 +69,6 @@ import java.util.ArrayList;
 import com.google.common.geometry.*;
 
 import java.sql.*;
-import jakarta.ejb.LocalBean;
 import jakarta.ejb.Stateless;
 import jakarta.ejb.TransactionAttribute;
 import jakarta.ejb.TransactionAttributeType;
@@ -88,7 +87,6 @@ import java.util.logging.Logger;
 
 
 @Stateless
-@LocalBean
 public class SQLEntityDAO implements EntityDAO {
 
 	//@PersistenceContext

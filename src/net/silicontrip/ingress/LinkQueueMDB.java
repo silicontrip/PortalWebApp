@@ -29,7 +29,7 @@ activationConfig = {
 public class LinkQueueMDB implements MessageListener {
 
 	//@EJB
-	//private SQLEntityDAO dao;
+	//private EntityDAO dao;
 
 	@EJB
 	private EntitySessionBean ent;

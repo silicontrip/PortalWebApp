@@ -9,7 +9,6 @@ import java.util.List;
 
 import jakarta.annotation.PostConstruct;
 
-import jakarta.ejb.LocalBean;
 import jakarta.ejb.Singleton;
 import jakarta.ejb.Startup;
 import jakarta.ejb.Lock;
@@ -25,7 +24,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 @Singleton
-@LocalBean
 public class MUSessionBean {  
 
 	@PersistenceContext(unitName="net.silicontrip.ingress.persistence")

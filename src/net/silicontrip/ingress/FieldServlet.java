@@ -39,7 +39,7 @@ public class FieldServlet extends HttpServlet {
 	private FieldsCellsBean fieldsCellsBean;
 
 	@EJB
-	private SQLEntityDAO dao;
+	private EntityDAO dao;
 
 	@EJB
 	private FieldProcessCache fpCache;
@@ -147,7 +147,7 @@ public class FieldServlet extends HttpServlet {
 					if (match)
 					{
 						Logger.getLogger(FieldServlet.class.getName()).log(Level.INFO,"processing field guid: " + fis);
-						fieldBean.processField(fi.getGuid());
+						fieldBean.processFieldGuid(fi.getGuid());
 						fieldGuids.put(fi.getGuid());
 						//fpCache.addFieldGuid(fi.getGuid());
 					}

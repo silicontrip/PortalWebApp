@@ -9,7 +9,6 @@ package net.silicontrip.ingress;
 
 import com.google.common.geometry.*;
 
-import jakarta.ejb.LocalBean;
 import jakarta.ejb.Stateless;
 import jakarta.ejb.EJB;
 import jakarta.persistence.EntityManager;
@@ -19,7 +18,6 @@ import jakarta.persistence.PersistenceException;
 import net.silicontrip.UniformDistribution;
 
 @Stateless
-@LocalBean
 public class CellSessionBean {
 
 	@PersistenceContext(unitName="net.silicontrip.ingress.persistence")

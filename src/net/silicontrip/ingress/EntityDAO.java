@@ -36,8 +36,9 @@ public interface EntityDAO {
 	public void deleteField(String guid) throws EntityDAOException;
 	public void insertField(String creator,String agent,int mu, String guid,long timestamp,String team, String pguid1, long plat1, long plng1, String pguid2, long plat2, long plng2, String pguid3, long plat3, long plng3, boolean valid) throws EntityDAOException;
 	// future expasion for joined cell table
-	// public void insertCellsForField (String guid, S2CellUnion cells) throws EntityDAOException;
-	// public ArrayList<String> fieldGuidsForCell(S2CellId cell) throws EntityDAOException;
+	public void insertCellsForField (String guid, S2CellUnion cells) throws EntityDAOException;
+	public ArrayList<String> fieldGuidsForCell(S2CellId cell) throws EntityDAOException;
+	public void deleteFieldGuidCells(String field_guid) throws EntityDAOException;
 
 //PORTALS
 	//public ArrayList<Portal> getPortalsInRegion (S2Region reg) throws EntityDAOException;

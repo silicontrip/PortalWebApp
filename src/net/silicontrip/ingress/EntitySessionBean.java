@@ -13,7 +13,6 @@ import java.util.Collection;
 import com.google.common.geometry.*;
 import jakarta.ejb.Stateless;
 import jakarta.ejb.EJB;
-import jakarta.ejb.LocalBean;
 import jakarta.ejb.TransactionAttribute;
 import jakarta.ejb.TransactionAttributeType;
 import jakarta.persistence.EntityManager;
@@ -25,12 +24,11 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 @Stateless
-@LocalBean
 public class EntitySessionBean {
 
 	// migrate away from DAO/SQL
 	@EJB
-	private SQLEntityDAO dao;
+	private EntityDAO dao;
 
         @PersistenceContext(unitName="net.silicontrip.ingress.persistence")
         private EntityManager em;

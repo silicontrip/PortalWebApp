@@ -1,8 +1,12 @@
+*.class
+*.jar
+*.png
 *.sh
+*.xz
 build
-dist
 deprecated
+dist
+/target/
 WEB-INF/lib
-iitc.user.js
-/nbproject/private/
 /WebContent/
+/nbproject/

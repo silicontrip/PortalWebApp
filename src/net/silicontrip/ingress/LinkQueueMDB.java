@@ -12,6 +12,8 @@ import org.json.JSONException;
 
 import org.json.JSONObject;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 @MessageDriven(
 mappedName = "jms/linkQueue",
@@ -85,7 +87,7 @@ public class LinkQueueMDB implements MessageListener {
     public void onMessage(Message message) {
         TextMessage textMessage = (TextMessage) message;
 		String tm = "";
-	String exceptionLog = new String();
+		String exceptionLog = new String();
         try {
 			tm= textMessage.getText();
 			//System.out.println("LinkQueue: "+ tm);
@@ -140,15 +142,20 @@ public class LinkQueueMDB implements MessageListener {
 				//dao.purgeLink();  // deprecated.
 			}
         } catch (JMSException e) {
-            System.out.println(
-              "Error while trying to consume messages: " + e.getMessage());
+			Logger.getLogger(LinkQueueMDB.class.getName()).log(Level.SEVERE, e.getMessage());
+
+            System.out.println("Error while trying to consume messages: " + e.getMessage());
         } catch (JSONException e) {
+			Logger.getLogger(LinkQueueMDB.class.getName()).log(Level.SEVERE, e.getMessage());
+
 			System.out.println("LinkQueueMDB::"+tm);
 			e.printStackTrace();
-	} catch (Exception e) {
+		} catch (Exception e) {
+			Logger.getLogger(LinkQueueMDB.class.getName()).log(Level.SEVERE, e.getMessage());
+
 			System.out.println("LinkQueueMDBException: " + e.getMessage());
 			System.out.println(exceptionLog);
 			e.printStackTrace();
-	}
+		}
 	}
 }

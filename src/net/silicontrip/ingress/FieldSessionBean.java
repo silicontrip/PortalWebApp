@@ -78,6 +78,8 @@ public class FieldSessionBean {
 	@EJB
 	private SQLEntityDAO dao;
 	
+	@EJB
+	private FieldProcessor fieldProcessor;
 
 	private AtomicBoolean running;
 	
@@ -342,6 +344,7 @@ public class FieldSessionBean {
 	 
 		return modifiedCells;
 	}
+
 	/**
 	 * find the MU for a known field
 	 *

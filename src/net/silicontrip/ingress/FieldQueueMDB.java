@@ -2,6 +2,7 @@ package net.silicontrip.ingress;
 
 import java.util.Map;
 import java.util.HashMap;
+import java.util.HashSet;
 
 import jakarta.jms.*;
 import jakarta.ejb.*;
@@ -152,7 +153,7 @@ public class FieldQueueMDB implements MessageListener {
 						if (refield)
 						{
 							//System.out.println("Resubmit: " + fi );
-							fieldBean.processField(fi.getGuid());
+							fieldBean.processFieldGuid(fi.getGuid());
 						} else {
 							if (!fieldBean.hasFieldGuid(fi.getGuid())) // this is handled above
 							{
@@ -166,7 +167,6 @@ public class FieldQueueMDB implements MessageListener {
 										{
 
 											Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.INFO, "INSERTING: " + tm);
-
 
 											dao.insertField(fi.getCreator(),
 												fi.getAgent(),
@@ -185,11 +185,23 @@ public class FieldQueueMDB implements MessageListener {
 												fi.getPLng3(),
 												true);
 											//S2CellUnion fieldCells = getCellsForField(field.getS2Polygon());
+
 											S2CellUnion fieldCells = fi.getCells();
 											fieldsCells.insertCellsForField(fi.getGuid(),fieldCells);
 
-											fpCache.addFieldGuid(fi.getGuid());
-											fieldBean.beginProcessing();
+											//fpCache.addFieldGuid(fi.getGuid());
+											//fieldBean.beginProcessing();
+											Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.INFO, "PROCESSING FIELD");
+
+											HashSet<S2CellId> updates = fieldBean.processField(fi);
+											Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.INFO, "CELLS UPDATED...");
+
+											JSONArray jsoncells = new JSONArray();
+											for (S2CellId cid: updates)
+												jsoncells.put(cid.toToken());
+											Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.INFO, "UPDATED: " + jsoncells.toString());
+											// Now add these to the cell processing queue
+
 										} else {
 											Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.WARNING, "Does not improve model: " + fi.getGuid() + " " + fi.getCreator() + " " + fi.getMU());
 										}
@@ -213,10 +225,10 @@ public class FieldQueueMDB implements MessageListener {
 						System.out.println ("not Submitting field: " + fi.getGuid() + "MU: " + valid[0] + ": " +mu.getLong(0));
 			} 
 		} catch (JMSException e) {
-			Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.SEVERE, null, e);
+			Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.SEVERE, e.getMessage());
 			System.out.println( "Error while trying to consume messages: " + e.getMessage());
 		} catch (Exception e) {
-			Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.SEVERE, null, e);
+			Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.SEVERE, e.getMessage());
 			System.out.println("FQB: exception");
 			System.out.println(tm);
 			e.printStackTrace();

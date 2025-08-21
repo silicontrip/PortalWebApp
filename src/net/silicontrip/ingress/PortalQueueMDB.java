@@ -54,11 +54,11 @@ public class PortalQueueMDB implements MessageListener {
 			
         } catch (JMSException e) {
             System.out.println("Error while trying to consume messages: " + e.getMessage());
-			Logger.getLogger(PortalQueueMDB.class.getName()).log(Level.SEVERE, null, e);
+			Logger.getLogger(PortalQueueMDB.class.getName()).log(Level.SEVERE,  e.getMessage());
         } catch (Exception e) {
 			System.out.println("PortalQueueMDB::"+tm);
 			e.printStackTrace();
-			Logger.getLogger(PortalQueueMDB.class.getName()).log(Level.SEVERE, null, e);
+			Logger.getLogger(PortalQueueMDB.class.getName()).log(Level.SEVERE,  e.getMessage());
 		}
 		
     }

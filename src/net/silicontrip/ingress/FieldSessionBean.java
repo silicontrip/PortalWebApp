@@ -49,14 +49,16 @@ import jakarta.persistence.PersistenceException;
 import net.silicontrip.AreaDistribution;
 import net.silicontrip.UniformDistribution;
 import net.silicontrip.UniformDistributionException;
-import static net.silicontrip.ingress.CellSessionBean.getS2Polygon;
+//import static net.silicontrip.ingress.CellSessionBean.getS2Polygon;
+
+import static net.silicontrip.S2PolygonUtils.*;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-//@Stateless
+@Stateless
 @LocalBean
-@Singleton
+//@Singleton
 public class FieldSessionBean {
 	
 		// private HashMap<S2CellId, UniformDistribution> cellmu = null;
@@ -146,7 +148,7 @@ public class FieldSessionBean {
 			for (String guid : fieldGuids)
 			{
 				//Field fi = dao.getField(guid);
-				processField(guid);
+				processFieldGuid(guid);
 			}
 		//} catch (EntityDAOException e) {
 		//	Logger.getLogger(FieldSessionBean.class.getName()).log(Level.SEVERE, null, e);
@@ -170,7 +172,7 @@ public class FieldSessionBean {
 			{
 				fpCache.removeFieldGuid(fieldGuid);
 
-				HashSet<S2CellId> modCells = processField(fieldGuid);
+				HashSet<S2CellId> modCells = processFieldGuid(fieldGuid);
 
 				for (S2CellId cell : modCells)
 				{
@@ -198,132 +200,146 @@ public class FieldSessionBean {
 		
 	}
 
-	/**
-	 * This is the MU worker method converting fields into cell mu
-	 * Any cells which have been modified are placed into the cellQueue
-	 * which then resubmits any fields which use that cell.
-	 * Proof of concept for realtime cell updating. I'm excited.
-	 * @param field the field entity to process into cells
-	 */
-	@TransactionAttribute(TransactionAttributeType.REQUIRES_NEW) 
-	public HashSet<S2CellId> processField(String fieldGuid)
+	public HashSet<S2CellId> processFieldGuid(String fieldGuid)
 	{
 
-		HashSet<S2CellId> modifiedCells = new HashSet<>();
+		Logger.getLogger(FieldSessionBean.class.getName()).log(Level.INFO,"processFieldGuid: "+ fieldGuid);
+
 		try {
 			Field field = dao.getField(fieldGuid);
+
 			if (field == null)
 			{
 				Logger.getLogger(FieldSessionBean.class.getName()).log(Level.WARNING, "cannot find field guid: " + fieldGuid);
-				return modifiedCells;
+				return new HashSet<S2CellId>();
 			}
+	
+			return processField(field);
 
-			UniformDistribution initialMU;
-			Double area;
+		} catch (EntityDAOException e) {
+			Logger.getLogger(FieldSessionBean.class.getName()).log(Level.WARNING, "cannot find field guid: " + fieldGuid);
+		}
+		return new HashSet<S2CellId>();
 
-			Integer score = field.getMU();
-			S2Polygon thisField = field.getS2Polygon();
+	}
 
-			Logger.getLogger(FieldSessionBean.class.getName()).log(Level.INFO,null,field);
-
-			try {
+	public HashSet<S2CellId> processField(Field field)
+	{
+		HashSet<S2CellId> modifiedCells = new HashSet<>();
 		
-				if (score==1) 
-					initialMU = new UniformDistribution(0.0,1.5);
-				else
-					initialMU = new UniformDistribution(score,range);
+		UniformDistribution initialMU;
+		Double area;
 
-			// an algorithmic version of the following equation
-			// mu[cell] = ( MU - intersectionArea[cell1] x mu[cell1] ... - intersectionArea[cellN] x mu[cellN]) / intersectionArea[cell]
+		Integer score = field.getMU();
+		S2Polygon thisField = field.getS2Polygon();
 
-				final S2CellUnion cells = field.getCells();
+		//Logger.getLogger(FieldSessionBean.class.getName()).log(Level.INFO,null,field);
 
-				for (S2CellId cellOuter: cells)
+		//Logger.getLogger(FieldSessionBean.class.getName()).log(Level.INFO,"mu: "+ score);
+
+
+		try {
+	
+			if (score==1) 
+				initialMU = new UniformDistribution(0.0,1.5);
+			else
+				initialMU = new UniformDistribution(score,range);
+
+		// an algorithmic version of the following equation
+		// mu[cell] = ( MU - intersectionArea[cell1] x mu[cell1] ... - intersectionArea[cellN] x mu[cellN]) / intersectionArea[cell]
+
+			final S2CellUnion cells = field.getCells();
+
+			for (S2CellId cellOuter: cells)
+			{
+				StringBuilder cellLog = new StringBuilder();
+				UniformDistribution mus = new UniformDistribution(initialMU);
+				cellLog.append("( ");
+				cellLog.append(mus.toString());
+				for (S2CellId cellInner: cells)
 				{
-					StringBuilder cellLog = new StringBuilder();
-					UniformDistribution mus = new UniformDistribution(initialMU);
-					cellLog.append("( ");
-					cellLog.append(mus.toString());
-					for (S2CellId cellInner: cells)
+					// if not cell from outer loop
+					if (!cellOuter.equals(cellInner))
 					{
-						// if not cell from outer loop
-						if (!cellOuter.equals(cellInner))
+						// System.out.println("i<->o: " + cellOuter.toToken() + " - "+ cellInner.toToken());
+						double areaInner = getIntersectionArea(thisField,cellInner);
+
+						//Logger.getLogger(FieldSessionBean.class.getName()).log(Level.INFO,"get mu for cell:" + cellInner.toToken());
+
+
+						UniformDistribution cellInnerMU = muBean.getMU(cellInner.toToken()); // em.find(CellMUEntity.class, cellInner.id());
+
+						cellLog.append(" - ");
+						cellLog.append(areaInner);
+						cellLog.append(" x ");
+						cellLog.append(cellInner.toToken());
+						cellLog.append(":");
+
+						if (cellInnerMU != null)
 						{
-							// System.out.println("i<->o: " + cellOuter.toToken() + " - "+ cellInner.toToken());
-							double areaInner = CellSessionBean.getIntersectionArea(thisField,cellInner);
-							UniformDistribution cellInnerMU = muBean.getMU(cellInner.toToken()); // em.find(CellMUEntity.class, cellInner.id());
-
-							cellLog.append(" - ");
-							cellLog.append(areaInner);
-							cellLog.append(" x ");
-							cellLog.append(cellInner.toToken());
-							cellLog.append(":");
-
-							if (cellInnerMU != null)
-							{
-								cellLog.append(cellInnerMU);
-								UniformDistribution cma = cellInnerMU.mul(areaInner);
-								mus = mus.sub(cma);
-							}
-							else
-							{
-								cellLog.append("undefined");
-								mus.setLower(0.0);
-							}
+							cellLog.append(cellInnerMU);
+							UniformDistribution cma = cellInnerMU.mul(areaInner);
+							mus = mus.sub(cma);
+						}
+						else
+						{
+							cellLog.append("undefined");
+							mus.setLower(0.0);
 						}
 					}
-					cellLog.append(" ) / ");
-					double areaOuter = CellSessionBean.getIntersectionArea(thisField,cellOuter);
-					cellLog.append(areaOuter);
-					mus=mus.div(areaOuter);
-					cellLog.insert(0," = ");
-				
-					try {	
-						mus.clampLower(0.0);
-						cellLog.insert(0,mus);
-
-						UniformDistribution cellOuterMU = muBean.getMU(cellOuter.toToken());
-
-						cellLog.insert(0," => ");
-						if (cellOuterMU==null)
-							cellLog.insert(0,"null");
-						else
-							cellLog.insert(0,cellOuterMU.toString());
-						cellLog.insert(0,": ");
-						cellLog.insert(0,cellOuter.toToken());
-
-						if(muBean.refineMU(cellOuter.toToken(),mus))
-							modifiedCells.add(cellOuter);
-					} catch (UniformDistributionException ae) {
-					// field error
-						Logger.getLogger(FieldSessionBean.class.getName()).log(Level.WARNING,"Field: " + fieldGuid + " Cell: " + cellOuter.toToken()+" MU exception " + ae.getMessage());
-
-						System.out.println(ae.getMessage() + " " + cellLog.toString());
-					// findInvalid(field);
-					// something something, out of range error
-					// mark field as invalid 
-					// logic to find invalid field for cell
-					}
 				}
-		//	em.getTransaction().commit(); // I hope this works. 
+				cellLog.append(" ) / ");
+				double areaOuter = CellSessionBean.getIntersectionArea(thisField,cellOuter);
+				cellLog.append(areaOuter);
+				mus=mus.div(areaOuter);
+				cellLog.insert(0," = ");
+			
+				try {	
+					mus.clampLower(0.0);
+					cellLog.insert(0,mus);
+
+					UniformDistribution cellOuterMU = muBean.getMU(cellOuter.toToken());
+
+					cellLog.insert(0," => ");
+					if (cellOuterMU==null)
+						cellLog.insert(0,"null");
+					else
+						cellLog.insert(0,cellOuterMU.toString());
+					cellLog.insert(0,": ");
+					cellLog.insert(0,cellOuter.toToken());
+
+					if(muBean.refineMU(cellOuter.toToken(),mus))
+						modifiedCells.add(cellOuter);
+				} catch (UniformDistributionException ae) {
+				// field error
+					Logger.getLogger(FieldSessionBean.class.getName()).log(Level.WARNING,"Field: " + field.getGuid() + " Cell: " + cellOuter.toToken()+" MU exception " + ae.getMessage());
+
+					System.out.println(ae.getMessage() + " " + cellLog.toString());
+				// findInvalid(field);
+				// something something, out of range error
+				// mark field as invalid 
+				// logic to find invalid field for cell
+				}
+
+				//Logger.getLogger(FieldSessionBean.class.getName()).log(Level.INFO,cellLog.toString());
+			}
+	//	em.getTransaction().commit(); // I hope this works. 
 		
 		// unlock cells
 		
 		// it didn't work, it threw some error about being incompatible with JTA
 		// but I really think I need to control the transaction 
 		
-				StringBuilder fieldLog = new StringBuilder();
-				return modifiedCells;
+			StringBuilder fieldLog = new StringBuilder();
+			return modifiedCells;
 
-			} catch (Exception e) {
-				Logger.getLogger(FieldSessionBean.class.getName()).log(Level.SEVERE, null, e);
+		} catch (Exception e) {
+			Logger.getLogger(FieldSessionBean.class.getName()).log(Level.SEVERE, null, e);
 
-				System.out.println("processFieldException: " + e.getMessage());
-				e.printStackTrace();
-			}
-		} catch (EntityDAOException e) {
-			Logger.getLogger(FieldSessionBean.class.getName()).log(Level.WARNING, "cannot find field guid: " + fieldGuid);
+			System.out.println("processFieldException: " + e.getMessage());
+			e.printStackTrace();
 		}
+	 
 		return modifiedCells;
 	}
 	/**
@@ -455,31 +471,31 @@ public class FieldSessionBean {
 		int disagree = 0;
 		final S2CellUnion cells = field.getCells();
 		try {
-		for (S2CellId cell : cells)
-		{
-
-			UniformDistribution outerRemaining = remaining(field, cell);
-
-			ArrayList<String> fieldGuids = fieldsCells.fieldGuidsForCell(cell);
-
-			for (String fguid : fieldGuids)
+			for (S2CellId cell : cells)
 			{
-				if (!fguid.equals(field.getGuid()))
+
+				UniformDistribution outerRemaining = remaining(field, cell);
+
+				ArrayList<String> fieldGuids = fieldsCells.fieldGuidsForCell(cell);
+
+				for (String fguid : fieldGuids)
 				{
-					Field fi = dao.getField(fguid);
-					if (fi != null) {
-						UniformDistribution innerRemaining = remaining(fi, cell);
-					
-						if (!outerRemaining.intersects(innerRemaining))
-							disagree++;
+					if (!fguid.equals(field.getGuid()))
+					{
+						Field fi = dao.getField(fguid);
+						if (fi != null) {
+							UniformDistribution innerRemaining = remaining(fi, cell);
+						
+							if (!outerRemaining.intersects(innerRemaining))
+								disagree++;
+						}
 					}
 				}
 			}
-		}
-	} catch (Exception e) {
-		Logger.getLogger(FieldSessionBean.class.getName()).log(Level.SEVERE, null, e);
+		} catch (Exception e) {
+			Logger.getLogger(FieldSessionBean.class.getName()).log(Level.SEVERE, null, e);
 
-	}
+		}
 		return disagree;
 	}
 
@@ -604,6 +620,109 @@ public class FieldSessionBean {
 			}
 		}
 		return results;
+	}
+
+	/**
+	 * For a 'split' field situation where an initial check shows multiple MUs are possible for a field,
+	 * this method performs a deeper validation to disambiguate. It takes two fields and two MUs
+	 * and returns a boolean array indicating which MU is valid for the first field (fieldA).
+	 *
+	 * @param fieldA The first field.
+	 * @param fieldB The second field.
+	 * @param mu1 The first mu value.
+	 * @param mu2 The second mu value.
+	 * @return A boolean array `valid` of size 2, where `valid[0]` corresponds to `mu1`'s validity for `fieldA`,
+	 *         and `valid[1]` corresponds to `mu2`'s validity for `fieldA`.
+	 */
+	public boolean[] isSingleValidSplitFieldCombination(Field fieldA, Field fieldB, int mu1, int mu2) {
+		boolean combo1_isValid = isCombinationValid(fieldA, mu1, fieldB, mu2); // A:mu1, B:mu2
+		boolean combo2_isValid = isCombinationValid(fieldA, mu2, fieldB, mu1); // A:mu2, B:mu1
+
+		return new boolean[]{combo1_isValid, combo2_isValid};
+	}
+
+	private boolean isCombinationValid(Field fieldA, int muA, Field fieldB, int muB) {
+		fieldA.setMU(muA);
+		fieldB.setMU(muB);
+
+		S2CellUnion cellsA = fieldA.getCells();
+		S2CellUnion cellsB = fieldB.getCells();
+
+		ArrayList<S2CellId> allCellsList = new ArrayList<>();
+		allCellsList.addAll(cellsA.cellIds());
+		allCellsList.addAll(cellsB.cellIds());
+		HashSet<S2CellId> allCellsSet = new HashSet<>(allCellsList);
+
+		Map<S2CellId, UniformDistribution> tempCellMus = new HashMap<>();
+		for (S2CellId cellId : allCellsSet) {
+			UniformDistribution mu = muBean.getMU(cellId.toToken());
+			if (mu == null) {
+				// Cannot validate if cell data is missing.
+				// Following the logic of muFieldValid, we return true.
+				return true;
+			}
+			tempCellMus.put(cellId, mu);
+		}
+
+		S2CellUnion sharedCells = new S2CellUnion();
+		sharedCells.getIntersection(cellsA, cellsB);
+
+		for (S2CellId sharedCellId : sharedCells) {
+			UniformDistribution muFromA = remaining(fieldA, sharedCellId);
+			UniformDistribution muFromB = remaining(fieldB, sharedCellId);
+
+			UniformDistribution intersection = muFromA.intersection(muFromB);
+			if (intersection.isEmpty()) {
+				// The MUs implied by the two fields for the shared cell are disjoint.
+				return false;
+			}
+			tempCellMus.put(sharedCellId, intersection);
+		}
+
+		// With updated MUs for shared cells, check if the field MUs are still valid.
+		UniformDistribution muEstA = muForField(fieldA, tempCellMus);
+		if (muEstA.getLower() != -1 && !muEstA.roundAboveZero().contains(muA)) {
+			return false;
+		}
+
+		UniformDistribution muEstB = muForField(fieldB, tempCellMus);
+		if (muEstB.getLower() != -1 && !muEstB.roundAboveZero().contains(muB)) {
+			return false;
+		}
+
+		return true;
+	}
+
+	/**
+	 * Get the MU UniformDistribution for a field, using a provided map of cell MUs.
+	 * @param field the field to calculate its mu
+	 * @param cellMus a map of S2CellId to UniformDistribution for the cells.
+	 * @return UniformDistribution of the mu.
+	 */
+	private UniformDistribution muForField(Field field, Map<S2CellId, UniformDistribution> cellMus)
+	{
+		UniformDistribution fieldmu = new UniformDistribution(0,0);
+
+		for (S2CellId cellId : field.getCells())
+		{
+			S2Polygon intPoly = new S2Polygon();
+			S2Polygon cellPoly = getS2Polygon(new S2Cell(cellId));
+
+			intPoly.initToIntersection(field.getS2Polygon(), cellPoly);
+			double area = intPoly.getArea() * 6367 * 6367;
+			
+			UniformDistribution cellMu = cellMus.get(cellId);
+
+			if (cellMu != null)
+			{
+				UniformDistribution uniformMU = new UniformDistribution(cellMu);
+				uniformMU = uniformMU.mul(area);
+				fieldmu = fieldmu.add(uniformMU);
+			} else {
+				return new UniformDistribution(-1.0,-1.0);
+			}
+		}
+		return fieldmu;
 	}
 	
 }

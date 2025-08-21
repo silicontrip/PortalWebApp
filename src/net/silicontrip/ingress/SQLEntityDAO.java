@@ -257,6 +257,8 @@ public class SQLEntityDAO implements EntityDAO {
 		try (Connection c = spdDs.getConnection();
 			 PreparedStatement ps = c.prepareStatement(LINK_PURGE)) {
 			ps.executeUpdate();
+			c.commit(); 
+
 		} catch (SQLException se) {
 			throw new EntityDAOException("SQLException: " + se.getMessage());
 		}
@@ -276,6 +278,8 @@ public class SQLEntityDAO implements EntityDAO {
 			 PreparedStatement ps = c.prepareStatement(LINK_DELETE)) {
 			ps.setString(1, guid);
 			ps.executeUpdate();
+			c.commit(); 
+
 		} catch (SQLException se) {
 			throw new EntityDAOException("SQLException: " + se.getMessage());
 		}
@@ -339,6 +343,8 @@ public class SQLEntityDAO implements EntityDAO {
 				ps.setString(8, team);
 
 				ps.executeUpdate();
+				c.commit(); 
+
 			} catch (SQLException se) {
 				throw new EntityDAOException("SQLException: " + se.getMessage());
 			}
@@ -784,6 +790,7 @@ public class SQLEntityDAO implements EntityDAO {
 			ps.setBoolean(16, valid);
 
 			ps.executeUpdate();
+			c.commit(); 
 		} catch (SQLException se) {
 			//System.out.println("GUID: >" + guid+"<");
 			Logger.getLogger(SQLEntityDAO.class.getName()).log(Level.WARNING, "Duplicate field GUID: " + guid);
@@ -1277,6 +1284,8 @@ public ArrayList<Portal> getPortalsFromTitle(String title) throws EntityDAOExcep
 			 PreparedStatement ps = c.prepareStatement(PORTAL_UPDATE_DELETED)) {
 			ps.setString(1, guid);
 			ps.executeUpdate();
+			c.commit(); 
+
 		} catch (SQLException se) {
 			throw new EntityDAOException("SQLException: " + se.getMessage());
 		}
@@ -1303,6 +1312,8 @@ public ArrayList<Portal> getPortalsFromTitle(String title) throws EntityDAOExcep
 			ps.setString(3, team);
 			ps.setString(4, guid);
 			ps.executeUpdate();
+			c.commit(); 
+
 		} catch (SQLException se) {
 			throw new EntityDAOException("SQLException: " + se.getMessage());
 		}
@@ -1339,6 +1350,8 @@ public ArrayList<Portal> getPortalsFromTitle(String title) throws EntityDAOExcep
 			ps.setString(8, image);
 			ps.setString(9, guid);
 			ps.executeUpdate();
+			c.commit(); 
+
 		} catch (SQLException se) {
 			throw new EntityDAOException("SQLException: " + se.getMessage());
 		}
@@ -1375,6 +1388,8 @@ public ArrayList<Portal> getPortalsFromTitle(String title) throws EntityDAOExcep
 			ps.setInt(8, health);
 			ps.setString(9, image);
 			ps.executeUpdate();
+			c.commit(); 
+
 		} catch (SQLException se) {
 			throw new EntityDAOException("SQLException: " + se.getMessage());
 		}
@@ -1401,6 +1416,8 @@ public ArrayList<Portal> getPortalsFromTitle(String title) throws EntityDAOExcep
 			ps.setLong(3, lngE6);
 			ps.setString(4, team);
 			ps.executeUpdate();
+			c.commit(); 
+
 		} catch (SQLException se) {
 			throw new EntityDAOException("SQLException: " + se.getMessage());
 		}

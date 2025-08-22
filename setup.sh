@@ -2,7 +2,7 @@
 
 ASADMIN=/Users/mark/glassfish7/glassfish/bin/asadmin
 
-$ASADMIN --passwordfile /dev/stdin create-file-user silicontrip <<EOF                                                                                                               │
+$ASADMIN create-file-user --passwordfile /dev/stdin silicontrip <<EOF 
 AS_ADMIN_USERPASSWORD=test123
 EOF 
 

@@ -2,9 +2,9 @@
 
 ASADMIN=/Users/mark/glassfish7/glassfish/bin/asadmin
 
-$ASADMIN create-file-user --passwordfile /dev/stdin silicontrip <<EOF 
+$ASADMIN create-file-user --passwordfile /dev/stdin silicontrip <<EOF
 AS_ADMIN_USERPASSWORD=test123
-EOF 
+EOF
 
 $ASADMIN create-jms-resource --restype jakarta.jms.QueueConnectionFactory jms/QueueConnectionFactory
 

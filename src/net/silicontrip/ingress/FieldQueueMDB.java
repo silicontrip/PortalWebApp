@@ -102,6 +102,8 @@ public class FieldQueueMDB implements MessageListener {
 					Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.WARNING, "Field Exists: " + fi.getGuid());
 					return;
 				} 
+				Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.WARNING, "Processing: " + fi.getGuid());
+
 			//  System.out.println("FieldQueue: " + tm);
 
 				//  System.out.println("new Field: " + guid);
@@ -191,10 +193,10 @@ public class FieldQueueMDB implements MessageListener {
 
 											//fpCache.addFieldGuid(fi.getGuid());
 											//fieldBean.beginProcessing();
-											Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.INFO, "PROCESSING FIELD");
+											//Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.INFO, "PROCESSING FIELD");
 
 											HashSet<S2CellId> updates = fieldBean.processField(fi);
-											Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.INFO, "CELLS UPDATED...");
+											//Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.INFO, "CELLS UPDATED...");
 
 											JSONArray jsoncells = new JSONArray();
 											for (S2CellId cid: updates)

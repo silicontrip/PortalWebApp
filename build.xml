@@ -12,8 +12,18 @@
     </target>
      
     <target name="compile" depends="init" >
+         <copy todir="build/classes">
+             <fileset dir="WEB-INF/classes">
+                 <!-- This finds your persistence.xml in src/.../META-INF/ -->
+                 <include name="META-INF/persistence.xml"/>
+             </fileset>
+         </copy>
+
         <javac destdir="build/classes" debug="true" srcdir="src" >
-            <classpath refid="compile.classpath"/>
+            <classpath>
+		<path refid="compile.classpath"/>
+		<pathelement location="build/classes"/>
+	    </classpath>
         </javac>
 	<copy todir="build/classes">
 		<fileset dir="WEB-INF/classes" includes="**/*.xml" />

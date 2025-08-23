@@ -5,7 +5,7 @@ import java.util.TreeSet;
 
 import net.silicontrip.UniformDistribution;
 
-class UniformDensityCurve {
+public class UniformDensityCurve {
     ArrayList<UniformDistribution> distributions;
     ArrayList<double[]> segments;
     UniformDistribution peakDistribution;

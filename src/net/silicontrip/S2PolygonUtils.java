@@ -8,6 +8,7 @@
 package net.silicontrip;
 
 import com.google.common.geometry.*;
+import java.util.HashMap;
 
 public class S2PolygonUtils {
    /**
@@ -64,8 +65,24 @@ public class S2PolygonUtils {
         pb.addEdge(v3,v1);
         return pb.assemblePolygon();
     }
+    /**
+     * Assembles a Triangular S2Polygon from a field string array object.
+     * @param flist String Array field object
+     * @return S2Polygon of the Triangle
+     */
+    public static S2Polygon getS2Polygon (String[] flist)
+    {
+        int lat1 = Integer.valueOf(flist[7].trim());
+        int lng1 = Integer.valueOf(flist[8].trim());
+        int lat2 = Integer.valueOf(flist[10].trim());
+        int lng2 = Integer.valueOf(flist[11].trim());
+        int lat3 = Integer.valueOf(flist[13].trim());
+        int lng3 = Integer.valueOf(flist[14].trim());
 
-        /**
+        return getS2Polygon(lat1,lng1,lat2,lng2,lat3,lng3);
+    }
+
+    /**
      * Get the area of the intersection between a polygon and cell.
      * @param field the field polygon
      * @param cell the cell polygon
@@ -78,6 +95,39 @@ public class S2PolygonUtils {
         S2Polygon cellPoly = getS2Polygon(new S2Cell(cell));
         intPoly.initToIntersection(field, cellPoly);
         return intPoly.getArea() * 6367 * 6367 ;
+    }
+
+    public static S2CellUnion getCells(S2Polygon s2p)
+    {
+        S2RegionCoverer rc = new S2RegionCoverer();
+        // ingress mu calculation specifics
+        rc.setMaxLevel(13);
+        rc.setMinLevel(0);
+        rc.setMaxCells(20);
+        return rc.getCovering (s2p);
+    }
+
+    static public HashMap<S2CellId,Double> getCellIntersection(S2CellUnion cells, S2Polygon fieldPoly)
+    {
+
+        HashMap<S2CellId,Double> polyArea = new HashMap<S2CellId,Double>();
+        for (S2CellId cellid: cells)
+        {
+            S2Cell cell = new S2Cell(cellid);
+            // I think there is a way to turn a cell into an S2Loop which can be turned into an s2polygon
+            S2PolygonBuilder pb = new S2PolygonBuilder(S2PolygonBuilder.Options.UNDIRECTED_UNION);
+            pb.addEdge(cell.getVertex(0),cell.getVertex(1));
+            pb.addEdge(cell.getVertex(1),cell.getVertex(2));
+            pb.addEdge(cell.getVertex(2),cell.getVertex(3));
+            pb.addEdge(cell.getVertex(3),cell.getVertex(0));
+            S2Polygon cellPoly = pb.assemblePolygon();
+            S2Polygon intPoly = new S2Polygon();
+            intPoly.initToIntersection(fieldPoly, cellPoly);
+
+            polyArea.put(cellid,intPoly.getArea());
+        }
+        return polyArea;
+        
     }
 
 }

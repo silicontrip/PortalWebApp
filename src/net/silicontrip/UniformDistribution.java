@@ -460,4 +460,33 @@ public class UniformDistribution implements Serializable {
 	 */
 	@Override
 	public String toString () { return "[" + lower + "," + upper + "]"; }
+
+	/**
+	 * 	return a more human readable printable string
+	 *
+	 * 	@param sig the number of significant figures to format to
+	 *
+	 * 	@return String representation of the UD
+	 */
+	public String toStringWithPrecision(int sig)
+	{
+		double midpoint = this.mean();
+		double halfRange = this.range() / 2.0;
+
+		int decimalPlaces = 0;
+		if (halfRange > 0) {
+			// We want to show at least one, maybe two, significant figures for the range.
+			// e.g., if halfRange is 0.0007, log10 is ~ -3.15. floor is -4. 1 - (-4) = 5 decimal places.
+			// This will format it as "0.00070". Let's aim for 2 significant figures.
+			decimalPlaces = Math.max(sig, (sig-1) - (int)Math.floor(Math.log10(halfRange)));
+		}
+
+		String formatString = "%." + decimalPlaces + "f";
+
+		return String.format("%s +/- %s",
+			String.format(formatString, midpoint),
+			String.format(formatString, halfRange)
+		);
+	}
+	
 }

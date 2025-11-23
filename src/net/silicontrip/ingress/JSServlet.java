@@ -70,7 +70,7 @@ public class JSServlet extends HttpServlet {
 		} catch (ServletException e) {
 
 			try {
-				resp.setStatus(403);
+				resp.setStatus(401);
 				PrintWriter writer = resp.getWriter();
 				writer.println("alert (\"" + e.getMessage()+ " ("+e.getClass().getName()+") for " + userName+"\");");
 				writer.close();

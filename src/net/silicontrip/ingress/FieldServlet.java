@@ -634,7 +634,7 @@ public class FieldServlet extends HttpServlet {
 		//jsonResponse.put("apikey", apiKey);
 
 		try {
-			resp.setStatus(403);
+			resp.setStatus(401);
 			PrintWriter writer = resp.getWriter();
 			writer.println(jsonResponse.toString());
 			writer.close();

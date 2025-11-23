@@ -293,46 +293,64 @@ public class SQLBulkDAO  {
 	* @return The total number of rows affected (inserted + updated).
 	* @throws SQLException if a database access error occurs.
 	*/
-	public int upsertCells(HashMap<S2CellId, UniformDistribution> cellm) throws SQLException {
+	public int upsertCells(HashMap<S2CellId, UniformDistribution> cellm) throws SQLException 
+	{
 	
-		// The powerful MERGE statement.
-		// It uses a "VALUES" clause to create a temporary "source" table in memory.
-		String sql = "MERGE INTO mucell AS t " +
-						"USING (VALUES (?, ?, ?)) AS s (cellid, mu_low, mu_high) " + // Note: Derby requires 'hight' typo fix if in DB
-						"ON t.cellid = s.cellid " +
-						"WHEN MATCHED THEN " +
-						"    UPDATE SET t.mu_low = s.mu_low, t.mu_high = s.mu_high " +
-						"WHEN NOT MATCHED THEN " +
-						"    INSERT (cellid, mu_low, mu_high) VALUES (s.cellid, s.mu_low, s.mu_high)";
-		
-		int[] updateCounts;
+		String updateSql = "UPDATE mucell SET mu_low = ?, mu_high = ? WHERE cellid = ?";
+		String insertSql = "INSERT INTO mucell (cellid, mu_low, mu_high) VALUES (?, ?, ?)";
+	
 		int totalAffected = 0;
-		
-		// We use try-with-resources for the Connection and PreparedStatement
-		try (Connection conn = spdDs.getConnection();
-				PreparedStatement pstmt = conn.prepareStatement(sql)) {
-		
-			// Loop through each entry in your map to add it to the batch
-			for (Map.Entry<S2CellId, UniformDistribution> entry : cellm.entrySet()) {
-				pstmt.setString(1, entry.getKey().toToken());
-				UniformDistribution ud = entry.getValue();
-				pstmt.setDouble(2, ud.getLower());
-				pstmt.setDouble(3, ud.getUpper());
-		
-				// Add the current set of parameters to the batch
-				pstmt.addBatch();
+		Connection conn = null; // Declare connection outside the try block for the finally block
+	
+		try {
+			conn = spdDs.getConnection();
+			conn.setAutoCommit(false); // **CRITICAL:** Start a transaction
+	
+			try (PreparedStatement updateStmt = conn.prepareStatement(updateSql);
+				PreparedStatement insertStmt = conn.prepareStatement(insertSql)) {
+	
+				for (Map.Entry<S2CellId, UniformDistribution> entry : cellm.entrySet()) {
+					// Try to UPDATE first
+					updateStmt.setDouble(1, entry.getValue().getLower());
+					updateStmt.setDouble(2, entry.getValue().getUpper());
+					updateStmt.setString(3, entry.getKey().toToken());
+	
+					int rowsUpdated = updateStmt.executeUpdate();
+					totalAffected += rowsUpdated;
+	
+					// If the UPDATE affected 0 rows, the key doesn't exist, so INSERT it.
+					if (rowsUpdated == 0) {
+						insertStmt.setString(1, entry.getKey().toToken());
+						insertStmt.setDouble(2, entry.getValue().getLower());
+						insertStmt.setDouble(3, entry.getValue().getUpper());
+						int rowsInserted = insertStmt.executeUpdate();
+						totalAffected += rowsInserted;
+					}
+				}
 			}
-		
-			// Execute the entire batch of MERGE operations at once
-			updateCounts = pstmt.executeBatch();
+	
+			conn.commit(); // **CRITICAL:** Commit the entire transaction at the end
+	
+		} catch (SQLException e) {
+			if (conn != null) {
+				try {
+					conn.rollback(); // If anything goes wrong, roll back the entire transaction
+				} catch (SQLException ex) {
+					// Log rollback failure
+				}
+			}
+			throw new SQLException("Error during upsert transaction.", e);
+		} finally {
+			if (conn != null) {
+				try {
+					conn.setAutoCommit(true); // Reset auto-commit state
+					conn.close(); // **CRITICAL:** Return the connection to the pool
+				} catch (SQLException e) {
+					// Log closing failure
+				}
+			}
 		}
-		// The Connection and PreparedStatement are automatically closed here.
-		
-		// Sum the results from the updateCounts array to get the total number of affected rows
-		for (int count : updateCounts) {
-			totalAffected += count;
-		}
-		
+	
 		return totalAffected;
 	}
 

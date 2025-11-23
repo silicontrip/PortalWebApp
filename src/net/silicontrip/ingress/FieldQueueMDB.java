@@ -102,7 +102,7 @@ public class FieldQueueMDB implements MessageListener {
 					Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.WARNING, "Field Exists: " + fi.getGuid());
 					return;
 				} 
-				Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.WARNING, "Processing: " + fi.getGuid());
+				Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.INFO, "Processing: " + fi.getGuid());
 
 			//  System.out.println("FieldQueue: " + tm);
 

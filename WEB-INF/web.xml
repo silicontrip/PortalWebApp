@@ -33,6 +33,10 @@
 		<servlet-name>LayerServlet</servlet-name>
 		<servlet-class>net.silicontrip.ingress.LayerServlet</servlet-class>
 	</servlet>
+	<servlet>
+		<servlet-name>JMXServlet</servlet-name>
+		<servlet-class>net.silicontrip.ingress.JMXServlet</servlet-class>
+	</servlet>
 	<servlet-mapping>
 		<servlet-name>PortalServlet</servlet-name>
 		<url-pattern>/getPortals</url-pattern>
@@ -56,5 +60,9 @@
 	<servlet-mapping>
 		<servlet-name>LayerServlet</servlet-name>
 		<url-pattern>/layer</url-pattern>
+	</servlet-mapping>
+	<servlet-mapping>
+		<servlet-name>JMXServlet</servlet-name>
+		<url-pattern>/jarvis</url-pattern>
 	</servlet-mapping>
 </web-app>

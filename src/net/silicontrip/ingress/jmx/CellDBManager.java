@@ -695,10 +695,10 @@ public class CellDBManager implements CellDBManagerMBean {
 			HashMap<S2CellId,UniformDistribution> cellm;
 
 			fieldList = bdao.readValidFields();
-			sb.append("" + fieldList.size() + " fields read.");
+			sb.append("" + fieldList.size() + " fields read.\n");
 			cellm = bdao.readCells();
 			int osize = cellm.size();
-			sb.append("" + osize + " cells read.");
+			sb.append("" + osize + " cells read.\n");
 			
 			long startTime = System.currentTimeMillis();
 			Logger.getLogger(CellDBManager.class.getName()).log(Level.INFO, "CellDBManager: Starting buildCells()...");

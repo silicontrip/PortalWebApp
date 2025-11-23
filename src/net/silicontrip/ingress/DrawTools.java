@@ -284,6 +284,7 @@ public class DrawTools {
 	public void addField(S2Polygon p) { entities.put(newField(p,this.colour)); }
 	public void addMarker(S2LatLng l) { entities.put(newMarker(l,this.colour)); }
 	public void addCircle(S2LatLng l, S1Angle a) { entities.put(newCircle(l,a,this.colour)); }
+	public void addPolygon(S2Polygon p) { entities.put(newPolygon(p,colour)); }
 
 	protected static JSONObject newLine (S2Edge l, String colour) { return newLine(l.getStart(),l.getEnd(),colour); }
 	protected static JSONObject newLine (S2Point a, S2Point b, String colour) { return newLine(newPoint(a),newPoint(b),colour); }
@@ -314,7 +315,20 @@ public class DrawTools {
 		pg.put("color",colour);
 		pg.put("latLngs",latLngs);
 		return pg;
-	}	
+	}
+
+	protected static JSONObject newPolygon(S2Polygon f, String colour)
+	{
+		JSONObject pg = new JSONObject();
+		pg.put("type","polygon");
+		JSONArray latLngs = new JSONArray();
+		pg.put("color",colour);
+		for (int j = 0; j < f.loop(0).numVertices(); j++)
+			latLngs.put(newPoint(f.loop(0).vertex(j)));
+		pg.put("latLngs",latLngs);
+		return pg;
+	}
+
 
 	protected static JSONObject newMarker (double lat, double lng, String colour) {
 		JSONObject pg = new JSONObject();
@@ -568,8 +582,9 @@ public class DrawTools {
 		intelLink.append(getE6String(centreLat));
 		intelLink.append(",");
 		intelLink.append(getE6String(centreLng));
-		intelLink.append("&z=");
-		intelLink.append(zoom.intValue());
+		// zoom is a bit wrong and appears intel can handle not having it
+		//intelLink.append("&z=");
+		//intelLink.append(zoom.intValue());
 		return intelLink.toString();
 	}
 	public String toString() { 
@@ -771,10 +786,4 @@ public class DrawTools {
 		}
 		return count;
 	}
-	
-
-			
-		
-
-
 }

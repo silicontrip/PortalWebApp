@@ -31,6 +31,9 @@ import net.silicontrip.UniformDensityCurve;
 import net.silicontrip.UniformDistribution;
 import net.silicontrip.UniformDistributionException;
 
+import net.silicontrip.ingress.DrawTools;
+
+
 
  // Your other necessary imports for database connection, celldbtool logic, etc.
  // import net.silicontrip.celldbtool;
@@ -524,7 +527,6 @@ public class CellDBManager implements CellDBManagerMBean {
 						// Again need to handle this error reporting.
 						Logger.getLogger(CellDBManager.class.getName()).log(Level.WARNING, "CellDBManager REFINE ERROR: " + io.toToken() + " " + udc.getPeakValue() + " P:" + udc.getPeakDistribution() + " <-> C:" + newCellm.get(io)+ " " + udc.allValid());
 						return("REFINE ERROR: " + io.toToken() + " " + udc.getPeakValue() + " P:" + udc.getPeakDistribution() + " <-> C:" + newCellm.get(io)+ " " + udc.allValid());
-
 					}
 				}
 				iterations ++;
@@ -601,6 +603,13 @@ public class CellDBManager implements CellDBManagerMBean {
 			StringBuilder sb = new StringBuilder();
 
 			sb.append(cid.toToken() + "\n");
+			
+			S2Polygon cpg = getS2Polygon(new S2Cell(cid));
+			DrawTools cdt = new DrawTools();
+			cdt.setDefaultColour(4);
+			cdt.addPolygon(cpg);
+			sb.append(cdt.toString() + "\n\n");
+			
 			sb.append("<b>MU (DB)         </b> : " + cellm.get(cid).toStringWithPrecision(3) + " " + cellm.get(cid) + "\n");
 			sb.append("<b>Fields          </b> : " + udc.getPeakValue() + "\n");
 			sb.append("<b>MU (calc)       </b> : " + udc.getPeakDistribution() + "\n");
@@ -628,10 +637,20 @@ public class CellDBManager implements CellDBManagerMBean {
 
 							UniformDistribution cmu = cellm.get(tcid).mul(intersectionsOuter.get(tcid) * 6367.0 * 6367.0);
 							double err = 100.0 * cmu.range() / imu;
-							sb.append("<b>Cell contribution</b>: " + tcid.toToken() + " range: " + cmu + " error: " + cmu.range() + " mu\n\n");
+							sb.append("<b>Cell contribution</b>: " + tcid.toToken() + " range: " + cmu + " error: " + cmu.range() + " mu\n");
 						}
 
-					sb.append("[" + dtPolygon(f, "#FFFFFF") +"]\n\n");
+					sb.append("\n");
+
+					DrawTools dt = new DrawTools();
+					dt.addField(getS2Polygon(f));
+					sb.append(dt.toString() + "\n\n");
+					
+					dt.erase();
+					dt.addField(getS2Polygon(f));
+					dt.addPolygon(cpg);
+					sb.append(dt.asIntelLink() + "\n\n");
+
 					//System.out.println("");
 	
 				}

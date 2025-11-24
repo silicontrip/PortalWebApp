@@ -526,7 +526,7 @@ public class DrawTools {
 // https://intel.ingress.com/intel?ll=-37.818269,144.94853&z=18&pls=-37.818663,144.949228,-37.818645,144.948802_-37.818478,144.94907,-37.818645,144.948802_-37.818478,144.94907,-37.818663,144.949228
 	public String asIntelLink() {
 		
-		StringBuilder intelLink = new StringBuilder("https://www.ingress.com/intel?pls=");
+		StringBuilder intelLink = new StringBuilder("https://intel.ingress.com/?pls=");
 		JSONArray pos = this.getAsLines();
 		boolean first = true;
 		double maxLength =0;

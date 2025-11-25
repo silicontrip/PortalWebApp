@@ -53,7 +53,6 @@ public class JMXServlet extends HttpServlet {
 	public void doPost(HttpServletRequest req, HttpServletResponse resp)
 	{
 		resp.setCharacterEncoding("UTF-8");
-		resp.setContentType("text/html");
 
 		try {
 			PrintWriter writer = resp.getWriter();
@@ -64,6 +63,28 @@ public class JMXServlet extends HttpServlet {
 
 			// writer.println("<h1>OK</H1>");
 			String action = req.getParameter("action");
+			resp.setContentType("text/plain");
+
+			if (action.equals("best")) {
+				resp.setContentType("text/plain");
+				String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+				String filename = "field_export_" + timestamp + ".txt";
+				resp.setHeader("Content-Disposition", "attachment; filename=\"" + filename + "\"");
+				writer.println(callCellDBManager("exportBestFields",null,null));
+				return;
+			} else if (action.equals("backup")) {
+				String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+				String filename = "field_export_" + timestamp + ".txt";
+				resp.setHeader("Content-Disposition", "attachment; filename=\"" + filename + "\"");
+				writer.println(callCellDBManager("exportAllFields",null,null));
+				return;
+			}
+
+			resp.setContentType("text/html");
+			
+			writer.println("<html>");
+			writer.println("<head><link rel=\"icon\" type=\"image/png\" sizes=\"32x32\" href=\"/icons/favicon32.png\"></head>");
+			writer.println("<body>");
 
 			// now our code will look just like celldbtool
 			if (action.equals("trace")) {
@@ -92,21 +113,12 @@ public class JMXServlet extends HttpServlet {
 				String[] sig = { "java.lang.String" };
 				String result = callCellDBManager("invalidateField",par,sig);
 				writer.println("<pre>" + result + "</pre>");
-			} else if (action.equals("best")) {
-				resp.setContentType("text/plain");
-				String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
-				String filename = "field_export_" + timestamp + ".txt";
-				resp.setHeader("Content-Disposition", "attachment; filename=\"" + filename + "\"");
-				writer.println(callCellDBManager("exportBestFields",null,null));
-			} else if (action.equals("backup")) {
-				resp.setContentType("text/plain");
-				String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
-				String filename = "field_export_" + timestamp + ".txt";
-				resp.setHeader("Content-Disposition", "attachment; filename=\"" + filename + "\"");
-				writer.println(callCellDBManager("exportAllFields",null,null));
 			} else {
 				writer.println("<pre>this is not the action you are looking for.</pre>");
 			}
+			
+			writer.println("</body>");
+			writer.println("</html>");
 
 		} catch (Exception e) {
 			
@@ -136,69 +148,88 @@ public class JMXServlet extends HttpServlet {
 			String[] up = getAuth(authHeader);
 			req.login(up[0],up[1]);
 			
-			writer.println("<pre>cell database tools\n</pre>");
-			writer.println("<pre><b>TRACE</b></pre>");
-			writer.println("<pre>Enter a cellid to show the field or fields that contribute to its value.</pre>");
+			writer.println("<html>");
+			writer.println("<head>");
+			writer.println("<link rel=\"icon\" type=\"image/png\" sizes=\"32x32\" href=\"favicon_32.png\">");
+			writer.println("<link rel=\"stylesheet\" href=\"api-stylesheet-grn.css\">");
+			writer.println("</head>");
+			writer.println("<body>");
+
+			writer.println("<div class=\"title\">");
+			writer.println("<H1>cell database tools</h1>");
+			writer.println("</div>");
+			
+			writer.println("<div class=\"control\">");
+			writer.println("<h1>trace</h1>");
+			writer.println("<p>Enter a cellid to show the field or fields that contribute to its value.</p>");
 			writer.println("<form method='POST' action='jarvis'>");
 			writer.println("<input type='text' name='cellid'>");
 			writer.println("<input type='hidden' name='action' value='trace'>");
 			writer.println("<input type='submit' value='Trace'>");
 			writer.println("</form>");
-			writer.println("<hr>");
+			writer.println("</div>");
 			
-			writer.println("<pre><b>INVALIDATE FIELD</b></pre>");
-			writer.println("<pre>Enter a field GUID which has an invalid MU to mark is as invalid in the database and not used for cell calculations.</pre>");
+			writer.println("<div class=\"control\">");
+			writer.println("<h1>INVALIDATE FIELD</h1>");
+			writer.println("<p>Enter a field GUID which has an invalid MU to mark is as invalid in the database and not used for cell calculations.</p>");
 			writer.println("<form method='POST' action='jarvis'>");
 			writer.println("<input type='text' name='fieldguid'>");
 			writer.println("<input type='hidden' name='action' value='invalidate'>");
 			writer.println("<input type='submit' value='Invalidate'>");
 			writer.println("</form>");
-			writer.println("<hr>");
-			
-			writer.println("<pre><b>REFINE</b></pre>");
-			writer.println("<pre>Update calculation of all cells based on database fields.</pre>");
+			writer.println("</div>");
+
+			writer.println("<div class=\"control\">");
+			writer.println("<h1>REFINE</h1>");
+			writer.println("<p>Update calculation of all cells based on database fields.</p>");
 			writer.println("<form method='POST' action='jarvis'>");
 			writer.println("<input type='hidden' name='action' value='refine'>");
 			writer.println("<input type='submit' value='Refine'>");
 			writer.println("</form>");
-			writer.println("<hr>");
+			writer.println("</div>");
 
-			writer.println("<pre><b>ERASE CELLS</b></pre>");
-			writer.println("<pre>Erase MUCELLS.</pre>");
+			writer.println("<div class=\"control\">");
+			writer.println("<h1>ERASE CELLS</h1>");
+			writer.println("<p>Erase MUCELLS.</p>");
 			writer.println("<form method='POST' action='jarvis'>");
 			writer.println("<input type='hidden' name='action' value='erase'>");
 			writer.println("<input type='submit' value='Erase'>");
 			writer.println("</form>");
-			writer.println("<hr>");
+			writer.println("</div>");
 
-			writer.println("<pre><b>REBUILD CELLS</b></pre>");
-			writer.println("<pre>Build Cell model from scratch based on database fields.</pre>");
+			writer.println("<div class=\"control\">");
+			writer.println("<h1>REBUILD CELLS</h1>");
+			writer.println("<p>Build Cell model from scratch based on database fields.</p>");
 			writer.println("<form method='POST' action='jarvis'>");
 			writer.println("<input type='hidden' name='action' value='build'>");
 			writer.println("<input type='submit' value='Build'>");
 			writer.println("</form>");
-			writer.println("<hr>");
+			writer.println("</div>");
 
-			writer.println("<pre><b>REBUILD FIELD CELLS</b></pre>");
-			writer.println("<pre>Rebuild the MUCELL-FIELDS joining table if the field table has been modified.</pre>");
+			writer.println("<div class=\"control\">");
+			writer.println("<h1>REBUILD FIELD CELLS</h1>");
+			writer.println("<p>Rebuild the MUCELL-FIELDS joining table if the field table has been modified.</p>");
 			writer.println("<form method='POST' action='jarvis'>");
 			writer.println("<input type='hidden' name='action' value='rebuild'>");
 			writer.println("<input type='submit' value='Rebuild'>");
 			writer.println("</form>");
-			writer.println("<hr>");
+			writer.println("</div>");
 			
-			writer.println("<pre><b>EXPORT FIELDS</b></pre>");
-			writer.println("<pre>Download All or the Best Fields for backup.</pre>");
+			writer.println("<div class=\"control\">");
+			writer.println("<h1>EXPORT FIELDS</h1>");
+			writer.println("<p>Download All or the Best Fields for backup.</p>");
 			writer.println("<form method='POST' action='jarvis'>");
 			writer.println("<input type='hidden' name='action' value='best'>");
 			writer.println("<input type='submit' value='Export Best'>");
-			writer.println("</form>");
-			writer.println("<form method='POST' action='jarvis'>");
+			writer.println("</form><form method='POST' action='jarvis'>");
 			writer.println("<input type='hidden' name='action' value='backup'>");
 			writer.println("<input type='submit' value='Export All'>");
 			writer.println("</form>");
+			writer.println("</div>");
 
-			writer.println("<hr>");
+			writer.println("</body>");
+			writer.println("</html>");
+
 
 		} catch (Exception e) {
 			

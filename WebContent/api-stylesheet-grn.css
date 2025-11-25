@@ -1,0 +1,42 @@
+body {
+    margin: 0;
+    border-color: #c0feb9;
+    border-width: 32;
+    border-style: solid;
+    background-color: #79d471;
+}
+
+.control form {
+    background-color: #79d471;
+    padding: 8;
+    margin: 0;
+}
+
+.title h1 {
+    text-transform: uppercase;
+    font-family: sans-serif;
+    font-size: larger;
+    background: #79d471;
+    color: #c0feb9;
+    padding: 8;
+    margin: 0;
+}
+
+.control h1 {
+    text-transform: uppercase;
+    font-family: sans-serif;
+    font-size: large;
+    background: #c0feb9;
+    color: #79d471;
+    margin: 0;
+    padding: 4;
+}
+
+.control p {
+    font-family: monospace;
+    background: #79d471;
+    color: white;
+    padding: 8;
+    margin: 0;
+}
+

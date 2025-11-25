@@ -608,7 +608,9 @@ public class CellDBManager implements CellDBManagerMBean {
 			DrawTools cdt = new DrawTools();
 			cdt.setDefaultColour(4);
 			cdt.addPolygon(cpg);
-			sb.append(cdt.toString() + "\n\n");
+			sb.append(cdt.toString() + "\n");
+			sb.append(cdt.asIntelLink() + "\n");
+			sb.append("\n");
 			
 			sb.append("<b>MU (DB)         </b> : " + cellm.get(cid).toStringWithPrecision(3) + " " + cellm.get(cid) + "\n");
 			sb.append("<b>Fields          </b> : " + udc.getPeakValue() + "\n");

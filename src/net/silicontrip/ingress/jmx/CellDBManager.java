@@ -33,6 +33,9 @@ import net.silicontrip.UniformDistributionException;
 
 import net.silicontrip.ingress.DrawTools;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
 // Your other necessary imports for database connection, celldbtool logic, etc.
 // import net.silicontrip.celldbtool;
 // import java.sql.Connection;
@@ -569,9 +572,10 @@ public class CellDBManager implements CellDBManagerMBean {
 		System.out.println("JMX: Tracing cell " + cellToken);
 
 		if (cellToken == null || cellToken.trim().isEmpty()) {
-			return "ERROR: cellToken parameter cannot be empty.";
+			return "{\"error\": \"cellToken parameter cannot be empty.\"}";
 		}
 
+		JSONObject jsonResponse = new JSONObject();
 		try {
 
 			HashMap<S2CellId, UniformDistribution> cellm;
@@ -611,24 +615,37 @@ public class CellDBManager implements CellDBManagerMBean {
 
 			UniformDensityCurve udc = new UniformDensityCurve(bestMUList);
 
-			StringBuilder sb = new StringBuilder();
+			//StringBuilder sb = new StringBuilder();
 
-			sb.append(cid.toToken() + "\n");
+			//sb.append(cid.toToken() + "\n");
+			
+			jsonResponse.put("cellid", cid.toToken());
+
 
 			S2Polygon cpg = getS2Polygon(new S2Cell(cid));
 			DrawTools cdt = new DrawTools();
 			cdt.setDefaultColour(4);
 			cdt.addPolygon(cpg);
-			sb.append(cdt.toString() + "\n");
-			sb.append(cdt.asIntelLink() + "\n");
-			sb.append("\n");
+			// sb.append(cdt.toString() + "\n");
+			jsonResponse.put("cellShapeDrawTools", cdt.toString());
+			jsonResponse.put("cellShapeIntel", cdt.asIntelLink());
+			// sb.append(cdt.asIntelLink() + "\n");
+			// sb.append("\n");
 
-			sb.append("<b>MU (DB)         </b> : " + cellm.get(cid).toStringWithPrecision(3) + " " + cellm.get(cid)
-					+ "\n");
-			sb.append("<b>Fields          </b> : " + udc.getPeakValue() + "\n");
-			sb.append("<b>MU (calc)       </b> : " + udc.getPeakDistribution() + "\n");
-			sb.append("<b>All fields valid</b> : " + udc.allValid() + "\n\n");
+			// sb.append("<b>MU (DB)         </b> : " + cellm.get(cid).toStringWithPrecision(3) + " " + cellm.get(cid)
+			// 		+ "\n");
+			jsonResponse.put("mudb", cellm.get(cid).toString());
+			// sb.append("<b>Fields          </b> : " + udc.getPeakValue() + "\n");
+			jsonResponse.put("numfields", udc.getPeakValue());
+			// sb.append("<b>MU (calc)       </b> : " + udc.getPeakDistribution() + "\n");
+			jsonResponse.put("mucalc", udc.getPeakDistribution());
+			// sb.append("<b>All fields valid</b> : " + udc.allValid() + "\n\n");
+			jsonResponse.put("valid", udc.allValid());
+
+			JSONArray fields = new JSONArray();
+
 			for (int i = 0; i < bestFieldList.size(); i++) {
+				JSONObject field = new JSONObject();
 				String[] f = bestFieldList.get(i);
 				UniformDistribution tmu = bestMUList.get(i);
 				if (udc.isPeak(tmu)) {
@@ -638,11 +655,19 @@ public class CellDBManager implements CellDBManagerMBean {
 					S2Polygon s2poly = getS2Polygon(f);
 					double area = s2poly.getArea() * 6367.0 * 6367.0;
 					double mukm = 1.0 * imu / area;
-					sb.append("<b>Field " + i + " guid</b>    : " + f[3] + "\n");
-					sb.append("<b>MU             </b> : " + imu + " error: " + fmu.perror() * 100.0 + "%\n");
-					sb.append("<b>Scaled MU range</b> : " + tmu + " error: " + tmu.perror() * 100.0 + "%\n");
-					sb.append("<b>Area           </b> : " + area + " km " + mukm + " mukm\n\n");
+					//sb.append("<b>Field " + i + " guid</b>    : " + f[3] + "\n");
+					field.put("guid", f[3]);
 
+					field.put("index",i);
+					field.put("imu",imu);
+					field.put("mu",tmu);
+					field.put("area",area);
+					field.put("mukm",mukm);	
+					//sb.append("<b>MU             </b> : " + imu + " error: " + fmu.perror() * 100.0 + "%\n");
+					//sb.append("<b>Scaled MU range</b> : " + tmu + " error: " + tmu.perror() * 100.0 + "%\n");
+					//sb.append("<b>Area           </b> : " + area + " km " + mukm + " mukm\n\n");
+
+					JSONObject contributions = new JSONObject();
 					for (S2CellId tcid : fieldUnion.get(f[3].trim()))
 						if (!tcid.equals(cid)) {
 							HashMap<S2CellId, Double> intersectionsOuter = fieldIntersections.get(f[3].trim());
@@ -650,27 +675,34 @@ public class CellDBManager implements CellDBManagerMBean {
 							UniformDistribution cmu = cellm.get(tcid)
 									.mul(intersectionsOuter.get(tcid) * 6367.0 * 6367.0);
 							double err = 100.0 * cmu.range() / imu;
-							sb.append("<b>Cell contribution</b>: " + tcid.toToken() + " range: " + cmu + " error: "
-									+ cmu.range() + " mu\n");
+							//sb.append("<b>Cell contribution</b>: " + tcid.toToken() + " range: " + cmu + " error: "
+									//+ cmu.range() + " mu\n");
+							contributions.put(tcid.toToken(),cmu);
+							//contributions.put("mu",cmu);
 						}
 
-					sb.append("\n");
+					//sb.append("\n");
+
+					field.put("contributions",contributions);
 
 					DrawTools dt = new DrawTools();
 					dt.addField(getS2Polygon(f));
-					sb.append(dt.toString() + "\n\n");
+					//sb.append(dt.toString() + "\n\n");
+					field.put("drawtools",dt.toString());
 
-					dt.erase();
-					dt.addField(getS2Polygon(f));
+					//dt.erase();
+					//dt.addField(getS2Polygon(f));
 					dt.addPolygon(cpg);
-					sb.append(dt.asIntelLink() + "\n\n");
-
+					//sb.append(dt.asIntelLink() + "\n\n");
+					field.put("intel",dt.asIntelLink());
 					// System.out.println("");
+				fields.put(field);
 
 				}
 			}
+			jsonResponse.put("fields",fields);
 
-			return sb.toString();
+			return jsonResponse.toString();
 
 			// return "Trace for " + cellToken + " completed. See server log for output.";
 

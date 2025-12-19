@@ -87,6 +87,50 @@ public class UniformDistribution implements Serializable {
 	{
 		this(ud.getLower(),ud.getUpper());
 	}
+	/**
+	 * String Constructor.
+	 * Parses a string in the format "[lower,upper]" to create a UniformDistribution.
+	 * This format matches the output of toString().
+	 *
+	 * @param str A String in the format "[lower,upper]"
+	 * @throws UniformDistributionException if the string format is invalid
+	 */
+	public UniformDistribution(String str) throws UniformDistributionException
+	{
+		if (str == null || str.isEmpty()) {
+			throw new UniformDistributionException("String cannot be null or empty");
+		}
+		
+		String trimmed = str.trim();
+		if (!trimmed.startsWith("[") || !trimmed.endsWith("]")) {
+			throw new UniformDistributionException("String must be in format '[lower,upper]', got: " + str);
+		}
+		
+		// Remove brackets
+		String content = trimmed.substring(1, trimmed.length() - 1);
+		
+		// Split by comma
+		String[] parts = content.split(",");
+		if (parts.length != 2) {
+			throw new UniformDistributionException("String must contain exactly two values separated by comma, got: " + str);
+		}
+		
+		try {
+			double a = Double.parseDouble(parts[0].trim());
+			double b = Double.parseDouble(parts[1].trim());
+			
+			// Use the existing logic to set lower and upper
+			if (a <= b) {
+				this.lower = a;
+				this.upper = b;
+			} else {
+				this.lower = b;
+				this.upper = a;
+			}
+		} catch (NumberFormatException e) {
+			throw new UniformDistributionException("Invalid number format in string: " + str, e);
+		}
+	}
 
 	/**
 	 * Accessor method for the upper bounds.

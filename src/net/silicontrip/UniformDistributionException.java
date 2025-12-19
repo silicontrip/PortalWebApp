@@ -17,6 +17,15 @@ public class UniformDistributionException extends Exception {
     } 
 
     /**
+     * Constructor with cause
+     * @param str    a string that explains what the exception condition is
+     * @param cause  the underlying cause of this exception
+     */
+    public UniformDistributionException (String str, Throwable cause) {
+        super(str, cause);
+    }
+
+    /**
      * Default constructor. Takes no arguments
      */
     public UniformDistributionException () {

@@ -3,6 +3,7 @@ package net.silicontrip.ingress;
 import jakarta.ejb.EJB;
 
 import jakarta.servlet.http.*;
+import net.silicontrip.UniformDistribution;
 import jakarta.servlet.*;
 
 import java.io.*;
@@ -21,6 +22,9 @@ import javax.management.ReflectionException;
 import javax.management.ObjectName;
 
 import java.sql.SQLException;
+
+import org.json.JSONObject;
+import org.json.JSONArray;
 
 public class JMXServlet extends HttpServlet {
 
@@ -79,45 +83,93 @@ public class JMXServlet extends HttpServlet {
 
 			resp.setContentType("text/html");
 
-			writer.println("<html>");
-			writer.println("<head><link rel=\"icon\" type=\"image/png\" sizes=\"32x32\" href=\"/icons/favicon_32.png\"></head>");
-			writer.println("<link rel=\"stylesheet\" href=\"api-stylesheet-grn.css\">");
-			writer.println("<body>");
+				writer.println("<html>");
+				writer.println("<head>");
+				writer.println("<link rel=\"icon\" type=\"image/png\" sizes=\"32x32\" href=\"favicon_32.png\">");
+				writer.println("<link rel=\"stylesheet\" href=\"api-stylesheet-grn.css\">");
+				writer.println("</head>");
+				writer.println("<body>");
 
 			// now our code will look just like celldbtool
 			if (action.equals("trace")) {
 				String cellid = req.getParameter("cellid");
+				writer.println("<div class=\"title\">");
+				writer.println("<h1>Tracing cellid: " + cellid + "</h1>");
+				writer.println("</div>");
 				writer.println("<div class=\"control\">");
-				writer.println("<pre>Tracing cellid: " + cellid + "</pre>");
 				Object[] par = { cellid };
 				String[] sig = { "java.lang.String" };
 				String result = callCellDBManager("traceCell", par, sig);
-				writer.println("<pre>" + result + "</pre>");
+				JSONObject json = new JSONObject(result);
+				//writer.println("<p>" + json.toString(2) + "</p>");
+				writer.println("<p>" + json.getString("cellShapeDrawTools") + "</p>");
+				writer.println("<p>" + json.getString("cellShapeIntel") + "</p>");
+				UniformDistribution mu = new UniformDistribution(json.getString("mudb"));
+				writer.println("<p>MU (db): " + mu + " : "+ mu.toStringWithPrecision(3) + "</p>");
+				mu = new UniformDistribution(json.getString("mucalc"));
+				writer.println("<p>MU (calc): " + mu + " : "+ mu.toStringWithPrecision(3) + "</p>");
+				writer.println("<p>Fields: " + json.getInt("numfields") + " All Valid: " + json.getBoolean("valid") + "</p>");
+				writer.println("<h1>Fields</h1>");
+				for (Object o : json.getJSONArray("fields")) {
+					JSONObject fi = (JSONObject) o;
+					//writer.println("<p>" + fi.toString(2) + "</p>");
+					writer.println("<p>GUID: " + fi.getString("guid") + "</p>");
+					writer.println("<p>Index: " + fi.getInt("index"));
+					mu = new UniformDistribution(fi.getString("mu"));
+					writer.println(" MU: " + fi.getInt("imu") + " Scaled MU: " + mu + " : " + mu.toStringWithPrecision(3) );
+					writer.println(" area: " + fi.getFloat("area") + " mukm: " + fi.getFloat("mukm") + "</p>");
+					for (String c : fi.getJSONObject("contributions").keySet()) {
+						mu = new UniformDistribution(fi.getJSONObject("contributions").getString(c));
+						writer.println("<p>" + c + ": " + mu + " : " + mu.toStringWithPrecision(3) + "</p>");
+					}
+					writer.println("<p>" + fi.getString("drawtools") + "</p>");
+					writer.println("<p>" + fi.getString("intel") + "</p>");
+				}
 				writer.println("</div>");
 			} else if (action.equals("refine")) {
-				writer.println("<pre>Refining cell model.</pre>");
+				writer.println("<div class=\"title\">");
+				writer.println("<h1>Refining cell model.</h1>");
+				writer.println("</div>");
 				String result = callCellDBManager("refineCells", null, null);
-				writer.println("<pre>" + result + "</pre>");
+				writer.println("<div class=\"control\">");
+				writer.println("<p>" + result + "</p>");
+				writer.println("</div>");
+
 			} else if (action.equals("build")) {
-				writer.println("<pre>Rebuilding cell model.</pre>");
+				writer.println("<div class=\"title\">");
+				writer.println("<h1>Rebuilding cell model.</h1>");
+				writer.println("</div>");
 				String result = callCellDBManager("rebuildCells", null, null);
-				writer.println("<pre>" + result + "</pre>");
+				writer.println("<div class=\"control\">");
+				writer.println("<p>" + result + "</p>");
+				writer.println("</div>");
+
 			} else if (action.equals("rebuild")) {
-				writer.println("<pre>Rebuilding Field-Cell table.</pre>");
+				writer.println("<div class=\"title\">");
+				writer.println("<h1>Rebuilding Field-Cell table.</h1>");
+				writer.println("</div>");
 				String result = callCellDBManager("rebuildFieldCells", null, null);
-				writer.println("<pre>" + result + "</pre>");
+				writer.println("<div class=\"control\">");
+				writer.println("<p>" + result + "</p>");
+				writer.println("</div>");
 			} else if (action.equals("invalidate")) {
 				String fieldguid = req.getParameter("fieldguid");
-				writer.println("<pre>Invalidating field: " + fieldguid + "</pre>");
+				writer.println("<div class=\"title\">");
+				writer.println("<h1>Invalidating field: " + fieldguid + "</h1>");
+				writer.println("</div>");
+				writer.println("<div class=\"control\">");
 				Object[] par = { fieldguid };
 				String[] sig = { "java.lang.String" };
 				String result = callCellDBManager("invalidateField", par, sig);
 				writer.println("<pre>" + result + "</pre>");
+				writer.println("</div>");
 			} else if (action.equals("refine-background")) {
 				// Start background refinement and show polling status page
 				String result = callCellDBManager("startRefineCellsBackground", null, null);
-				writer.println("<div class=\"control\">");
+				writer.println("<div class=\"title\">");
 				writer.println("<h1>Background Refinement</h1>");
+				writer.println("</div>");
+				writer.println("<div class=\"control\">");
 				writer.println("<p>" + result + "</p>");
 				writer.println("<div id='status'><pre>Loading status...</pre></div>");
 				writer.println("<button id='cancelBtn' onclick='cancelTask()'>Cancel Refinement</button>");
@@ -132,7 +184,7 @@ public class JMXServlet extends HttpServlet {
 				writer.println("  })");
 				writer.println("  .then(r => r.text())");
 				writer.println("  .then(data => {");
-				writer.println("    document.getElementById('status').innerHTML = '<p>' + data + '</p>';");
+				writer.println("    document.getElementById('status').innerHTML = '<pre>' + data + '</pre>';");
 				writer.println("    if (data.includes('Status: RUNNING')) {");
 				writer.println("      setTimeout(updateStatus, 2000);");
 				writer.println("    } else {");
@@ -165,7 +217,9 @@ public class JMXServlet extends HttpServlet {
 				writer.println(result);
 				return; // Skip HTML wrapper
 			} else {
-				writer.println("<pre>this is not the action you are looking for.</pre>");
+				writer.println("<div class=\"title\">");
+				writer.println("<h1>?UNKNOWN ACTION.</h1>");
+				writer.println("</div>");
 			}
 
 			writer.println("</body>");

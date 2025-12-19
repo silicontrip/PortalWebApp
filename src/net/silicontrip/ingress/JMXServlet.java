@@ -24,22 +24,21 @@ import java.sql.SQLException;
 
 public class JMXServlet extends HttpServlet {
 
-	public void init () throws ServletException {
+	public void init() throws ServletException {
 	}
-	
-	public void destroy () {
+
+	public void destroy() {
 		;
 	}
 
-	private String callCellDBManager(String call, Object[] par, String[] sig) throws MalformedObjectNameException, InstanceNotFoundException, MBeanException, ReflectionException, SQLException
-	{
+	private String callCellDBManager(String call, Object[] par, String[] sig) throws MalformedObjectNameException,
+			InstanceNotFoundException, MBeanException, ReflectionException, SQLException {
 		MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
 		ObjectName name = new ObjectName("net.silicontrip.ingress:type=CellDBManager");
-		return (String)mbs.invoke(name, call, par, sig);
+		return (String) mbs.invoke(name, call, par, sig);
 	}
-	
-	String[] getAuth(String authHeader) 
-	{
+
+	String[] getAuth(String authHeader) {
 		String[] parts = new String[2];
 		if (authHeader != null && authHeader.toLowerCase().startsWith("basic ")) {
 			String base64Credentials = authHeader.substring(6);
@@ -49,19 +48,17 @@ public class JMXServlet extends HttpServlet {
 		}
 		return parts;
 	}
-	
-	public void doPost(HttpServletRequest req, HttpServletResponse resp)
-	{
+
+	public void doPost(HttpServletRequest req, HttpServletResponse resp) {
 		resp.setCharacterEncoding("UTF-8");
 
 		try {
 			PrintWriter writer = resp.getWriter();
-			
+
 			String authHeader = req.getHeader("Authorization");
 			String[] up = getAuth(authHeader);
-			req.login(up[0],up[1]);
+			req.login(up[0], up[1]);
 
-			// writer.println("<h1>OK</H1>");
 			String action = req.getParameter("action");
 			resp.setContentType("text/plain");
 
@@ -70,84 +67,194 @@ public class JMXServlet extends HttpServlet {
 				String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
 				String filename = "field_export_" + timestamp + ".txt";
 				resp.setHeader("Content-Disposition", "attachment; filename=\"" + filename + "\"");
-				writer.println(callCellDBManager("exportBestFields",null,null));
+				writer.println(callCellDBManager("exportBestFields", null, null));
 				return;
 			} else if (action.equals("backup")) {
 				String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
 				String filename = "field_export_" + timestamp + ".txt";
 				resp.setHeader("Content-Disposition", "attachment; filename=\"" + filename + "\"");
-				writer.println(callCellDBManager("exportAllFields",null,null));
+				writer.println(callCellDBManager("exportAllFields", null, null));
 				return;
 			}
 
 			resp.setContentType("text/html");
-			
+
 			writer.println("<html>");
-			writer.println("<head><link rel=\"icon\" type=\"image/png\" sizes=\"32x32\" href=\"/icons/favicon32.png\"></head>");
+			writer.println("<head><link rel=\"icon\" type=\"image/png\" sizes=\"32x32\" href=\"/icons/favicon_32.png\"></head>");
+			writer.println("<link rel=\"stylesheet\" href=\"api-stylesheet-grn.css\">");
 			writer.println("<body>");
 
 			// now our code will look just like celldbtool
 			if (action.equals("trace")) {
 				String cellid = req.getParameter("cellid");
+				writer.println("<div class=\"control\">");
 				writer.println("<pre>Tracing cellid: " + cellid + "</pre>");
 				Object[] par = { cellid };
 				String[] sig = { "java.lang.String" };
 				String result = callCellDBManager("traceCell", par, sig);
 				writer.println("<pre>" + result + "</pre>");
+				writer.println("</div>");
 			} else if (action.equals("refine")) {
 				writer.println("<pre>Refining cell model.</pre>");
-				String result = callCellDBManager("refineCells",null,null);
+				String result = callCellDBManager("refineCells", null, null);
 				writer.println("<pre>" + result + "</pre>");
 			} else if (action.equals("build")) {
 				writer.println("<pre>Rebuilding cell model.</pre>");
-				String result = callCellDBManager("rebuildCells",null,null);
+				String result = callCellDBManager("rebuildCells", null, null);
 				writer.println("<pre>" + result + "</pre>");
 			} else if (action.equals("rebuild")) {
 				writer.println("<pre>Rebuilding Field-Cell table.</pre>");
-				String result = callCellDBManager("rebuildFieldCells",null,null);
+				String result = callCellDBManager("rebuildFieldCells", null, null);
 				writer.println("<pre>" + result + "</pre>");
 			} else if (action.equals("invalidate")) {
 				String fieldguid = req.getParameter("fieldguid");
 				writer.println("<pre>Invalidating field: " + fieldguid + "</pre>");
 				Object[] par = { fieldguid };
 				String[] sig = { "java.lang.String" };
-				String result = callCellDBManager("invalidateField",par,sig);
+				String result = callCellDBManager("invalidateField", par, sig);
 				writer.println("<pre>" + result + "</pre>");
+			} else if (action.equals("refine-background")) {
+				// Start background refinement and show polling status page
+				String result = callCellDBManager("startRefineCellsBackground", null, null);
+				writer.println("<h2>Background Refinement</h2>");
+				writer.println("<pre>" + result + "</pre>");
+				writer.println("<div id='status'><pre>Loading status...</pre></div>");
+				writer.println("<button id='cancelBtn' onclick='cancelTask()'>Cancel Refinement</button>");
+				writer.println("<script>");
+				writer.println("function updateStatus() {");
+				writer.println("  fetch('jarvis?action=refine-status', {");
+				writer.println("    method: 'POST',");
+				writer.println("    headers: {");
+				writer.println("      'Authorization': '" + req.getHeader("Authorization") + "'");
+				writer.println("    }");
+				writer.println("  })");
+				writer.println("  .then(r => r.text())");
+				writer.println("  .then(data => {");
+				writer.println("    document.getElementById('status').innerHTML = '<pre>' + data + '</pre>';");
+				writer.println("    if (data.includes('Status: RUNNING')) {");
+				writer.println("      setTimeout(updateStatus, 2000);");
+				writer.println("    } else {");
+				writer.println("      document.getElementById('cancelBtn').disabled = true;");
+				writer.println("    }");
+				writer.println("  });");
+				writer.println("}");
+				writer.println("function cancelTask() {");
+				writer.println("  fetch('jarvis?action=refine-cancel', {");
+				writer.println("    method: 'POST',");
+				writer.println("    headers: {");
+				writer.println("      'Authorization': '" + req.getHeader("Authorization") + "'");
+				writer.println("    }");
+				writer.println("  })");
+				writer.println("  .then(r => r.text())");
+				writer.println("  .then(data => alert(data));");
+				writer.println("}");
+				writer.println("setTimeout(updateStatus, 1000);");
+				writer.println("</script>");
+			} else if (action.equals("refine-status")) {
+				// Return plain text status for polling
+				resp.setContentType("text/plain");
+				String result = callCellDBManager("getRefineCellsStatus", null, null);
+				writer.println(result);
+				return; // Skip HTML wrapper
+			} else if (action.equals("refine-cancel")) {
+				// Cancel running refinement
+				resp.setContentType("text/plain");
+				String result = callCellDBManager("cancelRefineCells", null, null);
+				writer.println(result);
+				return; // Skip HTML wrapper
 			} else {
 				writer.println("<pre>this is not the action you are looking for.</pre>");
 			}
-			
+
 			writer.println("</body>");
 			writer.println("</html>");
 
-		} catch (Exception e) {
-			
+		} catch (ServletException e) {
+
 			try {
 				resp.setStatus(401);
 				PrintWriter writer = resp.getWriter();
-				writer.println("<h1>Authentication Required</h1>");
+				resp.setContentType("text/html");
+				writer.println("<html>");
+				writer.println("<head>");
+				writer.println("<link rel=\"icon\" type=\"image/png\" sizes=\"32x32\" href=\"favicon_32.png\">");
+				writer.println("<link rel=\"stylesheet\" href=\"api-stylesheet-grn.css\">");
+				writer.println("</head>");
+				writer.println("<body>");
+
+				writer.println("<div class=\"title\">");
+				writer.println("<h1>?Error Authentication Required</h1>");
+				// writer.println("<h1>ready.</h1>");
+				writer.println("</div>");
+				writer.println("<div class=\"control\">");
+				writer.println("<p>");
+				writer.println(e.getClass().getName());
+				writer.println("</p>");
+				writer.println("<p>");
+				writer.println(e.getMessage());
+				writer.println("</p>");
+				writer.println("</div>");
+
+				writer.println("</body></html>");
+				writer.close();
+			} catch (IOException e2) {
+				// :-P
+				// I should put a logger in here
+			}
+
+		} catch (Exception e) {
+						try {
+
+			resp.setStatus(500);
+				PrintWriter writer = resp.getWriter();
+				resp.setContentType("text/html");
+				writer.println("<html>");
+				writer.println("<head>");
+				writer.println("<link rel=\"icon\" type=\"image/png\" sizes=\"32x32\" href=\"favicon_32.png\">");
+				writer.println("<link rel=\"stylesheet\" href=\"api-stylesheet-grn.css\">");
+				writer.println("</head>");
+				writer.println("<body>");
+
+				writer.println("<div class=\"title\">");
+				writer.println("<h1>?Syntax Error</h1>");
+				// writer.println("<h1>ready.</h1>");
+				writer.println("</div>");
+				writer.println("<div class=\"control\">");
+				writer.println("<p>");
+				writer.println(e.getClass().getName());
+				writer.println("</p>");
+				writer.println("<p>");
+				writer.println(e.getMessage());
+				writer.println("</p>");
+				writer.println("<p>");
+				e.printStackTrace(writer);
+								writer.println("</p>");
+
+				writer.println("</div>");
+
+				writer.println("</body></html>");
 				writer.close();
 			} catch (IOException e2) {
 				// :-P
 			}
-			
+
 		}
+		
 
 	}
-	public void doGet(HttpServletRequest req, HttpServletResponse resp)
-	{
-		//doPost(req,resp);
+
+	public void doGet(HttpServletRequest req, HttpServletResponse resp) {
+		// doPost(req,resp);
 		resp.setCharacterEncoding("UTF-8");
 		resp.setContentType("text/html");
-
 
 		try {
 			PrintWriter writer = resp.getWriter();
 
 			String authHeader = req.getHeader("Authorization");
 			String[] up = getAuth(authHeader);
-			req.login(up[0],up[1]);
-			
+			req.login(up[0], up[1]);
+
 			writer.println("<html>");
 			writer.println("<head>");
 			writer.println("<link rel=\"icon\" type=\"image/png\" sizes=\"32x32\" href=\"favicon_32.png\">");
@@ -157,8 +264,9 @@ public class JMXServlet extends HttpServlet {
 
 			writer.println("<div class=\"title\">");
 			writer.println("<H1>cell database tools</h1>");
+			writer.println("<h1>ready.</h1>");
 			writer.println("</div>");
-			
+
 			writer.println("<div class=\"control\">");
 			writer.println("<h1>trace</h1>");
 			writer.println("<p>Enter a cellid to show the field or fields that contribute to its value.</p>");
@@ -168,10 +276,11 @@ public class JMXServlet extends HttpServlet {
 			writer.println("<input type='submit' value='Trace'>");
 			writer.println("</form>");
 			writer.println("</div>");
-			
+
 			writer.println("<div class=\"control\">");
 			writer.println("<h1>INVALIDATE FIELD</h1>");
-			writer.println("<p>Enter a field GUID which has an invalid MU to mark is as invalid in the database and not used for cell calculations.</p>");
+			writer.println(
+					"<p>Enter a field GUID which has an invalid MU to mark is as invalid in the database and not used for cell calculations.</p>");
 			writer.println("<form method='POST' action='jarvis'>");
 			writer.println("<input type='text' name='fieldguid'>");
 			writer.println("<input type='hidden' name='action' value='invalidate'>");
@@ -182,8 +291,13 @@ public class JMXServlet extends HttpServlet {
 			writer.println("<div class=\"control\">");
 			writer.println("<h1>REFINE</h1>");
 			writer.println("<p>Update calculation of all cells based on database fields.</p>");
+			// writer.println("<form method='POST' action='jarvis'
+			// style='display:inline;'>");
+			// writer.println("<input type='hidden' name='action' value='refine'>");
+			// writer.println("<input type='submit' value='Refine (Synchronous)'>");
+			// writer.println("</form>");
 			writer.println("<form method='POST' action='jarvis'>");
-			writer.println("<input type='hidden' name='action' value='refine'>");
+			writer.println("<input type='hidden' name='action' value='refine-background'>");
 			writer.println("<input type='submit' value='Refine'>");
 			writer.println("</form>");
 			writer.println("</div>");
@@ -214,7 +328,7 @@ public class JMXServlet extends HttpServlet {
 			writer.println("<input type='submit' value='Rebuild'>");
 			writer.println("</form>");
 			writer.println("</div>");
-			
+
 			writer.println("<div class=\"control\">");
 			writer.println("<h1>EXPORT FIELDS</h1>");
 			writer.println("<p>Download All or the Best Fields for backup.</p>");
@@ -227,22 +341,42 @@ public class JMXServlet extends HttpServlet {
 			writer.println("</form>");
 			writer.println("</div>");
 
+			writer.println("<div class=\"control\">");
+			writer.println("<h1>Import and merge FIELDS</h1>");
+			writer.println("<p>Import fields from a file and add them to the field table.</p>");
+			writer.println("<form method='POST' action='jarvis' enctype=\"multipart/form-data\">");
+			writer.println("<input type='hidden' name='action' value='merge'>");
+			writer.println("<input type=\"file\" id=\"uploadFile\" name=\"fileToUpload\" required>");
+			writer.println("<input type='submit' value='Import'>");
+			writer.println("</form>");
+			writer.println("</div>");
+
 			writer.println("</body>");
 			writer.println("</html>");
 
-
 		} catch (Exception e) {
-			
+
 			try {
 				resp.setHeader("WWW-Authenticate", "Basic realm=\"portalApi/jarvis\"");
 				resp.setStatus(401);
 				PrintWriter writer = resp.getWriter();
+				writer.println("<html>");
+				writer.println("<head>");
+				writer.println("<link rel=\"icon\" type=\"image/png\" sizes=\"32x32\" href=\"favicon_32.png\">");
+				writer.println("<link rel=\"stylesheet\" href=\"api-stylesheet-grn.css\">");
+				writer.println("</head>");
+				writer.println("<body>");
+
+				writer.println("<div class=\"title\">");
 				writer.println("<h1>Authentication Required</h1>");
+				writer.println("<h1>ready.</h1>");
+				writer.println("</div>");
+				writer.println("</body></html>");
 				writer.close();
 			} catch (IOException e2) {
 				// :-P
 			}
-			
+
 		}
 
 	}

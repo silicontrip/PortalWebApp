@@ -116,10 +116,12 @@ public class JMXServlet extends HttpServlet {
 			} else if (action.equals("refine-background")) {
 				// Start background refinement and show polling status page
 				String result = callCellDBManager("startRefineCellsBackground", null, null);
-				writer.println("<h2>Background Refinement</h2>");
-				writer.println("<pre>" + result + "</pre>");
+				writer.println("<div class=\"control\">");
+				writer.println("<h1>Background Refinement</h1>");
+				writer.println("<p>" + result + "</p>");
 				writer.println("<div id='status'><pre>Loading status...</pre></div>");
 				writer.println("<button id='cancelBtn' onclick='cancelTask()'>Cancel Refinement</button>");
+				writer.println("</div>");
 				writer.println("<script>");
 				writer.println("function updateStatus() {");
 				writer.println("  fetch('jarvis?action=refine-status', {");
@@ -130,7 +132,7 @@ public class JMXServlet extends HttpServlet {
 				writer.println("  })");
 				writer.println("  .then(r => r.text())");
 				writer.println("  .then(data => {");
-				writer.println("    document.getElementById('status').innerHTML = '<pre>' + data + '</pre>';");
+				writer.println("    document.getElementById('status').innerHTML = '<p>' + data + '</p>';");
 				writer.println("    if (data.includes('Status: RUNNING')) {");
 				writer.println("      setTimeout(updateStatus, 2000);");
 				writer.println("    } else {");
@@ -153,7 +155,7 @@ public class JMXServlet extends HttpServlet {
 			} else if (action.equals("refine-status")) {
 				// Return plain text status for polling
 				resp.setContentType("text/plain");
-				String result = callCellDBManager("getRefineCellsStatus", null, null);
+				String result = callCellDBManager("refineCellsStatus", null, null);
 				writer.println(result);
 				return; // Skip HTML wrapper
 			} else if (action.equals("refine-cancel")) {

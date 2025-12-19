@@ -27,7 +27,7 @@ public interface CellDBManagerMBean {
     // Background task methods for long-running refinement
     public String startRefineCellsBackground();
 
-    public String getRefineCellsStatus();
+    public String refineCellsStatus();
 
     public String cancelRefineCells();
 

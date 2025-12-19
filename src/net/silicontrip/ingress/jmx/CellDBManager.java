@@ -684,7 +684,7 @@ public class CellDBManager implements CellDBManagerMBean {
 	public String startRefineCellsBackground() {
 		synchronized (this) {
 			if (refineCellsRunning) {
-				return "ERROR: Refinement task is already running. Use getRefineCellsStatus() to monitor progress.";
+				return "ERROR: Refinement task is already running. Use refineCellsStatus() to monitor progress.";
 			}
 
 			// Reset state
@@ -707,44 +707,44 @@ public class CellDBManager implements CellDBManagerMBean {
 					// 1. Read fields from DB
 					refineCellsStatus = "Reading fields from database...";
 					fieldList = bdao.readValidFields();
-					refineCellsResult.append("" + fieldList.size() + " fields read.\\n");
+					refineCellsResult.append("" + fieldList.size() + " fields read.\n");
 
 					// 2. Read cells from DB
 					refineCellsStatus = "Reading cells from database...";
 					cellm = bdao.readCells();
 					int osize = cellm.size();
-					refineCellsResult.append("" + osize + " cells read.\\n");
+					refineCellsResult.append("" + osize + " cells read.\n");
 
 					// 3. Refine cells
 					refineCellsStatus = "Refining cells...";
 					cellm = refineFieldCells(fieldList, cellm);
-					refineCellsResult.append("Refinement iterations completed.\\n");
+					refineCellsResult.append("Refinement iterations completed.\n");
 
 					// 4. Write results back to DB
 					refineCellsStatus = "Writing results to database...";
 					int update = bdao.upsertCells(cellm);
-					refineCellsResult.append("" + update + " cells updated.\\n");
+					refineCellsResult.append("" + update + " cells updated.\n");
 
 					long endTime = System.currentTimeMillis();
 					long duration = (endTime - startTime) / 1000; // in seconds
 
 					Logger.getLogger(CellDBManager.class.getName()).log(Level.INFO, "CellDBManager background refinement process completed in " + duration + " seconds.");
-					refineCellsResult.append("CellDBManager refinement process completed in " + duration + " seconds.\\n");
+					refineCellsResult.append("CellDBManager refinement process completed in " + duration + " seconds.\n");
 					refineCellsStatus = "Completed successfully";
 
 				} catch (RuntimeException e) {
 					if (refineCellsCancelled) {
 						refineCellsStatus = "Cancelled by user";
-						refineCellsResult.append("\\nRefinement cancelled by user.\\n");
+						refineCellsResult.append("\nRefinement cancelled by user.\n");
 						Logger.getLogger(CellDBManager.class.getName()).log(Level.WARNING, "CellDBManager: Refinement cancelled by user");
 					} else {
 						refineCellsStatus = "ERROR: " + e.getMessage();
-						refineCellsResult.append("\\nERROR: " + e.getMessage() + "\\n");
+						refineCellsResult.append("\nERROR: " + e.getMessage() + "\n");
 						Logger.getLogger(CellDBManager.class.getName()).log(Level.SEVERE, "CellDBManager: Refinement error", e);
 					}
 				} catch (Exception e) {
 					refineCellsStatus = "ERROR: " + e.getMessage();
-					refineCellsResult.append("\\nERROR: Refinement failed. " + e.getMessage() + "\\n");
+					refineCellsResult.append("\nERROR: Refinement failed. " + e.getMessage() + "\n");
 					e.printStackTrace();
 					Logger.getLogger(CellDBManager.class.getName()).log(Level.SEVERE, "CellDBManager: Refinement error", e);
 				} finally {
@@ -755,30 +755,30 @@ public class CellDBManager implements CellDBManagerMBean {
 			refineCellsThread.setName("RefineCells-Background");
 			refineCellsThread.start();
 
-			return "Refinement task started in background. Use getRefineCellsStatus() to monitor progress.";
+			return "Refinement task started in background. Use refineCellsStatus() to monitor progress.";
 		}
 	}
 
 	@Override
-	public String getRefineCellsStatus() {
+	public String refineCellsStatus() {
 		StringBuilder sb = new StringBuilder();
 		
 		if (refineCellsRunning) {
-			sb.append("Status: RUNNING\\n");
-			sb.append("Current: " + refineCellsStatus + "\\n");
+			sb.append("Status: RUNNING\n");
+			sb.append("Current: " + refineCellsStatus + "\n");
 			if (refineCellsTotal > 0) {
-				sb.append("Progress: Iteration " + refineCellsProgress + ", analyzing " + refineCellsTotal + " cells\\n");
+				sb.append("Progress: Iteration " + refineCellsProgress + ", analyzing " + refineCellsTotal + " cells\n");
 			}
-			sb.append("\\nProgress so far:\\n");
+			sb.append("\nProgress so far:\n");
 			sb.append(refineCellsResult.toString());
 		} else {
 			if (refineCellsStatus.equals("Not running")) {
-				sb.append("Status: NOT RUNNING\\n");
-				sb.append("No refinement task has been started.\\n");
+				sb.append("Status: NOT RUNNING\n");
+				sb.append("No refinement task has been started.\n");
 			} else {
-				sb.append("Status: COMPLETED\\n");
-				sb.append("Final status: " + refineCellsStatus + "\\n\\n");
-				sb.append("Results:\\n");
+				sb.append("Status: COMPLETED\n");
+				sb.append("Final status: " + refineCellsStatus + "\n\n");
+				sb.append("Results:\n");
 				sb.append(refineCellsResult.toString());
 			}
 		}

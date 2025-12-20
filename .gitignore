@@ -8,5 +8,4 @@ deprecated
 dist
 /target/
 WEB-INF/lib
-/WebContent/
 /nbproject/

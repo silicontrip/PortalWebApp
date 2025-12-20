@@ -75,17 +75,17 @@ public class MUSessionBean {
 		{
 			//System.out.println ("" + id.toToken() + " managed: " + em.contains(c)); // tree, bark, right?
 
-			UniformDistribution oldd = c.getDistribution();
+			//UniformDistribution oldd = c.getDistribution();
 
 			updated =  c.refine(ud);
-			
+			/*
 			if (updated) {
 				//System.out.println(""+ id.toToken() + " -> " + c.getDistribution());
 				UniformDistribution newd = c.getDistribution();
 				Logger.getLogger(MUSessionBean.class.getName()).log(Level.INFO, "UPDATED: "+ tok + " old " 
 					+ oldd.toStringWithPrecision(3) + " new " + newd.toStringWithPrecision(3));
 			}
-			
+			*/
 			//em.flush();
 		}
 		else

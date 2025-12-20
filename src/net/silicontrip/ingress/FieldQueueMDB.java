@@ -102,7 +102,7 @@ public class FieldQueueMDB implements MessageListener {
 					Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.WARNING, "Field Exists: " + fi.getGuid());
 					return;
 				} 
-				Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.INFO, "Processing: " + fi.getGuid());
+				//Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.INFO, "Processing: " + fi.getGuid());
 
 			//  System.out.println("FieldQueue: " + tm);
 
@@ -205,7 +205,8 @@ public class FieldQueueMDB implements MessageListener {
 											// Now add these to the cell processing queue
 
 										} else {
-											Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.WARNING, "Does not improve model: " + fi.getGuid() + " " + fi.getCreator() + " " + fi.getMU());
+											//Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.WARNING, "Does not improve model: " + fi.getGuid() + " " + fi.getCreator() + " " + fi.getMU());
+											//
 										}
 									} else {
 										Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.WARNING, "Has Disagreements: " + fi.getGuid() + " " + fi.getCreator() + " " + fi.getMU());
@@ -216,7 +217,8 @@ public class FieldQueueMDB implements MessageListener {
 							}
 						} 
 					} else {
-						Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.WARNING, "Fails valid logic: " + fi.getGuid() + " " + fi.getCreator() + " MU: [" + valid[0] + ": " +mu.getLong(0) + ", "+valid[1] + ": "+mu.getLong(1)+"]" );
+						//Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.WARNING, "Fails valid logic: " + fi.getGuid() + " " + fi.getCreator() + " MU: [" + valid[0] + ": " +mu.getLong(0) + ", "+valid[1] + ": "+mu.getLong(1)+"]" );
+						;
 					}
 				}
 				// maybe set up an invalid table with split MU

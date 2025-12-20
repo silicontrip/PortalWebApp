@@ -302,11 +302,23 @@ public class FieldSessionBean {
 						cellLog.insert(0,"null");
 					else
 						cellLog.insert(0,cellOuterMU.toString());
+
 					cellLog.insert(0,": ");
 					cellLog.insert(0,cellOuter.toToken());
 
 					if(muBean.refineMU(cellOuter.toToken(),mus))
+					{
+						if (cellOuterMU != null)
+						{
+							mus.refine(cellOuterMU);
+							Logger.getLogger(FieldSessionBean.class.getName()).log(Level.INFO, "UPDATED: "+ cellOuter.toToken() + " old " 
+							+ cellOuterMU.toStringWithPrecision(3) + " new " + mus.toStringWithPrecision(3) + " fguid: " + field.getGuid());
+						} else {
+							Logger.getLogger(FieldSessionBean.class.getName()).log(Level.INFO, "NEW: "+ cellOuter.toToken() + " " + mus.toStringWithPrecision(3) + " fguid: " + field.getGuid());
+						}
 						modifiedCells.add(cellOuter);
+					}
+					
 				} catch (UniformDistributionException ae) {
 				// field error
 					Logger.getLogger(FieldSessionBean.class.getName()).log(Level.WARNING,"Field: " + field.getGuid() + " Cell: " + cellOuter.toToken()+" MU exception " + ae.getMessage());

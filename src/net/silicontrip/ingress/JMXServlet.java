@@ -216,6 +216,14 @@ public class JMXServlet extends HttpServlet {
 				String result = callCellDBManager("cancelRefineCells", null, null);
 				writer.println(result);
 				return; // Skip HTML wrapper
+			} else if (action.equals("erase")) {
+				writer.println("<div class=\"title\">");
+				writer.println("<h1>Erasing cells.</h1>");
+				writer.println("</div>");
+				String result = callCellDBManager("eraseCells", null, null);
+				writer.println("<div class=\"control\">");
+				writer.println("<p>" + result + "</p>");
+				writer.println("</div>");
 			} else {
 				writer.println("<div class=\"title\">");
 				writer.println("<h1>?UNKNOWN ACTION.</h1>");

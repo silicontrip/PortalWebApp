@@ -69,6 +69,16 @@ public class CellDBManager implements CellDBManagerMBean {
 	private volatile int refineCellsTotal = 0;
 	private StringBuilder refineCellsResult = new StringBuilder();
 
+	// Background task state for rebuildCells (build-cells action)
+	private Thread rebuildCellsThread;
+	private volatile boolean rebuildCellsRunning = false;
+	private volatile boolean rebuildCellsCancelled = false;
+	private volatile String rebuildCellsStatus = "Not running";
+	private volatile int rebuildCellsProgress = 0;
+	private volatile int rebuildCellsTotal = 0;
+	private StringBuilder rebuildCellsResult = new StringBuilder();
+
+
 	@PostConstruct
 	public void register() {
 		try {
@@ -382,6 +392,91 @@ public class CellDBManager implements CellDBManagerMBean {
 		} while (count != newCellm.size());
 		return newCellm;
 	}
+
+	/**
+	 * Non-static wrapper for agreements() that adds cancellation checks and progress updates
+	 * for background build cells operation.
+	 */
+	private HashMap<S2CellId, UniformDistribution> agreementsWithProgress(ArrayList<String[]> flist,
+			HashMap<S2CellId, UniformDistribution> cellw) {
+		HashMap<S2CellId, UniformDistribution> newCellm = new HashMap<S2CellId, UniformDistribution>(cellw);
+		int iteration = 0;
+		int count = 0;
+		
+		do {
+			// Check for cancellation
+			if (rebuildCellsCancelled) {
+				throw new RuntimeException("Build cancelled by user");
+			}
+			
+			iteration++;
+			int previousCount = newCellm.size();
+			
+			// Update status (don't append to result, just update the status message)
+			rebuildCellsStatus = "Building cell model - iteration " + iteration + " (analyzing " + newCellm.size() + " cells)...";
+			
+			// Process one iteration
+			count = newCellm.size();
+			int n = flist.size();
+
+			HashMap<S2CellId, HashSet<String[]>> cellField = new HashMap<S2CellId, HashSet<String[]>>();
+			for (int io = 0; io < n; io++) {
+				String[] outerField = flist.get(io);
+				S2Polygon s2polyOuter = getS2Polygon(outerField);
+				S2CellUnion cellsOuter = getCells(s2polyOuter);
+				if (countMissingCells(cellsOuter, newCellm) == 1) {
+					S2CellId analyseId = getMissingCell(cellsOuter, newCellm);
+					if (!cellField.containsKey(analyseId))
+						cellField.put(analyseId, new HashSet<String[]>());
+					cellField.get(analyseId).add(outerField);
+				}
+			}
+			
+			for (S2CellId io : cellField.keySet()) {
+				ArrayList<String[]> bestFieldList = new ArrayList<String[]>();
+				ArrayList<UniformDistribution> bestMUList = new ArrayList<>();
+
+				for (String[] ii : cellField.get(io)) {
+					S2Polygon s2polyOuter = getS2Polygon(ii);
+					S2CellUnion cellsOuter = getCells(s2polyOuter);
+					String guidOuter = ii[3].trim();
+
+					int muOuter = Integer.valueOf(ii[2].trim());
+					HashMap<S2CellId, Double> intersectionsOuter = getCellIntersection(cellsOuter, s2polyOuter);
+
+					UniformDistribution muOuterError = makeDist(ii[2]);
+
+					muOuterError = remaining(cellsOuter, io, newCellm, intersectionsOuter, muOuterError);
+					double areaOuter = intersectionsOuter.get(io) * 6367.0 * 6367.0;
+					muOuterError = muOuterError.div(areaOuter);
+
+					bestFieldList.add(ii);
+					bestMUList.add(muOuterError);
+				}
+
+				UniformDensityCurve udc = new UniformDensityCurve(bestMUList);
+
+				if (!udc.allValid()) {
+					System.out.println(io.toToken() + " " + udc.getPeakValue() + " " + udc.getPeakDistribution() + " "
+							+ udc.allValid());
+					throw new ArithmeticException("INVALID FIELD: " + io.toToken() + " " + udc.getPeakValue() + " "
+							+ udc.getPeakDistribution() + " " + udc.allValid());
+				}
+
+				UniformDistribution celld = udc.getPeakDistribution();
+				try {
+					celld.clampLower(0.0);
+					celld.clampUpper(1000000.0);
+					newCellm.put(io, celld);
+				} catch (UniformDistributionException e) {
+					System.err.println("Clamp EXCEPTION. " + celld);
+				}
+			}
+		} while (count != newCellm.size());
+		
+		return newCellm;
+	}
+
 
 	/**
 	 * Core refinement logic extracted from refineCells.
@@ -907,6 +1002,165 @@ public class CellDBManager implements CellDBManagerMBean {
 		}
 		return sb.toString();
 	}
+
+	@Override
+	public String startRebuildCellsBackground() {
+		synchronized (this) {
+			if (rebuildCellsRunning) {
+				return "ERROR: Build cells task is already running. Use rebuildCellsStatus() to monitor progress.";
+			}
+
+			// Reset state
+			rebuildCellsRunning = true;
+			rebuildCellsCancelled = false;
+			rebuildCellsStatus = "Starting build...";
+			rebuildCellsProgress = 0;
+			rebuildCellsTotal = 0;
+			rebuildCellsResult = new StringBuilder();
+
+			// Spawn background thread
+			rebuildCellsThread = new Thread(() -> {
+				try {
+					ArrayList<String[]> fieldList;
+					HashMap<S2CellId, UniformDistribution> cellm;
+
+					long startTime = System.currentTimeMillis();
+					Logger.getLogger(CellDBManager.class.getName()).log(Level.INFO, "CellDBManager: Starting background rebuildCells()...");
+
+					// Check for cancellation
+					if (rebuildCellsCancelled) {
+						throw new RuntimeException("Build cancelled by user");
+					}
+
+					// 1. Read fields from DB
+					rebuildCellsStatus = "Reading fields from database...";
+					rebuildCellsProgress = 1;
+					rebuildCellsTotal = 5;
+					fieldList = bdao.readValidFields();
+					rebuildCellsResult.append("" + fieldList.size() + " fields read.\n");
+
+					// Check for cancellation
+					if (rebuildCellsCancelled) {
+						throw new RuntimeException("Build cancelled by user");
+					}
+
+					// 2. Read existing cells from DB
+					rebuildCellsStatus = "Reading existing cells from database...";
+					rebuildCellsProgress = 2;
+					cellm = bdao.readCells();
+					int osize = cellm.size();
+					rebuildCellsResult.append("" + osize + " cells read.\n");
+
+					// Check for cancellation
+					if (rebuildCellsCancelled) {
+						throw new RuntimeException("Build cancelled by user");
+					}
+
+					// 3. Build cell model using agreements algorithm
+					rebuildCellsStatus = "Building cell model (this may take a while)...";
+					rebuildCellsProgress = 3;
+					cellm = agreementsWithProgress(fieldList, cellm);
+					rebuildCellsResult.append("Cell model built.\n");
+
+					// Check for cancellation
+					if (rebuildCellsCancelled) {
+						throw new RuntimeException("Build cancelled by user");
+					}
+
+					// 4. Delete old cells if needed
+					int update = cellm.size();
+					if (update != osize) {
+						rebuildCellsStatus = "Deleting old cell data...";
+						rebuildCellsProgress = 4;
+						int d = bdao.deleteCells();
+						rebuildCellsResult.append("" + d + " cells erased.\n");
+
+						// Check for cancellation
+						if (rebuildCellsCancelled) {
+							throw new RuntimeException("Build cancelled by user");
+						}
+
+						// 5. Write new cells
+						rebuildCellsStatus = "Writing new cell data to database...";
+						rebuildCellsProgress = 5;
+						int cr = bdao.writeCells(cellm);
+						rebuildCellsResult.append("" + cr + " rows updated.\n");
+					} else {
+						update = 0;
+						rebuildCellsResult.append("No new cells created.\n");
+					}
+
+					long endTime = System.currentTimeMillis();
+					long duration = (endTime - startTime) / 1000; // in seconds
+
+					Logger.getLogger(CellDBManager.class.getName()).log(Level.INFO, "CellDBManager background build process completed in " + duration + " seconds. " + update + " cells updated.");
+					rebuildCellsResult.append("CellDBManager build process completed in " + duration + " seconds.\n");
+					rebuildCellsStatus = "Completed successfully";
+
+				} catch (RuntimeException e) {
+					if (rebuildCellsCancelled) {
+						rebuildCellsStatus = "Cancelled by user";
+						rebuildCellsResult.append("\nBuild cancelled by user.\n");
+						Logger.getLogger(CellDBManager.class.getName()).log(Level.WARNING, "CellDBManager: Build cancelled by user");
+					} else {
+						rebuildCellsStatus = "ERROR: " + e.getMessage();
+						rebuildCellsResult.append("\nERROR: " + e.getMessage() + "\n");
+						Logger.getLogger(CellDBManager.class.getName()).log(Level.SEVERE, "CellDBManager: Build error", e);
+					}
+				} catch (Exception e) {
+					rebuildCellsStatus = "ERROR: " + e.getMessage();
+					rebuildCellsResult.append("\nERROR: Build failed. " + e.getMessage() + "\n");
+					e.printStackTrace();
+					Logger.getLogger(CellDBManager.class.getName()).log(Level.SEVERE, "CellDBManager: Build error", e);
+				} finally {
+					rebuildCellsRunning = false;
+				}
+			});
+
+			rebuildCellsThread.setName("RebuildCells-Background");
+			rebuildCellsThread.start();
+
+			return "Build cells task started in background. Use rebuildCellsStatus() to monitor progress.";
+		}
+	}
+
+	@Override
+	public String rebuildCellsStatus() {
+		StringBuilder sb = new StringBuilder();
+		
+		if (rebuildCellsRunning) {
+			sb.append("Status: RUNNING\n");
+			sb.append("Current: " + rebuildCellsStatus + "\n");
+			if (rebuildCellsTotal > 0) {
+				sb.append("Progress: Step " + rebuildCellsProgress + " of " + rebuildCellsTotal + "\n");
+			}
+			sb.append("\nProgress so far:\n");
+			sb.append(rebuildCellsResult.toString());
+		} else {
+			if (rebuildCellsStatus.equals("Not running")) {
+				sb.append("Status: NOT RUNNING\n");
+				sb.append("No build cells task has been started.\n");
+			} else {
+				sb.append("Status: COMPLETED\n");
+				sb.append("Final status: " + rebuildCellsStatus + "\n\n");
+				sb.append("Results:\n");
+				sb.append(rebuildCellsResult.toString());
+			}
+		}
+		
+		return sb.toString();
+	}
+
+	@Override
+	public String cancelRebuildCells() {
+		if (!rebuildCellsRunning) {
+			return "No build cells task is currently running.";
+		}
+		
+		rebuildCellsCancelled = true;
+		return "Cancellation requested. The task will stop at the next safe point.";
+	}
+
 
 	@Override
 	public String invalidateField(String fieldGuid) {

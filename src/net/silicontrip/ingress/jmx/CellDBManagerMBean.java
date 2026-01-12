@@ -31,6 +31,14 @@ public interface CellDBManagerMBean {
 
     public String cancelRefineCells();
 
+    // Background task methods for long-running build cells
+    public String startRebuildCellsBackground();
+
+    public String rebuildCellsStatus();
+
+    public String cancelRebuildCells();
+
+
     // public String eraseFields();
     // public String importFieldsMerge();
     // public String importFieldsReplace();

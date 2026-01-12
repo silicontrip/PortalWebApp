@@ -135,18 +135,51 @@ public class JMXServlet extends HttpServlet {
 				writer.println("<p>" + result + "</p>");
 				writer.println("</div>");
 
-			} else if (action.equals("build")) {
+			} else if (action.equals("build-cells-background")) {
+				// Start background build cells and show polling status page
+				String result = callCellDBManager("startRebuildCellsBackground", null, null);
 				writer.println("<div class=\"title\">");
-				writer.println("<h1>Rebuilding cell model.</h1>");
+				writer.println("<h1>Background Build Cells</h1>");
 				writer.println("</div>");
-				String result = callCellDBManager("rebuildCells", null, null);
 				writer.println("<div class=\"control\">");
 				writer.println("<p>" + result + "</p>");
+				writer.println("<div id='status'><pre>Loading status...</pre></div>");
+				writer.println("<button id='cancelBtn' onclick='cancelTask()'>Cancel Build</button>");
 				writer.println("</div>");
+				writer.println("<script>");
+				writer.println("function updateStatus() {");
+				writer.println("  fetch('jarvis?action=build-cells-status', {");
+				writer.println("    method: 'POST',");
+				writer.println("    headers: {");
+				writer.println("      'Authorization': '" + req.getHeader("Authorization") + "'");
+				writer.println("    }");
+				writer.println("  })");
+				writer.println("  .then(r => r.text())");
+				writer.println("  .then(data => {");
+				writer.println("    document.getElementById('status').innerHTML = '<pre>' + data + '</pre>';");
+				writer.println("    if (data.includes('Status: RUNNING')) {");
+				writer.println("      setTimeout(updateStatus, 2000);");
+				writer.println("    } else {");
+				writer.println("      document.getElementById('cancelBtn').disabled = true;");
+				writer.println("    }");
+				writer.println("  });");
+				writer.println("}");
+				writer.println("function cancelTask() {");
+				writer.println("  fetch('jarvis?action=build-cells-cancel', {");
+				writer.println("    method: 'POST',");
+				writer.println("    headers: {");
+				writer.println("      'Authorization': '" + req.getHeader("Authorization") + "'");
+				writer.println("    }");
+				writer.println("  })");
+				writer.println("  .then(r => r.text())");
+				writer.println("  .then(data => alert(data));");
+				writer.println("}");
+				writer.println("setTimeout(updateStatus, 1000);");
+				writer.println("</script>");
 
-			} else if (action.equals("rebuild")) {
+			} else if (action.equals("rebuild-fields")) {
 				writer.println("<div class=\"title\">");
-				writer.println("<h1>Rebuilding Field-Cell table.</h1>");
+				writer.println("<h1>Rebuilding Field Index.</h1>");
 				writer.println("</div>");
 				String result = callCellDBManager("rebuildFieldCells", null, null);
 				writer.println("<div class=\"control\">");
@@ -214,6 +247,18 @@ public class JMXServlet extends HttpServlet {
 				// Cancel running refinement
 				resp.setContentType("text/plain");
 				String result = callCellDBManager("cancelRefineCells", null, null);
+				writer.println(result);
+				return; // Skip HTML wrapper
+			} else if (action.equals("build-cells-status")) {
+				// Return plain text status for polling
+				resp.setContentType("text/plain");
+				String result = callCellDBManager("rebuildCellsStatus", null, null);
+				writer.println(result);
+				return; // Skip HTML wrapper
+			} else if (action.equals("build-cells-cancel")) {
+				// Cancel running build cells
+				resp.setContentType("text/plain");
+				String result = callCellDBManager("cancelRebuildCells", null, null);
 				writer.println(result);
 				return; // Skip HTML wrapper
 			} else if (action.equals("erase")) {
@@ -376,20 +421,20 @@ public class JMXServlet extends HttpServlet {
 			writer.println("</div>");
 
 			writer.println("<div class=\"control\">");
-			writer.println("<h1>REBUILD CELLS</h1>");
-			writer.println("<p>Build Cell model from scratch based on database fields.</p>");
+			writer.println("<h1>BUILD CELLS</h1>");
+			writer.println("<p>Build cell model from scratch based on database fields.</p>");
 			writer.println("<form method='POST' action='jarvis'>");
-			writer.println("<input type='hidden' name='action' value='build'>");
-			writer.println("<input type='submit' value='Build'>");
+			writer.println("<input type='hidden' name='action' value='build-cells-background'>");
+			writer.println("<input type='submit' value='Build Cell Model'>");
 			writer.println("</form>");
 			writer.println("</div>");
 
 			writer.println("<div class=\"control\">");
-			writer.println("<h1>REBUILD FIELD CELLS</h1>");
-			writer.println("<p>Rebuild the MUCELL-FIELDS joining table if the field table has been modified.</p>");
+			writer.println("<h1>REBUILD FIELD INDEX</h1>");
+			writer.println("<p>Rebuild field index when fields have been added or modified.</p>");
 			writer.println("<form method='POST' action='jarvis'>");
-			writer.println("<input type='hidden' name='action' value='rebuild'>");
-			writer.println("<input type='submit' value='Rebuild'>");
+			writer.println("<input type='hidden' name='action' value='rebuild-fields'>");
+			writer.println("<input type='submit' value='Rebuild Field Index'>");
 			writer.println("</form>");
 			writer.println("</div>");
 

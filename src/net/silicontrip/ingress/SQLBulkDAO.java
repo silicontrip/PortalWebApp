@@ -181,20 +181,35 @@ public class SQLBulkDAO  {
 // Will change this to a single loop
 	public int writeFieldCells (ArrayList<String[]> flist) throws SQLException
 	{
-		int[] count;
+		int totalCount = 0;
+		final int BATCH_SIZE = 30000; // Derby limit is 65534 parameters, 2 params per row = 32767 max, use 30000 for safety
 
 		try (Connection conn=spdDs.getConnection();
 			PreparedStatement ps = conn.prepareStatement("insert into fieldcells (field_guid,cellid) values (?,?)") ) {
 	
+			int batchCount = 0;
 			for (String[] fieldCell: flist)
 			{
 				ps.setString(1, fieldCell[0]);
 				ps.setLong(2, Long.parseLong(fieldCell[1])); 
 				ps.addBatch();
+				batchCount++;
+				
+				// Execute batch when we hit the limit
+				if (batchCount >= BATCH_SIZE) {
+					int[] count = ps.executeBatch();
+					totalCount += count.length;
+					batchCount = 0;
+				}
 			}
-			count = ps.executeBatch();
+			
+			// Execute remaining batch
+			if (batchCount > 0) {
+				int[] count = ps.executeBatch();
+				totalCount += count.length;
+			}
 		}
-		return count.length;
+		return totalCount;
 	}
 
 /*

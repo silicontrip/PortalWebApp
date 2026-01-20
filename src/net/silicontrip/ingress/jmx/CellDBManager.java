@@ -78,7 +78,6 @@ public class CellDBManager implements CellDBManagerMBean {
 	private volatile int rebuildCellsTotal = 0;
 	private StringBuilder rebuildCellsResult = new StringBuilder();
 
-
 	@PostConstruct
 	public void register() {
 		try {
@@ -93,7 +92,7 @@ public class CellDBManager implements CellDBManagerMBean {
 
 			Logger.getLogger(CellDBManager.class.getName()).log(Level.INFO,
 					"CellDBManager MBean registered successfully.");
-			
+
 		} catch (Exception e) {
 			throw new IllegalStateException("Problem during MBean registration", e);
 		}
@@ -394,7 +393,8 @@ public class CellDBManager implements CellDBManagerMBean {
 	}
 
 	/**
-	 * Non-static wrapper for agreements() that adds cancellation checks and progress updates
+	 * Non-static wrapper for agreements() that adds cancellation checks and
+	 * progress updates
 	 * for background build cells operation.
 	 */
 	private HashMap<S2CellId, UniformDistribution> agreementsWithProgress(ArrayList<String[]> flist,
@@ -402,19 +402,20 @@ public class CellDBManager implements CellDBManagerMBean {
 		HashMap<S2CellId, UniformDistribution> newCellm = new HashMap<S2CellId, UniformDistribution>(cellw);
 		int iteration = 0;
 		int count = 0;
-		
+
 		do {
 			// Check for cancellation
 			if (rebuildCellsCancelled) {
 				throw new RuntimeException("Build cancelled by user");
 			}
-			
+
 			iteration++;
 			int previousCount = newCellm.size();
-			
+
 			// Update status (don't append to result, just update the status message)
-			rebuildCellsStatus = "Building cell model - iteration " + iteration + " (analyzing " + newCellm.size() + " cells)...";
-			
+			rebuildCellsStatus = "Building cell model - iteration " + iteration + " (analyzing " + newCellm.size()
+					+ " cells)...";
+
 			// Process one iteration
 			count = newCellm.size();
 			int n = flist.size();
@@ -431,7 +432,7 @@ public class CellDBManager implements CellDBManagerMBean {
 					cellField.get(analyseId).add(outerField);
 				}
 			}
-			
+
 			for (S2CellId io : cellField.keySet()) {
 				ArrayList<String[]> bestFieldList = new ArrayList<String[]>();
 				ArrayList<UniformDistribution> bestMUList = new ArrayList<>();
@@ -473,10 +474,9 @@ public class CellDBManager implements CellDBManagerMBean {
 				}
 			}
 		} while (count != newCellm.size());
-		
+
 		return newCellm;
 	}
-
 
 	/**
 	 * Core refinement logic extracted from refineCells.
@@ -710,12 +710,11 @@ public class CellDBManager implements CellDBManagerMBean {
 
 			UniformDensityCurve udc = new UniformDensityCurve(bestMUList);
 
-			//StringBuilder sb = new StringBuilder();
+			// StringBuilder sb = new StringBuilder();
 
-			//sb.append(cid.toToken() + "\n");
-			
+			// sb.append(cid.toToken() + "\n");
+
 			jsonResponse.put("cellid", cid.toToken());
-
 
 			S2Polygon cpg = getS2Polygon(new S2Cell(cid));
 			DrawTools cdt = new DrawTools();
@@ -727,12 +726,13 @@ public class CellDBManager implements CellDBManagerMBean {
 			// sb.append(cdt.asIntelLink() + "\n");
 			// sb.append("\n");
 
-			// sb.append("<b>MU (DB)         </b> : " + cellm.get(cid).toStringWithPrecision(3) + " " + cellm.get(cid)
-			// 		+ "\n");
+			// sb.append("<b>MU (DB) </b> : " + cellm.get(cid).toStringWithPrecision(3) + "
+			// " + cellm.get(cid)
+			// + "\n");
 			jsonResponse.put("mudb", cellm.get(cid).toString());
-			// sb.append("<b>Fields          </b> : " + udc.getPeakValue() + "\n");
+			// sb.append("<b>Fields </b> : " + udc.getPeakValue() + "\n");
 			jsonResponse.put("numfields", udc.getPeakValue());
-			// sb.append("<b>MU (calc)       </b> : " + udc.getPeakDistribution() + "\n");
+			// sb.append("<b>MU (calc) </b> : " + udc.getPeakDistribution() + "\n");
 			jsonResponse.put("mucalc", udc.getPeakDistribution());
 			// sb.append("<b>All fields valid</b> : " + udc.allValid() + "\n\n");
 			jsonResponse.put("valid", udc.allValid());
@@ -750,17 +750,18 @@ public class CellDBManager implements CellDBManagerMBean {
 					S2Polygon s2poly = getS2Polygon(f);
 					double area = s2poly.getArea() * 6367.0 * 6367.0;
 					double mukm = 1.0 * imu / area;
-					//sb.append("<b>Field " + i + " guid</b>    : " + f[3] + "\n");
+					// sb.append("<b>Field " + i + " guid</b> : " + f[3] + "\n");
 					field.put("guid", f[3]);
 
-					field.put("index",i);
-					field.put("imu",imu);
-					field.put("mu",tmu);
-					field.put("area",area);
-					field.put("mukm",mukm);	
-					//sb.append("<b>MU             </b> : " + imu + " error: " + fmu.perror() * 100.0 + "%\n");
-					//sb.append("<b>Scaled MU range</b> : " + tmu + " error: " + tmu.perror() * 100.0 + "%\n");
-					//sb.append("<b>Area           </b> : " + area + " km " + mukm + " mukm\n\n");
+					field.put("index", i);
+					field.put("imu", imu);
+					field.put("mu", tmu);
+					field.put("area", area);
+					field.put("mukm", mukm);
+					// sb.append("<b>MU </b> : " + imu + " error: " + fmu.perror() * 100.0 + "%\n");
+					// sb.append("<b>Scaled MU range</b> : " + tmu + " error: " + tmu.perror() *
+					// 100.0 + "%\n");
+					// sb.append("<b>Area </b> : " + area + " km " + mukm + " mukm\n\n");
 
 					JSONObject contributions = new JSONObject();
 					for (S2CellId tcid : fieldUnion.get(f[3].trim()))
@@ -770,32 +771,33 @@ public class CellDBManager implements CellDBManagerMBean {
 							UniformDistribution cmu = cellm.get(tcid)
 									.mul(intersectionsOuter.get(tcid) * 6367.0 * 6367.0);
 							double err = 100.0 * cmu.range() / imu;
-							//sb.append("<b>Cell contribution</b>: " + tcid.toToken() + " range: " + cmu + " error: "
-									//+ cmu.range() + " mu\n");
-							contributions.put(tcid.toToken(),cmu);
-							//contributions.put("mu",cmu);
+							// sb.append("<b>Cell contribution</b>: " + tcid.toToken() + " range: " + cmu +
+							// " error: "
+							// + cmu.range() + " mu\n");
+							contributions.put(tcid.toToken(), cmu);
+							// contributions.put("mu",cmu);
 						}
 
-					//sb.append("\n");
+					// sb.append("\n");
 
-					field.put("contributions",contributions);
+					field.put("contributions", contributions);
 
 					DrawTools dt = new DrawTools();
 					dt.addField(getS2Polygon(f));
-					//sb.append(dt.toString() + "\n\n");
-					field.put("drawtools",dt.toString());
+					// sb.append(dt.toString() + "\n\n");
+					field.put("drawtools", dt.toString());
 
-					//dt.erase();
-					//dt.addField(getS2Polygon(f));
+					// dt.erase();
+					// dt.addField(getS2Polygon(f));
 					dt.addPolygon(cpg);
-					//sb.append(dt.asIntelLink() + "\n\n");
-					field.put("intel",dt.asIntelLink());
+					// sb.append(dt.asIntelLink() + "\n\n");
+					field.put("intel", dt.asIntelLink());
 					// System.out.println("");
-				fields.put(field);
+					fields.put(field);
 
 				}
 			}
-			jsonResponse.put("fields",fields);
+			jsonResponse.put("fields", fields);
 
 			return jsonResponse.toString();
 
@@ -826,10 +828,11 @@ public class CellDBManager implements CellDBManagerMBean {
 			refineCellsThread = new Thread(() -> {
 				try {
 					ArrayList<String[]> fieldList;
-					HashMap<S2CellId,UniformDistribution> cellm;
+					HashMap<S2CellId, UniformDistribution> cellm;
 
 					long startTime = System.currentTimeMillis();
-					Logger.getLogger(CellDBManager.class.getName()).log(Level.INFO, "CellDBManager: Starting background refineCells()...");
+					Logger.getLogger(CellDBManager.class.getName()).log(Level.INFO,
+							"CellDBManager: Starting background refineCells()...");
 
 					// 1. Read fields from DB
 					refineCellsStatus = "Reading fields from database...";
@@ -855,25 +858,30 @@ public class CellDBManager implements CellDBManagerMBean {
 					long endTime = System.currentTimeMillis();
 					long duration = (endTime - startTime) / 1000; // in seconds
 
-					Logger.getLogger(CellDBManager.class.getName()).log(Level.INFO, "CellDBManager background refinement process completed in " + duration + " seconds.");
-					refineCellsResult.append("CellDBManager refinement process completed in " + duration + " seconds.\n");
+					Logger.getLogger(CellDBManager.class.getName()).log(Level.INFO,
+							"CellDBManager background refinement process completed in " + duration + " seconds.");
+					refineCellsResult
+							.append("CellDBManager refinement process completed in " + duration + " seconds.\n");
 					refineCellsStatus = "Completed successfully";
 
 				} catch (RuntimeException e) {
 					if (refineCellsCancelled) {
 						refineCellsStatus = "Cancelled by user";
 						refineCellsResult.append("\nRefinement cancelled by user.\n");
-						Logger.getLogger(CellDBManager.class.getName()).log(Level.WARNING, "CellDBManager: Refinement cancelled by user");
+						Logger.getLogger(CellDBManager.class.getName()).log(Level.WARNING,
+								"CellDBManager: Refinement cancelled by user");
 					} else {
 						refineCellsStatus = "ERROR: " + e.getMessage();
 						refineCellsResult.append("\nERROR: " + e.getMessage() + "\n");
-						Logger.getLogger(CellDBManager.class.getName()).log(Level.SEVERE, "CellDBManager: Refinement error", e);
+						Logger.getLogger(CellDBManager.class.getName()).log(Level.SEVERE,
+								"CellDBManager: Refinement error", e);
 					}
 				} catch (Exception e) {
 					refineCellsStatus = "ERROR: " + e.getMessage();
 					refineCellsResult.append("\nERROR: Refinement failed. " + e.getMessage() + "\n");
 					e.printStackTrace();
-					Logger.getLogger(CellDBManager.class.getName()).log(Level.SEVERE, "CellDBManager: Refinement error", e);
+					Logger.getLogger(CellDBManager.class.getName()).log(Level.SEVERE, "CellDBManager: Refinement error",
+							e);
 				} finally {
 					refineCellsRunning = false;
 				}
@@ -889,12 +897,13 @@ public class CellDBManager implements CellDBManagerMBean {
 	@Override
 	public String refineCellsStatus() {
 		StringBuilder sb = new StringBuilder();
-		
+
 		if (refineCellsRunning) {
 			sb.append("Status: RUNNING\n");
 			sb.append("Current: " + refineCellsStatus + "\n");
 			if (refineCellsTotal > 0) {
-				sb.append("Progress: Iteration " + refineCellsProgress + ", analyzing " + refineCellsTotal + " cells\n");
+				sb.append(
+						"Progress: Iteration " + refineCellsProgress + ", analyzing " + refineCellsTotal + " cells\n");
 			}
 			sb.append("\nProgress so far:\n");
 			sb.append(refineCellsResult.toString());
@@ -909,7 +918,7 @@ public class CellDBManager implements CellDBManagerMBean {
 				sb.append(refineCellsResult.toString());
 			}
 		}
-		
+
 		return sb.toString();
 	}
 
@@ -918,7 +927,7 @@ public class CellDBManager implements CellDBManagerMBean {
 		if (!refineCellsRunning) {
 			return "No refinement task is currently running.";
 		}
-		
+
 		refineCellsCancelled = true;
 		return "Cancellation requested. The task will stop at the next safe point.";
 	}
@@ -1025,7 +1034,8 @@ public class CellDBManager implements CellDBManagerMBean {
 					HashMap<S2CellId, UniformDistribution> cellm;
 
 					long startTime = System.currentTimeMillis();
-					Logger.getLogger(CellDBManager.class.getName()).log(Level.INFO, "CellDBManager: Starting background rebuildCells()...");
+					Logger.getLogger(CellDBManager.class.getName()).log(Level.INFO,
+							"CellDBManager: Starting background rebuildCells()...");
 
 					// Check for cancellation
 					if (rebuildCellsCancelled) {
@@ -1093,7 +1103,9 @@ public class CellDBManager implements CellDBManagerMBean {
 					long endTime = System.currentTimeMillis();
 					long duration = (endTime - startTime) / 1000; // in seconds
 
-					Logger.getLogger(CellDBManager.class.getName()).log(Level.INFO, "CellDBManager background build process completed in " + duration + " seconds. " + update + " cells updated.");
+					Logger.getLogger(CellDBManager.class.getName()).log(Level.INFO,
+							"CellDBManager background build process completed in " + duration + " seconds. " + update
+									+ " cells updated.");
 					rebuildCellsResult.append("CellDBManager build process completed in " + duration + " seconds.\n");
 					rebuildCellsStatus = "Completed successfully";
 
@@ -1101,11 +1113,13 @@ public class CellDBManager implements CellDBManagerMBean {
 					if (rebuildCellsCancelled) {
 						rebuildCellsStatus = "Cancelled by user";
 						rebuildCellsResult.append("\nBuild cancelled by user.\n");
-						Logger.getLogger(CellDBManager.class.getName()).log(Level.WARNING, "CellDBManager: Build cancelled by user");
+						Logger.getLogger(CellDBManager.class.getName()).log(Level.WARNING,
+								"CellDBManager: Build cancelled by user");
 					} else {
 						rebuildCellsStatus = "ERROR: " + e.getMessage();
 						rebuildCellsResult.append("\nERROR: " + e.getMessage() + "\n");
-						Logger.getLogger(CellDBManager.class.getName()).log(Level.SEVERE, "CellDBManager: Build error", e);
+						Logger.getLogger(CellDBManager.class.getName()).log(Level.SEVERE, "CellDBManager: Build error",
+								e);
 					}
 				} catch (Exception e) {
 					rebuildCellsStatus = "ERROR: " + e.getMessage();
@@ -1127,7 +1141,7 @@ public class CellDBManager implements CellDBManagerMBean {
 	@Override
 	public String rebuildCellsStatus() {
 		StringBuilder sb = new StringBuilder();
-		
+
 		if (rebuildCellsRunning) {
 			sb.append("Status: RUNNING\n");
 			sb.append("Current: " + rebuildCellsStatus + "\n");
@@ -1147,7 +1161,7 @@ public class CellDBManager implements CellDBManagerMBean {
 				sb.append(rebuildCellsResult.toString());
 			}
 		}
-		
+
 		return sb.toString();
 	}
 
@@ -1156,11 +1170,10 @@ public class CellDBManager implements CellDBManagerMBean {
 		if (!rebuildCellsRunning) {
 			return "No build cells task is currently running.";
 		}
-		
+
 		rebuildCellsCancelled = true;
 		return "Cancellation requested. The task will stop at the next safe point.";
 	}
-
 
 	@Override
 	public String invalidateField(String fieldGuid) {
@@ -1203,6 +1216,146 @@ public class CellDBManager implements CellDBManagerMBean {
 			; // We really need to throw an exception because nothing is presented to the user
 		}
 		return "";
+	}
+
+	/**
+	 * Helper method to parse pipe-delimited field content into ArrayList of String
+	 * arrays.
+	 * Expected format: field1|field2|field3|...|field16
+	 * 
+	 * @param fileContent The pipe-delimited content from uploaded file
+	 * @return ArrayList of String arrays, each representing a field row
+	 */
+	private ArrayList<String[]> parseFieldsFromContent(String fileContent) {
+		ArrayList<String[]> fieldList = new ArrayList<>();
+
+		if (fileContent == null || fileContent.trim().isEmpty()) {
+			return fieldList;
+		}
+
+		String[] lines = fileContent.split("\\r?\\n");
+		for (String line : lines) {
+			if (line.trim().isEmpty()) {
+				continue;
+			}
+			// Split by pipe delimiter
+			String[] fields = line.split("\\|");
+			// Trim each field
+			for (int i = 0; i < fields.length; i++) {
+				fields[i] = fields[i].trim();
+			}
+			fieldList.add(fields);
+		}
+
+		return fieldList;
+	}
+
+	/**
+	 * Merge uploaded fields with existing database fields, removing duplicates by
+	 * GUID.
+	 * 
+	 * @param fileContent Pipe-delimited field data from uploaded file
+	 * @return Status message with count of fields imported
+	 */
+	@Override
+	public String importFieldsMerge(String fileContent) {
+		StringBuilder sb = new StringBuilder();
+
+		try {
+			long startTime = System.currentTimeMillis();
+			Logger.getLogger(CellDBManager.class.getName()).log(Level.INFO,
+					"CellDBManager: Starting importFieldsMerge()...");
+
+			// 1. Parse uploaded file content
+			ArrayList<String[]> uploadedFields = parseFieldsFromContent(fileContent);
+			sb.append("Parsed " + uploadedFields.size() + " fields from uploaded file.\n");
+
+			// 2. Read existing fields from database
+			ArrayList<String[]> existingFields = bdao.readAllFields();
+			sb.append("Read " + existingFields.size() + " existing fields from database.\n");
+
+			// 3. Merge and remove duplicates by GUID (field index 3)
+			ArrayList<String[]> mergedList = new ArrayList<>(uploadedFields);
+			mergedList.addAll(existingFields);
+
+			HashSet<String> uniqueGuids = new HashSet<>();
+			ArrayList<String[]> deduplicatedList = new ArrayList<>();
+			for (String[] row : mergedList) {
+				String guid = row[3].trim();
+				if (!uniqueGuids.contains(guid)) {
+					uniqueGuids.add(guid);
+					deduplicatedList.add(row);
+				}
+			}
+			sb.append("After deduplication: " + deduplicatedList.size() + " unique fields.\n");
+
+			// 4. Delete all existing fields
+			int deleted = bdao.deleteFields();
+			sb.append("Deleted " + deleted + " existing fields.\n");
+
+			// 5. Write merged fields
+			int written = bdao.writeFields(deduplicatedList);
+			sb.append("Wrote " + written + " fields to database.\n");
+
+			long endTime = System.currentTimeMillis();
+			long duration = (endTime - startTime) / 1000; // in seconds
+
+			Logger.getLogger(CellDBManager.class.getName()).log(Level.INFO,
+					"CellDBManager merge import completed in " + duration + " seconds.");
+			sb.append("Merge import completed in " + duration + " seconds.\n");
+
+		} catch (Exception e) {
+			e.printStackTrace();
+			Logger.getLogger(CellDBManager.class.getName()).log(Level.SEVERE,
+					"Error during importFieldsMerge", e);
+			return "ERROR: Merge import failed. " + e.getMessage();
+		}
+
+		return sb.toString();
+	}
+
+	/**
+	 * Replace all existing database fields with uploaded fields.
+	 * 
+	 * @param fileContent Pipe-delimited field data from uploaded file
+	 * @return Status message with count of fields imported
+	 */
+	@Override
+	public String importFieldsReplace(String fileContent) {
+		StringBuilder sb = new StringBuilder();
+
+		try {
+			long startTime = System.currentTimeMillis();
+			Logger.getLogger(CellDBManager.class.getName()).log(Level.INFO,
+					"CellDBManager: Starting importFieldsReplace()...");
+
+			// 1. Parse uploaded file content
+			ArrayList<String[]> uploadedFields = parseFieldsFromContent(fileContent);
+			sb.append("Parsed " + uploadedFields.size() + " fields from uploaded file.\n");
+
+			// 2. Delete all existing fields
+			int deleted = bdao.deleteFields();
+			sb.append("Deleted " + deleted + " existing fields.\n");
+
+			// 3. Write new fields
+			int written = bdao.writeFields(uploadedFields);
+			sb.append("Wrote " + written + " fields to database.\n");
+
+			long endTime = System.currentTimeMillis();
+			long duration = (endTime - startTime) / 1000; // in seconds
+
+			Logger.getLogger(CellDBManager.class.getName()).log(Level.INFO,
+					"CellDBManager replace import completed in " + duration + " seconds.");
+			sb.append("Replace import completed in " + duration + " seconds.\n");
+
+		} catch (Exception e) {
+			e.printStackTrace();
+			Logger.getLogger(CellDBManager.class.getName()).log(Level.SEVERE,
+					"Error during importFieldsReplace", e);
+			return "ERROR: Replace import failed. " + e.getMessage();
+		}
+
+		return sb.toString();
 	}
 
 }

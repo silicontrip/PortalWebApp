@@ -3,6 +3,7 @@ package net.silicontrip.ingress;
 import jakarta.ejb.EJB;
 
 import jakarta.servlet.http.*;
+import jakarta.servlet.http.Part;
 import net.silicontrip.UniformDistribution;
 import jakarta.servlet.*;
 
@@ -26,6 +27,7 @@ import java.sql.SQLException;
 import org.json.JSONObject;
 import org.json.JSONArray;
 
+@jakarta.servlet.annotation.MultipartConfig
 public class JMXServlet extends HttpServlet {
 
 	public void init() throws ServletException {
@@ -83,12 +85,12 @@ public class JMXServlet extends HttpServlet {
 
 			resp.setContentType("text/html");
 
-				writer.println("<html>");
-				writer.println("<head>");
-				writer.println("<link rel=\"icon\" type=\"image/png\" sizes=\"32x32\" href=\"favicon_32.png\">");
-				writer.println("<link rel=\"stylesheet\" href=\"api-stylesheet-grn.css\">");
-				writer.println("</head>");
-				writer.println("<body>");
+			writer.println("<html>");
+			writer.println("<head>");
+			writer.println("<link rel=\"icon\" type=\"image/png\" sizes=\"32x32\" href=\"favicon_32.png\">");
+			writer.println("<link rel=\"stylesheet\" href=\"api-stylesheet-grn.css\">");
+			writer.println("</head>");
+			writer.println("<body>");
 
 			// now our code will look just like celldbtool
 			if (action.equals("trace")) {
@@ -101,22 +103,24 @@ public class JMXServlet extends HttpServlet {
 				String[] sig = { "java.lang.String" };
 				String result = callCellDBManager("traceCell", par, sig);
 				JSONObject json = new JSONObject(result);
-				//writer.println("<p>" + json.toString(2) + "</p>");
+				// writer.println("<p>" + json.toString(2) + "</p>");
 				writer.println("<p>" + json.getString("cellShapeDrawTools") + "</p>");
 				writer.println("<p>" + json.getString("cellShapeIntel") + "</p>");
 				UniformDistribution mu = new UniformDistribution(json.getString("mudb"));
-				writer.println("<p>MU (db): " + mu + " : "+ mu.toStringWithPrecision(3) + "</p>");
+				writer.println("<p>MU (db): " + mu + " : " + mu.toStringWithPrecision(3) + "</p>");
 				mu = new UniformDistribution(json.getString("mucalc"));
-				writer.println("<p>MU (calc): " + mu + " : "+ mu.toStringWithPrecision(3) + "</p>");
-				writer.println("<p>Fields: " + json.getInt("numfields") + " All Valid: " + json.getBoolean("valid") + "</p>");
+				writer.println("<p>MU (calc): " + mu + " : " + mu.toStringWithPrecision(3) + "</p>");
+				writer.println(
+						"<p>Fields: " + json.getInt("numfields") + " All Valid: " + json.getBoolean("valid") + "</p>");
 				writer.println("<h1>Fields</h1>");
 				for (Object o : json.getJSONArray("fields")) {
 					JSONObject fi = (JSONObject) o;
-					//writer.println("<p>" + fi.toString(2) + "</p>");
+					// writer.println("<p>" + fi.toString(2) + "</p>");
 					writer.println("<p>GUID: " + fi.getString("guid") + "</p>");
 					writer.println("<p>Index: " + fi.getInt("index"));
 					mu = new UniformDistribution(fi.getString("mu"));
-					writer.println(" MU: " + fi.getInt("imu") + " Scaled MU: " + mu + " : " + mu.toStringWithPrecision(3) );
+					writer.println(
+							" MU: " + fi.getInt("imu") + " Scaled MU: " + mu + " : " + mu.toStringWithPrecision(3));
 					writer.println(" area: " + fi.getFloat("area") + " mukm: " + fi.getFloat("mukm") + "</p>");
 					for (String c : fi.getJSONObject("contributions").keySet()) {
 						mu = new UniformDistribution(fi.getJSONObject("contributions").getString(c));
@@ -261,6 +265,76 @@ public class JMXServlet extends HttpServlet {
 				String result = callCellDBManager("cancelRebuildCells", null, null);
 				writer.println(result);
 				return; // Skip HTML wrapper
+			} else if (action.equals("merge")) {
+				// Handle file upload for merge
+				writer.println("<div class=\"title\">");
+				writer.println("<h1>Merging Fields</h1>");
+				writer.println("</div>");
+				writer.println("<div class=\"control\">");
+
+				try {
+					Part filePart = req.getPart("fileToUpload");
+					if (filePart != null && filePart.getSize() > 0) {
+						// Read file content
+						java.io.InputStream fileContent = filePart.getInputStream();
+						java.io.BufferedReader reader = new java.io.BufferedReader(
+								new java.io.InputStreamReader(fileContent, "UTF-8"));
+						StringBuilder fileData = new StringBuilder();
+						String line;
+						while ((line = reader.readLine()) != null) {
+							fileData.append(line).append("\n");
+						}
+						reader.close();
+
+						// Call JMX method
+						Object[] par = { fileData.toString() };
+						String[] sig = { "java.lang.String" };
+						String result = callCellDBManager("importFieldsMerge", par, sig);
+						writer.println("<pre>" + result + "</pre>");
+					} else {
+						writer.println("<p>Error: No file uploaded.</p>");
+					}
+				} catch (Exception e) {
+					writer.println("<p>Error processing file: " + e.getMessage() + "</p>");
+					e.printStackTrace(writer);
+				}
+
+				writer.println("</div>");
+			} else if (action.equals("replace")) {
+				// Handle file upload for replace
+				writer.println("<div class=\"title\">");
+				writer.println("<h1>Replacing Fields</h1>");
+				writer.println("</div>");
+				writer.println("<div class=\"control\">");
+
+				try {
+					Part filePart = req.getPart("fileToUpload");
+					if (filePart != null && filePart.getSize() > 0) {
+						// Read file content
+						java.io.InputStream fileContent = filePart.getInputStream();
+						java.io.BufferedReader reader = new java.io.BufferedReader(
+								new java.io.InputStreamReader(fileContent, "UTF-8"));
+						StringBuilder fileData = new StringBuilder();
+						String line;
+						while ((line = reader.readLine()) != null) {
+							fileData.append(line).append("\n");
+						}
+						reader.close();
+
+						// Call JMX method
+						Object[] par = { fileData.toString() };
+						String[] sig = { "java.lang.String" };
+						String result = callCellDBManager("importFieldsReplace", par, sig);
+						writer.println("<pre>" + result + "</pre>");
+					} else {
+						writer.println("<p>Error: No file uploaded.</p>");
+					}
+				} catch (Exception e) {
+					writer.println("<p>Error processing file: " + e.getMessage() + "</p>");
+					e.printStackTrace(writer);
+				}
+
+				writer.println("</div>");
 			} else if (action.equals("erase")) {
 				writer.println("<div class=\"title\">");
 				writer.println("<h1>Erasing cells.</h1>");
@@ -312,9 +386,9 @@ public class JMXServlet extends HttpServlet {
 			}
 
 		} catch (Exception e) {
-						try {
+			try {
 
-			resp.setStatus(500);
+				resp.setStatus(500);
 				PrintWriter writer = resp.getWriter();
 				resp.setContentType("text/html");
 				writer.println("<html>");
@@ -337,7 +411,7 @@ public class JMXServlet extends HttpServlet {
 				writer.println("</p>");
 				writer.println("<p>");
 				e.printStackTrace(writer);
-								writer.println("</p>");
+				writer.println("</p>");
 
 				writer.println("</div>");
 
@@ -348,7 +422,6 @@ public class JMXServlet extends HttpServlet {
 			}
 
 		}
-		
 
 	}
 
@@ -457,6 +530,17 @@ public class JMXServlet extends HttpServlet {
 			writer.println("<input type='hidden' name='action' value='merge'>");
 			writer.println("<input type=\"file\" id=\"uploadFile\" name=\"fileToUpload\" required>");
 			writer.println("<input type='submit' value='Import'>");
+			writer.println("</form>");
+			writer.println("</div>");
+
+			writer.println("<div class=\"control\">");
+			writer.println("<h1>Import and REPLACE FIELDS</h1>");
+			writer.println(
+					"<p><strong>WARNING:</strong> This will delete ALL existing fields and replace them with the uploaded file.</p>");
+			writer.println("<form method='POST' action='jarvis' enctype=\"multipart/form-data\">");
+			writer.println("<input type='hidden' name='action' value='replace'>");
+			writer.println("<input type=\"file\" id=\"uploadFileReplace\" name=\"fileToUpload\" required>");
+			writer.println("<input type='submit' value='Replace All Fields'>");
 			writer.println("</form>");
 			writer.println("</div>");
 

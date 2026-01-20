@@ -38,10 +38,10 @@ public interface CellDBManagerMBean {
 
     public String cancelRebuildCells();
 
-
     // public String eraseFields();
-    // public String importFieldsMerge();
-    // public String importFieldsReplace();
+    public String importFieldsMerge(String fileContent);
+
+    public String importFieldsReplace(String fileContent);
     // public String revalidateAllFields();
 
     // celldbtool commands not implemented

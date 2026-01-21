@@ -1,6 +1,7 @@
 package net.silicontrip.ingress;
 
 import java.util.Map;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 
@@ -13,17 +14,9 @@ import com.google.common.geometry.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-
-
-@MessageDriven(
-mappedName = "jms/fieldQueue",
-activationConfig = { 
-	@ActivationConfigProperty(
-	  propertyName = "acknowledgeMode", 
-	  propertyValue = "Auto-acknowledge"), 
-	@ActivationConfigProperty(
-	  propertyName = "destinationType", 
-	  propertyValue = "jakarta.jms.Queue")
+@MessageDriven(mappedName = "jms/fieldQueue", activationConfig = {
+		@ActivationConfigProperty(propertyName = "acknowledgeMode", propertyValue = "Auto-acknowledge"),
+		@ActivationConfigProperty(propertyName = "destinationType", propertyValue = "jakarta.jms.Queue")
 })
 
 public class FieldQueueMDB implements MessageListener {
@@ -40,9 +33,7 @@ public class FieldQueueMDB implements MessageListener {
 	@EJB
 	FieldProcessCache fpCache;
 
-
-	private Field makeField (JSONObject pobj)
-	{
+	private Field makeField(JSONObject pobj) {
 		// unwrap the JSON message
 
 		JSONObject options = pobj.getJSONObject("options");
@@ -54,21 +45,18 @@ public class FieldQueueMDB implements MessageListener {
 		JSONObject p3 = points.getJSONObject(2);
 
 		String guid = pobj.getString("guid");
-				
 
-		return new Field (
-			pobj.getString("creator"),
-			pobj.getString("agent"),
-			-1, // place holder
-			guid,
-			options.getInt("timestamp"),
-			entPoints.getString(1),
-			p1.getString("guid"),p1.getLong("latE6"),p1.getLong("lngE6"),
-			p2.getString("guid"),p2.getLong("latE6"),p2.getLong("lngE6"),
-			p3.getString("guid"),p3.getLong("latE6"),p3.getLong("lngE6")
-		);
+		return new Field(
+				pobj.getString("creator"),
+				pobj.getString("agent"),
+				-1, // place holder
+				guid,
+				options.getInt("timestamp"),
+				entPoints.getString(1),
+				p1.getString("guid"), p1.getLong("latE6"), p1.getLong("lngE6"),
+				p2.getString("guid"), p2.getLong("latE6"), p2.getLong("lngE6"),
+				p3.getString("guid"), p3.getLong("latE6"), p3.getLong("lngE6"));
 	}
-
 
 	@Override
 	public void onMessage(Message message) {
@@ -76,14 +64,15 @@ public class FieldQueueMDB implements MessageListener {
 		String tm = "";
 		boolean refield = false;
 		try {
-			tm= textMessage.getText();
+			tm = textMessage.getText();
 
-			//Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.INFO, "process: " + tm);
+			// Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.INFO, "process: " +
+			// tm);
 
-			JSONObject pobj = new JSONObject (textMessage.getText());
+			JSONObject pobj = new JSONObject(textMessage.getText());
 
 			if (pobj.has("mu")) {
-			//System.out.println("field has mu");
+				// System.out.println("field has mu");
 
 				refield = pobj.has("refield");
 				JSONArray mu = pobj.getJSONArray("mu");
@@ -93,68 +82,63 @@ public class FieldQueueMDB implements MessageListener {
 				// perform business logic...
 				// check for duplicates
 
-				//System.out.println("Check for duplicates");
-				
-				
-				if (!refield && fieldBean.hasFieldGuid(fi.getGuid()))
-				{
-				//  System.out.println("field exists: " + guid);
+				// System.out.println("Check for duplicates");
+
+				if (!refield && fieldBean.hasFieldGuid(fi.getGuid())) {
+					// System.out.println("field exists: " + guid);
 					Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.WARNING, "Field Exists: " + fi.getGuid());
 					return;
-				} 
-				//Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.INFO, "Processing: " + fi.getGuid());
+				}
+				// Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.INFO, "Processing:
+				// " + fi.getGuid());
 
-			//  System.out.println("FieldQueue: " + tm);
+				// System.out.println("FieldQueue: " + tm);
 
-				//  System.out.println("new Field: " + guid);
+				// System.out.println("new Field: " + guid);
 
-				
 				// check for validity
 				// EJB???
 
-				//cellBean.createCellsForField(S2Field);
+				// cellBean.createCellsForField(S2Field);
 
 				boolean[] valid = new boolean[mu.length()];
-				
-				for (int i =0; i < mu.length(); i++) {
-					try { 
-						valid[i] = fieldBean.muFieldValid(fi,mu.getInt(i));
+
+				for (int i = 0; i < mu.length(); i++) {
+					try {
+						valid[i] = fieldBean.muFieldValid(fi, mu.getInt(i));
 					} catch (Exception e) {
 						Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.WARNING, null, e);
-						valid[i]=false;
+						valid[i] = false;
 					}
 				}
 
-			//what to do if different MU are valid?
-			// which one is more accurate?
-			// really need split field handler.
-			// problem is we don't know the matching split field.
+				// what to do if different MU are valid?
+				// which one is more accurate?
+				// really need split field handler.
+				// problem is we don't know the matching split field.
 
-			// some business logic, while I work out the code;
-			// valid[0], valid[1]
-			// false, false  -> don't know which to submit, safest is not to submit
-			// false, true -> submit 1
-			// true, false -> submit 0
-			// true, true -> don't know
-			// true -> submit 0
-			// false -> submit 0
+				// some business logic, while I work out the code;
+				// valid[0], valid[1]
+				// false, false -> don't know which to submit, safest is not to submit
+				// false, true -> submit 1
+				// true, false -> submit 0
+				// true, true -> don't know
+				// true -> submit 0
+				// false -> submit 0
 
-	//  System.out.println ("FieldQMDB: " + guid + " valid: " + valid[0]);
+				// System.out.println ("FieldQMDB: " + guid + " valid: " + valid[0]);
 
-			// we don't want to actually submit a field twice.
+				// we don't want to actually submit a field twice.
 				boolean submit = false;
-				for (int i =0; i < mu.length(); i++)
-				{
-					//System.out.println ("submit field");
+				for (int i = 0; i < mu.length(); i++) {
+					// System.out.println ("submit field");
 					fi.setMU(mu.getInt(i));
 
-					if (mu.length() == 1 || mu.getInt(0) == mu.getInt(1) || (valid[i] && (valid[0] ^ valid[1])))
-					{
+					if (mu.length() == 1 || mu.getInt(0) == mu.getInt(1) || (valid[i] && (valid[0] ^ valid[1]))) {
 						// above business logic decribed in 1 if statement
 						submit = true;
-						if (refield)
-						{
-							//System.out.println("Resubmit: " + fi );
+						if (refield) {
+							// System.out.println("Resubmit: " + fi );
 							fieldBean.processFieldGuid(fi.getGuid());
 						} else {
 							if (!fieldBean.hasFieldGuid(fi.getGuid())) // this is handled above
@@ -162,75 +146,95 @@ public class FieldQueueMDB implements MessageListener {
 								// same geo field with different guid
 								if (fieldBean.muKnownField(fi) == -1) {
 									// validate this field against others.
-									if (fieldBean.disagreements(fi) == 0)
-									{
+									if (fieldBean.disagreements(fi).size() == 0) {
 										// does this field improve (or is unknown) the cell model.
-										if (fieldBean.improvesModel(fi)) 
-										{
+										if (fieldBean.improvesModel(fi)) {
 
-											Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.INFO, "INSERTING: " + tm);
+											Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.INFO,
+													"INSERTING: " + tm);
 
 											dao.insertField(fi.getCreator(),
-												fi.getAgent(),
-												fi.getMU(),
-												fi.getGuid(),
-												fi.getTimestamp(),
-												fi.getTeam(),
-												fi.getPGuid1(),
-												fi.getPLat1(),
-												fi.getPLng1(),
-												fi.getPGuid2(),
-												fi.getPLat2(),
-												fi.getPLng2(),
-												fi.getPGuid3(),
-												fi.getPLat3(),
-												fi.getPLng3(),
-												true);
-											//S2CellUnion fieldCells = getCellsForField(field.getS2Polygon());
+													fi.getAgent(),
+													fi.getMU(),
+													fi.getGuid(),
+													fi.getTimestamp(),
+													fi.getTeam(),
+													fi.getPGuid1(),
+													fi.getPLat1(),
+													fi.getPLng1(),
+													fi.getPGuid2(),
+													fi.getPLat2(),
+													fi.getPLng2(),
+													fi.getPGuid3(),
+													fi.getPLat3(),
+													fi.getPLng3(),
+													true);
+											// S2CellUnion fieldCells = getCellsForField(field.getS2Polygon());
 
 											S2CellUnion fieldCells = fi.getCells();
-											fieldsCells.insertCellsForField(fi.getGuid(),fieldCells);
+											fieldsCells.insertCellsForField(fi.getGuid(), fieldCells);
 
-											//fpCache.addFieldGuid(fi.getGuid());
-											//fieldBean.beginProcessing();
-											//Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.INFO, "PROCESSING FIELD");
+											// fpCache.addFieldGuid(fi.getGuid());
+											// fieldBean.beginProcessing();
+											// Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.INFO,
+											// "PROCESSING FIELD");
 
 											HashSet<S2CellId> updates = fieldBean.processField(fi);
-											//Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.INFO, "CELLS UPDATED...");
+											// Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.INFO, "CELLS
+											// UPDATED...");
 
 											JSONArray jsoncells = new JSONArray();
-											for (S2CellId cid: updates)
+											for (S2CellId cid : updates)
 												jsoncells.put(cid.toToken());
-											Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.INFO, "UPDATED: " + jsoncells.toString());
+											Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.INFO,
+													"UPDATED: " + jsoncells.toString());
 											// Now add these to the cell processing queue
 
 										} else {
-											//Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.WARNING, "Does not improve model: " + fi.getGuid() + " " + fi.getCreator() + " " + fi.getMU());
+											// Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.WARNING, "Does
+											// not improve model: " + fi.getGuid() + " " + fi.getCreator() + " " +
+											// fi.getMU());
 											//
 										}
 									} else {
-										Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.WARNING, "Has Disagreements: " + fi.getGuid() + " " + fi.getCreator() + " " + fi.getMU());
+										ArrayList<S2CellId> cells = fieldBean.disagreements(fi);
+										StringBuilder sb = new StringBuilder();
+										boolean first = true;
+										for (S2CellId cell : cells) {
+											if (!first)
+												sb.append(",");
+											first = false;
+											sb.append(cell.toToken());
+										}
+										Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.WARNING,
+												"Has Disagreements: " + fi.getGuid() + " " + fi.getCreator() + " "
+														+ fi.getMU() + " " + sb.toString());
 									}
 								} else {
-									Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.WARNING, "Already Known: " + fi.getGuid() + " " + fi.getCreator() + " " + fi.getMU());
+									Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.WARNING, "Already Known: "
+											+ fi.getGuid() + " " + fi.getCreator() + " " + fi.getMU());
 								}
 							}
-						} 
+						}
 					} else {
-						//Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.WARNING, "Fails valid logic: " + fi.getGuid() + " " + fi.getCreator() + " MU: [" + valid[0] + ": " +mu.getLong(0) + ", "+valid[1] + ": "+mu.getLong(1)+"]" );
+						// Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.WARNING, "Fails
+						// valid logic: " + fi.getGuid() + " " + fi.getCreator() + " MU: [" + valid[0] +
+						// ": " +mu.getLong(0) + ", "+valid[1] + ": "+mu.getLong(1)+"]" );
 						;
 					}
 				}
 				// maybe set up an invalid table with split MU
 				if (!submit)
-					if(mu.length()==2)
-						System.out.println ("not Submitting field: " + fi.getGuid() + "MU: [" + valid[0] + ": " +mu.getLong(0) + ", "+valid[1] + ": "+mu.getLong(1)+"]");
+					if (mu.length() == 2)
+						System.out.println("not Submitting field: " + fi.getGuid() + "MU: [" + valid[0] + ": "
+								+ mu.getLong(0) + ", " + valid[1] + ": " + mu.getLong(1) + "]");
 					else
-						System.out.println ("not Submitting field: " + fi.getGuid() + "MU: " + valid[0] + ": " +mu.getLong(0));
-			} 
+						System.out.println(
+								"not Submitting field: " + fi.getGuid() + "MU: " + valid[0] + ": " + mu.getLong(0));
+			}
 		} catch (JMSException e) {
 			Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.SEVERE, e.getMessage());
-			System.out.println( "Error while trying to consume messages: " + e.getMessage());
+			System.out.println("Error while trying to consume messages: " + e.getMessage());
 		} catch (Exception e) {
 			Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.SEVERE, e.getMessage());
 			System.out.println("FQB: exception");

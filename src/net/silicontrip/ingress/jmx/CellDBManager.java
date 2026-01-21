@@ -544,6 +544,17 @@ public class CellDBManager implements CellDBManagerMBean {
 
 				// Handle invalid field reporting.
 				if (!udc.allValid()) {
+					StringBuilder errorDetails = new StringBuilder();
+					errorDetails.append("Cell ").append(io.toToken())
+							.append(" (").append(iii).append("/").append(ksn).append("): ")
+							.append(udc.countInvalid()).append(" invalid field(s) detected.\n");
+
+					// Include the cell's current MU value if it exists
+					if (newCellm.containsKey(io)) {
+						errorDetails.append("  Cell MU: ").append(newCellm.get(io)).append("\n");
+					}
+					errorDetails.append("\n");
+
 					Logger.getLogger(CellDBManager.class.getName()).log(Level.WARNING,
 							"CellDBManager: " + iii + "/" + ksn + " " + io.toToken() + " " + udc.getPeakValue() + " "
 									+ udc.getPeakDistribution() + " " + udc.countInvalid());
@@ -554,12 +565,22 @@ public class CellDBManager implements CellDBManagerMBean {
 							UniformDistribution mu = getEstMu(f, newCellm);
 							long epoch = Integer.toUnsignedLong(Integer.parseInt(f[4]));
 							Date time = new Date(epoch);
+
+							// Build detailed error message for web UI
+							errorDetails.append("  Field GUID: ").append(f[3]).append("\n");
+							errorDetails.append("    Timestamp: ").append(time).append(" (").append(epoch)
+									.append(")\n");
+							errorDetails.append("    Reported MU: ").append(f[2]).append("\n");
+							errorDetails.append("    Calculated MU: ").append(bestMUList.get(i)).append("\n");
+							errorDetails.append("    Estimated MU: ").append(mu).append("\n\n");
+
 							Logger.getLogger(CellDBManager.class.getName()).log(Level.WARNING,
 									"CellDBManager: " + f[3] + " " + time + " (" + epoch + ") " + bestMUList.get(i)
 											+ " est: " + mu + " mu: " + f[2]);
 						}
 
-					throw new ArithmeticException("Encountered potential Error MU fields. See Log.");
+					throw new ArithmeticException(
+							"Encountered potential Error MU fields:\n\n" + errorDetails.toString());
 				}
 				try {
 					UniformDistribution ud = udc.getPeakDistribution();
@@ -657,7 +678,16 @@ public class CellDBManager implements CellDBManagerMBean {
 			sb.append("CellDBManager refinement process completed in " + duration + " seconds.\n");
 		} catch (Exception e) {
 			e.printStackTrace();
-			return "ERROR: Refinement failed. " + e.getMessage();
+			Logger.getLogger(CellDBManager.class.getName()).log(Level.SEVERE,
+					"CellDBManager refinement failed", e);
+
+			// Include what was done before the error occurred
+			sb.append("\n=== ERROR ===\n");
+			sb.append("Refinement FAILED with error:\n");
+			sb.append(e.getMessage());
+			sb.append("\n\nStatus: ERROR - Refinement did not complete successfully.\n");
+
+			return sb.toString();
 		}
 		return sb.toString();
 	}

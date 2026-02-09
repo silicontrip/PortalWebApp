@@ -471,10 +471,10 @@ public class FieldSessionBean {
 		return mu;
 	}
 
-	public ArrayList<S2CellId> disagreements(Field field) throws EntityDAOException {
+	public HashSet<S2CellId> disagreements(Field field) throws EntityDAOException {
 
 		int disagree = 0;
-		ArrayList<S2CellId> disagreecells = new ArrayList<S2CellId>();
+		HashSet<S2CellId> disagreecells = new HashSet<S2CellId>();
 
 		if (field == null) {
 			Logger.getLogger(FieldSessionBean.class.getName()).log(Level.WARNING, "Null field passed to disagreements");

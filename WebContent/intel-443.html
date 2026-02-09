@@ -1,0 +1,116 @@
+<html>
+<head>
+<style>
+#mapid { height: 800px; }
+</style>
+<title>Technology Journey</title>
+</head>
+<body>
+ <link rel="stylesheet" href="https://unpkg.com/leaflet@1.4.0/dist/leaflet.css"
+   integrity="sha512-puBpdR0798OZvTTbP4A8Ix/l+A4dHDD0DGqYW6RQ+9jxkRFclaxxQb/SJAWZfWAkuyeQUytO7+7N4QKrDh+drA=="
+   crossorigin=""/>
+ 
+ <script src="https://unpkg.com/leaflet@1.4.0/dist/leaflet.js"
+   integrity="sha512-QVftwZFqvtRNi0ZyCtsznlKSWOStnDORoefr1enyq5mVL4tmKB3S/EnC3rRJcxCPavG10IcrVGSmPh6Qw5lwrg=="
+   crossorigin=""></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+
+<div id="mapid"></div>
+<script>
+
+	window.onresize = function(event) {
+		var mapStyle = document.querySelector("#mapid");
+		mapStyle.style.height = window.innerHeight - 16; // fudge factor.
+	};    
+
+
+    var drawMap = function () {
+	var bounds = mymap.getBounds();
+	var ll = "" + bounds._southWest.lat +","+bounds._southWest.lng;
+	var l2 = "" + bounds._northEast.lat +","+bounds._northEast.lng;
+//console.log(bounds);
+
+// get portals
+	$.ajax({ url:"https://quadrant.silicontrip.net/portalApi/getPortals", 
+		type:"post", 
+		data:{"ll":ll,"l2":l2 }, 
+		success: function(res) {
+		    for (var guid in res)
+		    {
+			var pt = res[guid];
+			var cirPt = [pt.lat/1000000.0,pt.lng/1000000.0];
+            //console.log(myPt);
+			var circle = L.circle(cirPt, {
+				color: 'orange',
+				fillColor: '#f73',
+				fillOpacity: 0.5,
+				radius:5 ,
+				weight:1
+			});                
+               // console.log(JSON.stringify(circle));
+
+                        circle.addTo(mymap);
+		    }
+        }});
+
+	    $.ajax({ url:"https://quadrant.silicontrip.net/portalApi/getLinks", 
+		type:"post",
+		data: {"ll":ll, "l2":l2},
+		success: function(res) {
+		    for (var guid in res)
+		    {
+			var li = res[guid];
+			var ll =[
+			    [li.olat/1000000.0,li.olng/1000000.0],
+			    [li.dlat/1000000.0,li.dlng/1000000.0]
+			];
+			var colour = "green";
+			if (li.team==='R')
+			    colour='blue';
+			var polyline = L.polyline(ll, {color: colour, weight: 1});
+			//console.log(JSON.stringify(polyline));
+                        polyline.addTo(mymap);
+		    }
+		}
+	    });
+    };
+    var qs = window.location.search.split("?");
+    var lat = -37.847;
+    var lng = 145.29;
+    var z = 13;
+	if (qs.length === 2)
+	{
+	    qv=qs[1].split("&");
+	    for (var count=0; count < qv.length; count++)
+	    {
+		var qvl = qv[count];
+		kvp = qvl.split("=");
+		if (kvp[0] === 'z') {
+		    z = kvp[1];
+		}
+		if (kvp[0]=== "ll")
+		{
+		    var ll = kvp[1].split(',');
+		    lat = ll[0];
+		    lng = ll[1];
+		}
+	    }
+	}
+
+	var mapStyle = document.querySelector("#mapid");
+	mapStyle.style.height = window.innerHeight - 16; // fudge factor. arg probably only one browser specific
+
+	var mymap = L.map('mapid').setView([lat, lng], z);
+	L.tileLayer('https://a.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+	    attribution: '© OpenStreetMap contributors',
+	    maxZoom: 16
+	}).addTo(mymap);
+
+	mymap.on("moveend", drawMap );
+
+	drawMap();
+
+</script>
+</body>
+
+</html>

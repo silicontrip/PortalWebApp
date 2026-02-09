@@ -1,0 +1,22 @@
+used in javascript
+mu - main Cell mu getter
+use - determine if field may be suitable for addtion to model, returns value from database (if found) or estimate
+dtreport - show the mu calculations for a drawtools plano
+
+
+unused.
+fields - Returns field GUIDs for given S2 cells
+
+getfields - Returns complete field details (creator, agent, MU, portal coordinates)
+
+process - Queues fields for batch MU processing
+
+processexact - Processes fields that exactly match given cells
+
+deletecell - Deletes cached MU data for cells
+
+diag - Diagnostic HTML for field MU breakdown
+
+celldiag - Diagnostic HTML for cell MU data
+
+findsplit` - Finds fields sharing edges (split field detection)

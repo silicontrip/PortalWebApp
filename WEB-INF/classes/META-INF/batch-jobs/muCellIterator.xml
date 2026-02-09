@@ -1,0 +1,9 @@
+<job id="muCellIterator">
+    <step id="cellIterator" >
+        <chunk item-count="3">
+            <reader ref="net.silicontrip.ingress.CellIteratorFieldReader"/>
+            <processor ref="net.silicontrip.ingress.CellIteratorFieldProcessor"/>
+            <writer ref="net.silicontrip.ingress.CellIteratorCellWriter"/>
+        </chunk>    
+    </step>
+</job>

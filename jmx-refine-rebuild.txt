@@ -1,0 +1,29 @@
+   1. The "Start Task" MBean Method:
+       * You create a new MBean method, e.g., startRebuildTask().
+       * When the servlet calls this method, it does not perform the work. It simply:
+           * Generates a unique task_id.
+           * Submits the task to a background thread pool (e.g., a ManagedExecutorService provided by the J2EE server).
+           * Immediately returns the task_id to the servlet.
+
+   2. The "Worker" Thread:
+       * The background thread now executes your original, long-running MBean method.
+       * As it runs, it periodically updates a shared, thread-safe Map or cache with its progress (e.g., taskStatusMap.put(task_id, "Step 5 of 10 complete...")).
+
+   3. The "Check Status" MBean Method:
+       * You create a second MBean method, e.g., getTaskStatus(String task_id).
+       * The servlet calls this method. It simply reads the status from the taskStatusMap and returns it as a string.
+
+   4. The Servlet and JavaScript:
+       * The user clicks the "Go" button.
+       * The servlet calls startRebuildTask() and gets back a task_id.
+       * The servlet returns a page that includes this task_id.
+       * JavaScript on the page then starts making periodic AJAX calls (e.g., every 2 seconds) to a new servlet endpoint, /maintenance/status?id=<task_id>.
+       * This new endpoint calls getTaskStatus() and returns the latest status message, which the JavaScript then displays on the page.
+
+  Why This is the "Correct" Architecture:
+
+   * Non-Blocking: The web request that starts the task returns instantly. The browser is not left hanging.
+   * Efficient: The long-running task executes in a single, unbroken process on the backend, preserving its "expensive cache setup."
+   * Scalable: It uses a proper thread pool, managed by the application server.
+   * Stateful on the Backend, Stateless on the Frontend: It correctly keeps the state on the server where it belongs, while using the stateless request/response model of the web for communication.
+

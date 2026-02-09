@@ -197,7 +197,7 @@ public class FieldQueueMDB implements MessageListener {
 											//
 										}
 									} else {
-										ArrayList<S2CellId> cells = fieldBean.disagreements(fi);
+										HashSet<S2CellId> cells = fieldBean.disagreements(fi);
 										StringBuilder sb = new StringBuilder();
 										boolean first = true;
 										for (S2CellId cell : cells) {

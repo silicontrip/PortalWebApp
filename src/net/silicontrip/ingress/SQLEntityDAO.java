@@ -81,17 +81,15 @@ import net.silicontrip.UniformDistribution;
 import jakarta.ejb.TransactionAttribute;
 import jakarta.ejb.TransactionAttributeType;
 
-
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
 
 @Stateless
 public class SQLEntityDAO implements EntityDAO {
 
-	//@PersistenceContext
-	//private EntityManagerFactory emf;
-	
+	// @PersistenceContext
+	// private EntityManagerFactory emf;
+
 	private DataSource spdDs = null;
 
 	protected static String LINK_GET_ALL = "select * from links";
@@ -101,10 +99,13 @@ public class SQLEntityDAO implements EntityDAO {
 	protected static String LINK_INSERT = "insert into links (guid,d_guid,d_latE6,d_lngE6,o_guid,o_latE6,o_lngE6,team) values (?,?,?,?,?,?,?,?)";
 
 	/*
-	protected static String MUCELL_GET_ALL = "Select * from mucell";
-	protected static String MUCELL_GET_CELLID = "Select * from mucell where cellid=?";
-	protected static String MUCELL_UPDATE = "update mucell set mu_low=?,mu_high=? where cellid=?";
-	protected static String MUCELL_INSERT = "insert into mucell (cellid,mu_low,mu_high) values (?,?,?)";
+	 * protected static String MUCELL_GET_ALL = "Select * from mucell";
+	 * protected static String MUCELL_GET_CELLID =
+	 * "Select * from mucell where cellid=?";
+	 * protected static String MUCELL_UPDATE =
+	 * "update mucell set mu_low=?,mu_high=? where cellid=?";
+	 * protected static String MUCELL_INSERT =
+	 * "insert into mucell (cellid,mu_low,mu_high) values (?,?,?)";
 	 */
 	protected static String FIELD_GET = "select * from mufields";
 	protected static String FIELD_GET_GUID = "select * from mufields where guid=? and valid = true";
@@ -129,8 +130,10 @@ public class SQLEntityDAO implements EntityDAO {
 	protected static String PORTAL_GET_PORTAL_FROM_GUID = "select guid,title,latE6,lngE6,health,team,level from portals where guid=? and deleted!=true";
 	protected static String PORTAL_GET_PORTAL_FROM_LOCATION = "select guid,title,latE6,lngE6,health,team,level from portals where latE6=? and lngE6=? and deleted!=true";
 
-	//protected static String PORTAL_UPDATE_TITLE = "update portals set title=? where guid=?";
-	//protected static String PORTAL_UPDATE_LOCATION = "update portals set latE6=?,lngE6=? where guid=?";
+	// protected static String PORTAL_UPDATE_TITLE = "update portals set title=?
+	// where guid=?";
+	// protected static String PORTAL_UPDATE_LOCATION = "update portals set
+	// latE6=?,lngE6=? where guid=?";
 	protected static String PORTAL_INSERT_FULL = "insert into portals (guid,title,latE6,lngE6,team,level,res_count,health,image,deleted) values (?,?,?,?,?,?,?,?,?,false)";
 	protected static String PORTAL_INSERT = "insert into portals (guid,latE6,lngE6,team,deleted) values (?,?,?,?,false)";
 
@@ -140,6 +143,7 @@ public class SQLEntityDAO implements EntityDAO {
 
 	/**
 	 * Constructor
+	 * 
 	 * @throws EntityDAOException if there is a problem with the jdbc resource
 	 */
 	public SQLEntityDAO() throws EntityDAOException {
@@ -187,7 +191,7 @@ public class SQLEntityDAO implements EntityDAO {
 	public Link getLinkGuid(String guid) throws EntityDAOException {
 		Link ret = null;
 		try (Connection c = spdDs.getConnection();
-			 PreparedStatement ps = c.prepareStatement(LINK_GET_GUID)) {
+				PreparedStatement ps = c.prepareStatement(LINK_GET_GUID)) {
 			ps.setString(1, guid);
 			try (ResultSet rs = ps.executeQuery()) {
 				while (rs.next()) {
@@ -220,8 +224,8 @@ public class SQLEntityDAO implements EntityDAO {
 	public ArrayList<Link> getLinkAll() throws EntityDAOException {
 		ArrayList<Link> ret = new ArrayList<>();
 		try (Connection c = spdDs.getConnection();
-			 PreparedStatement ps = c.prepareStatement(LINK_GET_ALL);
-			 ResultSet rs = ps.executeQuery()) {
+				PreparedStatement ps = c.prepareStatement(LINK_GET_ALL);
+				ResultSet rs = ps.executeQuery()) {
 			while (rs.next()) {
 				long dlat = rs.getLong("d_latE6");
 				long dlng = rs.getLong("d_lngE6");
@@ -253,9 +257,9 @@ public class SQLEntityDAO implements EntityDAO {
 	@Override
 	public void purgeLink() throws EntityDAOException {
 		try (Connection c = spdDs.getConnection();
-			 PreparedStatement ps = c.prepareStatement(LINK_PURGE)) {
+				PreparedStatement ps = c.prepareStatement(LINK_PURGE)) {
 			ps.executeUpdate();
-			c.commit(); 
+			c.commit();
 
 		} catch (SQLException se) {
 			throw new EntityDAOException("SQLException: " + se.getMessage());
@@ -271,19 +275,19 @@ public class SQLEntityDAO implements EntityDAO {
 	 */
 	@Override
 	public void deleteLink(String guid) throws EntityDAOException {
-		//System.out.println("SQLLinkDAO: delete("+guid+")");
+		// System.out.println("SQLLinkDAO: delete("+guid+")");
 		try (Connection c = spdDs.getConnection();
-			 PreparedStatement ps = c.prepareStatement(LINK_DELETE)) {
+				PreparedStatement ps = c.prepareStatement(LINK_DELETE)) {
 			ps.setString(1, guid);
 			ps.executeUpdate();
-			c.commit(); 
+			c.commit();
 
 		} catch (SQLException se) {
 			throw new EntityDAOException("SQLException: " + se.getMessage());
 		}
 	}
 
-		/**
+	/**
 	 * Checks if a field already exists in the database from its guid. Fields of
 	 * the same geometry but different guids may be present in the database.
 	 *
@@ -297,7 +301,8 @@ public class SQLEntityDAO implements EntityDAO {
 	public boolean existsLink(String guid) throws EntityDAOException {
 		boolean ret;
 		try (Connection c = spdDs.getConnection();
-			 PreparedStatement ps = c.prepareStatement(LINK_GET_GUID, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)) {
+				PreparedStatement ps = c.prepareStatement(LINK_GET_GUID, ResultSet.TYPE_SCROLL_INSENSITIVE,
+						ResultSet.CONCUR_READ_ONLY)) {
 			ps.setString(1, guid);
 			try (ResultSet rs = ps.executeQuery()) {
 				ret = rs.first();
@@ -307,30 +312,30 @@ public class SQLEntityDAO implements EntityDAO {
 		}
 		return ret;
 	}
-	
-	
+
 	/**
 	 * Inserts a link into the Link database
 	 *
-	 * @param guid The guid of the link
-	 * @param dguid The guid of the destination portal
+	 * @param guid   The guid of the link
+	 * @param dguid  The guid of the destination portal
 	 * @param dlatE6 The latitude of the destination portal in E6 format
 	 * @param dlngE6 The longitude of the destination portal in E6 format
-	 * @param oguid The guid of the originating portal
+	 * @param oguid  The guid of the originating portal
 	 * @param olatE6 The latitude of the originating portal in E6 format
 	 * @param olngE6 The longitude of the originating portal in E6 format
-	 * @param team The Faction of the link, 'E' or 'R'
+	 * @param team   The Faction of the link, 'E' or 'R'
 	 *
 	 * @throws EntityDAOException containing an SQL Exception message
 	 */
 	@Override
-	public void insertLink(String guid, String dguid, long dlatE6, long dlngE6, String oguid, long olatE6, long olngE6, String team) throws EntityDAOException {
+	public void insertLink(String guid, String dguid, long dlatE6, long dlngE6, String oguid, long olatE6, long olngE6,
+			String team) throws EntityDAOException {
 
-		//System.out.println("SQLEntityDAO::insertLink");
-		
+		// System.out.println("SQLEntityDAO::insertLink");
+
 		if (getLinkGuid(guid) == null) {
 			try (Connection c = spdDs.getConnection();
-				 PreparedStatement ps = c.prepareStatement(LINK_INSERT)) {
+					PreparedStatement ps = c.prepareStatement(LINK_INSERT)) {
 				ps.setString(1, guid);
 				ps.setString(2, dguid);
 				ps.setLong(3, dlatE6);
@@ -341,7 +346,7 @@ public class SQLEntityDAO implements EntityDAO {
 				ps.setString(8, team);
 
 				ps.executeUpdate();
-				c.commit(); 
+				c.commit();
 
 			} catch (SQLException se) {
 				throw new EntityDAOException("SQLException: " + se.getMessage());
@@ -349,7 +354,7 @@ public class SQLEntityDAO implements EntityDAO {
 		}
 	}
 
-// MU CELL - replaced by persistance entity
+	// MU CELL - replaced by persistance entity
 	/**
 	 * Gets all the CELLS:MU in the database This data is small enough to be
 	 * stored in an instance variable.
@@ -358,37 +363,39 @@ public class SQLEntityDAO implements EntityDAO {
 	 *
 	 * @throws EntityDAOException containing an SQL Exception message
 	 */
-	
+
 	/*
-        @Override
-	public HashMap<S2CellId,UniformDistribution> getMUAll() throws EntityDAOException
-	{
-		PreparedStatement ps = null;
-		ResultSet rs = null;
-		HashMap<S2CellId,UniformDistribution> ret = new HashMap<>();
-		try {
-			c = spdDs.getConnection();
-			ps = c.prepareStatement(MUCELL_GET_ALL);
-			rs = ps.executeQuery();
-			while (rs.next())
-			{
-				UniformDistribution ud = new UniformDistribution(rs.getDouble("mu_low"), rs.getDouble("mu_high"));
-				S2CellId cell = S2CellId.fromToken(rs.getString("cellid"));
-				ret.put(cell,ud);
-			}
-		} catch (SQLException e) {
-			throw new EntityDAOException(e.getMessage());
-		} finally {
-			try {
-				rs.close();
-				ps.close();
-				c.close();
-			} catch (SQLException se) {
-				throw new EntityDAOException("SQLException: " + se.getMessage());
-			}
-		}
-		return ret;
-	}
+	 * @Override
+	 * public HashMap<S2CellId,UniformDistribution> getMUAll() throws
+	 * EntityDAOException
+	 * {
+	 * PreparedStatement ps = null;
+	 * ResultSet rs = null;
+	 * HashMap<S2CellId,UniformDistribution> ret = new HashMap<>();
+	 * try {
+	 * c = spdDs.getConnection();
+	 * ps = c.prepareStatement(MUCELL_GET_ALL);
+	 * rs = ps.executeQuery();
+	 * while (rs.next())
+	 * {
+	 * UniformDistribution ud = new UniformDistribution(rs.getDouble("mu_low"),
+	 * rs.getDouble("mu_high"));
+	 * S2CellId cell = S2CellId.fromToken(rs.getString("cellid"));
+	 * ret.put(cell,ud);
+	 * }
+	 * } catch (SQLException e) {
+	 * throw new EntityDAOException(e.getMessage());
+	 * } finally {
+	 * try {
+	 * rs.close();
+	 * ps.close();
+	 * c.close();
+	 * } catch (SQLException se) {
+	 * throw new EntityDAOException("SQLException: " + se.getMessage());
+	 * }
+	 * }
+	 * return ret;
+	 * }
 	 */
 	/**
 	 * Stores all the CELLS:MU in the database
@@ -398,56 +405,59 @@ public class SQLEntityDAO implements EntityDAO {
 	 * @throws EntityDAOException containing an SQL Exception message
 	 */
 	/*
-	public void updateMUAll(HashMap<S2CellId,UniformDistribution> cellmu) throws EntityDAOException
-	{
-		PreparedStatement psExist = null;
-		PreparedStatement psInsert = null;
-		PreparedStatement psUpdate = null;
-		try {
-			c = spdDs.getConnection();
-			//psExist = c.prepareStatement(MUCELL_GET_CELLID);
-                        psExist = c.prepareStatement(MUCELL_GET_CELLID,ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
-
-			psInsert = c.prepareStatement(MUCELL_INSERT);
-			psUpdate = c.prepareStatement(MUCELL_UPDATE);
-
-			for (Map.Entry<S2CellId,UniformDistribution> entry : cellmu.entrySet())
-			{
-				String id =entry.getKey().toToken();
-				UniformDistribution mu = entry.getValue();
-				// check cell id exists?
-				psExist.setString(1,id);
-				ResultSet rsExist = psExist.executeQuery();
-				if (rsExist.first())
-				{
-					// update
-					psUpdate.setString(3,id);
-					psUpdate.setDouble(1,mu.getLower());
-					psUpdate.setDouble(2,mu.getUpper());
-					psUpdate.executeUpdate();
-				} else {
-					// insert
-					psInsert.setString(1,id);
-					psInsert.setDouble(2,mu.getLower());
-					psInsert.setDouble(3,mu.getUpper());
-					psInsert.executeUpdate();
-				}
-				rsExist.close();
-
-			}
-		} catch (SQLException e) {
-			throw new EntityDAOException(e.getMessage());
-		} finally {
-			try {
-				psExist.close();
-				psInsert.close();
-				psUpdate.close();
-				c.close();
-			} catch (SQLException se) {
-				throw new EntityDAOException("SQLException: " + se.getMessage());
-			}
-		}
-	}
+	 * public void updateMUAll(HashMap<S2CellId,UniformDistribution> cellmu) throws
+	 * EntityDAOException
+	 * {
+	 * PreparedStatement psExist = null;
+	 * PreparedStatement psInsert = null;
+	 * PreparedStatement psUpdate = null;
+	 * try {
+	 * c = spdDs.getConnection();
+	 * //psExist = c.prepareStatement(MUCELL_GET_CELLID);
+	 * psExist =
+	 * c.prepareStatement(MUCELL_GET_CELLID,ResultSet.TYPE_SCROLL_INSENSITIVE,
+	 * ResultSet.CONCUR_READ_ONLY);
+	 * 
+	 * psInsert = c.prepareStatement(MUCELL_INSERT);
+	 * psUpdate = c.prepareStatement(MUCELL_UPDATE);
+	 * 
+	 * for (Map.Entry<S2CellId,UniformDistribution> entry : cellmu.entrySet())
+	 * {
+	 * String id =entry.getKey().toToken();
+	 * UniformDistribution mu = entry.getValue();
+	 * // check cell id exists?
+	 * psExist.setString(1,id);
+	 * ResultSet rsExist = psExist.executeQuery();
+	 * if (rsExist.first())
+	 * {
+	 * // update
+	 * psUpdate.setString(3,id);
+	 * psUpdate.setDouble(1,mu.getLower());
+	 * psUpdate.setDouble(2,mu.getUpper());
+	 * psUpdate.executeUpdate();
+	 * } else {
+	 * // insert
+	 * psInsert.setString(1,id);
+	 * psInsert.setDouble(2,mu.getLower());
+	 * psInsert.setDouble(3,mu.getUpper());
+	 * psInsert.executeUpdate();
+	 * }
+	 * rsExist.close();
+	 * 
+	 * }
+	 * } catch (SQLException e) {
+	 * throw new EntityDAOException(e.getMessage());
+	 * } finally {
+	 * try {
+	 * psExist.close();
+	 * psInsert.close();
+	 * psUpdate.close();
+	 * c.close();
+	 * } catch (SQLException se) {
+	 * throw new EntityDAOException("SQLException: " + se.getMessage());
+	 * }
+	 * }
+	 * }
 	 */
 
 	/**
@@ -457,55 +467,56 @@ public class SQLEntityDAO implements EntityDAO {
 	 *
 	 * @throws EntityDAOException containing an SQL Exception message
 	 */
-/*
-	causes out of memory issues.
-	@Override
-	public ArrayList<Field> getFieldAll() throws EntityDAOException {
-		PreparedStatement ps = null;
-		ResultSet rs = null;
-		ArrayList<Field> ret = new ArrayList<>();
-
-		try {
-			c = spdDs.getConnection();
-			ps = c.prepareStatement(FIELD_GET);
-			rs = ps.executeQuery();
-
-			while (rs.next()) {
-				Field fi = new Field(
-						rs.getString("creator"),
-						rs.getString("agent"),
-						rs.getInt("mu"),
-						rs.getString("guid"),
-						rs.getLong("timestamp"),
-						rs.getString("team"),
-						rs.getString("pguid1"), rs.getLong("plat1"), rs.getLong("plng1"),
-						rs.getString("pguid2"), rs.getLong("plat2"), rs.getLong("plng2"),
-						rs.getString("pguid3"), rs.getLong("plat3"), rs.getLong("plng3"),
-						rs.getBoolean("valid")
-				);
-				ret.add(fi);
-			}
-		} catch (SQLException e) {
-			throw new EntityDAOException(e.getMessage());
-		} finally {
-			try {
-				if(rs!=null)
-					rs.close();
-				if (ps!=null)
-					ps.close();
-				c.close();
-			} catch (SQLException se) {
-				throw new EntityDAOException("SQLException: " + se.getMessage());
-			}
-		}
-		return ret;
-	}
-*/
+	/*
+	 * causes out of memory issues.
+	 * 
+	 * @Override
+	 * public ArrayList<Field> getFieldAll() throws EntityDAOException {
+	 * PreparedStatement ps = null;
+	 * ResultSet rs = null;
+	 * ArrayList<Field> ret = new ArrayList<>();
+	 * 
+	 * try {
+	 * c = spdDs.getConnection();
+	 * ps = c.prepareStatement(FIELD_GET);
+	 * rs = ps.executeQuery();
+	 * 
+	 * while (rs.next()) {
+	 * Field fi = new Field(
+	 * rs.getString("creator"),
+	 * rs.getString("agent"),
+	 * rs.getInt("mu"),
+	 * rs.getString("guid"),
+	 * rs.getLong("timestamp"),
+	 * rs.getString("team"),
+	 * rs.getString("pguid1"), rs.getLong("plat1"), rs.getLong("plng1"),
+	 * rs.getString("pguid2"), rs.getLong("plat2"), rs.getLong("plng2"),
+	 * rs.getString("pguid3"), rs.getLong("plat3"), rs.getLong("plng3"),
+	 * rs.getBoolean("valid")
+	 * );
+	 * ret.add(fi);
+	 * }
+	 * } catch (SQLException e) {
+	 * throw new EntityDAOException(e.getMessage());
+	 * } finally {
+	 * try {
+	 * if(rs!=null)
+	 * rs.close();
+	 * if (ps!=null)
+	 * ps.close();
+	 * c.close();
+	 * } catch (SQLException se) {
+	 * throw new EntityDAOException("SQLException: " + se.getMessage());
+	 * }
+	 * }
+	 * return ret;
+	 * }
+	 */
 	/**
 	 * Gets a Field matching the specified geometry from the database
 	 *
 	 * @param f The field to find. This field only requires its 3 lat/long
-	 * points to have values
+	 *          points to have values
 	 *
 	 * @return ArrayList of Fields
 	 *
@@ -516,7 +527,7 @@ public class SQLEntityDAO implements EntityDAO {
 		ArrayList<Field> ret = new ArrayList<>();
 
 		try (Connection c = spdDs.getConnection();
-			 PreparedStatement ps = c.prepareStatement(FIELD_FIND)) {
+				PreparedStatement ps = c.prepareStatement(FIELD_FIND)) {
 
 			ps.setLong(1, f.getPLat1());
 			ps.setLong(2, f.getPLng1());
@@ -551,8 +562,7 @@ public class SQLEntityDAO implements EntityDAO {
 							rs.getString("pguid1"), rs.getLong("plat1"), rs.getLong("plng1"),
 							rs.getString("pguid2"), rs.getLong("plat2"), rs.getLong("plng2"),
 							rs.getString("pguid3"), rs.getLong("plat3"), rs.getLong("plng3"),
-							rs.getBoolean("valid")
-					);
+							rs.getBoolean("valid"));
 					ret.add(fi);
 				}
 			}
@@ -577,7 +587,7 @@ public class SQLEntityDAO implements EntityDAO {
 		ArrayList<Field> ret = new ArrayList<>();
 
 		try (Connection c = spdDs.getConnection();
-			 PreparedStatement ps = c.prepareStatement(FIELD_FIND_LINK)) {
+				PreparedStatement ps = c.prepareStatement(FIELD_FIND_LINK)) {
 
 			ps.setLong(1, l.getoLatE6());
 			ps.setLong(2, l.getoLngE6());
@@ -599,7 +609,7 @@ public class SQLEntityDAO implements EntityDAO {
 			ps.setLong(16, l.getdLngE6());
 			ps.setLong(17, l.getdLatE6());
 			ps.setLong(18, l.getdLngE6());
-			
+
 			try (ResultSet rs = ps.executeQuery()) {
 				while (rs.next()) {
 					Field fi = new Field(
@@ -612,8 +622,7 @@ public class SQLEntityDAO implements EntityDAO {
 							rs.getString("pguid1"), rs.getLong("plat1"), rs.getLong("plng1"),
 							rs.getString("pguid2"), rs.getLong("plat2"), rs.getLong("plng2"),
 							rs.getString("pguid3"), rs.getLong("plat3"), rs.getLong("plng3"),
-							rs.getBoolean("valid")
-					);
+							rs.getBoolean("valid"));
 					ret.add(fi);
 				}
 			}
@@ -622,7 +631,6 @@ public class SQLEntityDAO implements EntityDAO {
 		}
 		return ret;
 	}
-
 
 	/**
 	 * Checks if a field already exists in the database from its guid. Fields of
@@ -638,7 +646,8 @@ public class SQLEntityDAO implements EntityDAO {
 	public boolean existsField(String guid) throws EntityDAOException {
 		boolean ret;
 		try (Connection c = spdDs.getConnection();
-			 PreparedStatement ps = c.prepareStatement(FIELD_GET_GUID, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)) {
+				PreparedStatement ps = c.prepareStatement(FIELD_GET_GUID, ResultSet.TYPE_SCROLL_INSENSITIVE,
+						ResultSet.CONCUR_READ_ONLY)) {
 			ps.setString(1, guid);
 			try (ResultSet rs = ps.executeQuery()) {
 				ret = rs.first();
@@ -648,8 +657,8 @@ public class SQLEntityDAO implements EntityDAO {
 		}
 		return ret;
 	}
-	
-		/**
+
+	/**
 	 * Gets a field from the database from its guid. Fields of
 	 *
 	 * @param guid of the field
@@ -662,7 +671,8 @@ public class SQLEntityDAO implements EntityDAO {
 	public Field getField(String guid) throws EntityDAOException {
 		Field ret = null;
 		try (Connection c = spdDs.getConnection();
-			 PreparedStatement ps = c.prepareStatement(FIELD_GET_GUID, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)) {
+				PreparedStatement ps = c.prepareStatement(FIELD_GET_GUID, ResultSet.TYPE_SCROLL_INSENSITIVE,
+						ResultSet.CONCUR_READ_ONLY)) {
 			ps.setString(1, guid);
 			try (ResultSet rs = ps.executeQuery()) {
 				if (rs.first()) {
@@ -670,7 +680,7 @@ public class SQLEntityDAO implements EntityDAO {
 							rs.getString("agent"),
 							rs.getInt("mu"),
 							rs.getString("guid"),
-							Long.parseLong(rs.getString("timestamp")),
+							rs.getLong("timestamp"),
 							rs.getString("team"),
 							rs.getString("pguid1"),
 							rs.getLong("plat1"),
@@ -681,8 +691,7 @@ public class SQLEntityDAO implements EntityDAO {
 							rs.getString("pguid3"),
 							rs.getLong("plat3"),
 							rs.getLong("plng3"),
-							rs.getBoolean("valid")
-					);
+							rs.getBoolean("valid"));
 				}
 			}
 		} catch (SQLException e) {
@@ -698,7 +707,7 @@ public class SQLEntityDAO implements EntityDAO {
 	 * not be a requirement
 	 *
 	 * @param guid of the field
-	 * @param mu change the field to this mu
+	 * @param mu   change the field to this mu
 	 *
 	 * @throws EntityDAOException containing an SQL Exception message
 	 */
@@ -706,7 +715,7 @@ public class SQLEntityDAO implements EntityDAO {
 	public void updateFieldMU(String guid, int mu) throws EntityDAOException {
 		System.out.println("SQLMUFieldDAO: updateMU(" + guid + " -> " + mu + ")");
 		try (Connection c = spdDs.getConnection();
-			 PreparedStatement ps = c.prepareStatement(FIELD_UPDATE_MU)) {
+				PreparedStatement ps = c.prepareStatement(FIELD_UPDATE_MU)) {
 			ps.setInt(1, mu);
 			ps.setString(2, guid);
 			ps.executeUpdate();
@@ -729,7 +738,7 @@ public class SQLEntityDAO implements EntityDAO {
 	public void deleteField(String guid) throws EntityDAOException {
 		System.out.println("SQLMUFieldDAO: delete(" + guid + ")");
 		try (Connection c = spdDs.getConnection();
-			 PreparedStatement ps = c.prepareStatement(FIELD_DELETE)) {
+				PreparedStatement ps = c.prepareStatement(FIELD_DELETE)) {
 			ps.setString(1, guid);
 			ps.executeUpdate();
 		} catch (SQLException se) {
@@ -739,42 +748,44 @@ public class SQLEntityDAO implements EntityDAO {
 
 	/**
 	 * Inserts a field into the database.Business logic to check for duplicates
- and for MU validity should be performed first. Exceptions may occur for
- duplicate GUID. Invalid MU may cause errors in the fieldProcessing logic.
- Although fields have point 1, point 2 and point 3 which implies order. No
- order is a requirement.
+	 * and for MU validity should be performed first. Exceptions may occur for
+	 * duplicate GUID. Invalid MU may cause errors in the fieldProcessing logic.
+	 * Although fields have point 1, point 2 and point 3 which implies order. No
+	 * order is a requirement.
 	 *
-	 * @param creator of the field
-	 * @param agent who submitted the field via the field grabber plugin
-	 * @param mu of the field
-	 * @param guid of the field in string format
+	 * @param creator   of the field
+	 * @param agent     who submitted the field via the field grabber plugin
+	 * @param mu        of the field
+	 * @param guid      of the field in string format
 	 * @param timestamp of the fields creation time, in milliseconds since epoch
-	 * (java millis)
-	 * @param team of the field. 'E' or 'R'
-	 * @param pguid1 guid of the portal for point 1
-	 * @param plat1 latitude of the portal for point 1 in E6 format
-	 * @param plng1 longitude of the portal for point 1 in E6 format
-	 * @param pguid2 guid of the portal for point 2
-	 * @param plat2 latitude of the portal for point 2 in E6 format
-	 * @param plng2 longitude of the portal for point 2 in E6 format
-	 * @param pguid3 guid of the portal for point 3
-	 * @param plat3 latitude of the portal for point 3 in E6 format
-	 * @param plng3 longitude of the portal for point 3 in E6 format
-	 * @param valid is the MU valid for this field
+	 *                  (java millis)
+	 * @param team      of the field. 'E' or 'R'
+	 * @param pguid1    guid of the portal for point 1
+	 * @param plat1     latitude of the portal for point 1 in E6 format
+	 * @param plng1     longitude of the portal for point 1 in E6 format
+	 * @param pguid2    guid of the portal for point 2
+	 * @param plat2     latitude of the portal for point 2 in E6 format
+	 * @param plng2     longitude of the portal for point 2 in E6 format
+	 * @param pguid3    guid of the portal for point 3
+	 * @param plat3     latitude of the portal for point 3 in E6 format
+	 * @param plng3     longitude of the portal for point 3 in E6 format
+	 * @param valid     is the MU valid for this field
 	 *
 	 * @throws EntityDAOException containing an SQL Exception message
 	 */
 
 	@Override
-	public void insertField(String creator, String agent, int mu, String guid, long timestamp, String team, String pguid1, long plat1, long plng1, String pguid2, long plat2, long plng2, String pguid3, long plat3, long plng3, boolean valid) throws EntityDAOException {
-		//System.out.println("SQLMUFieldDAO::insert");
+	public void insertField(String creator, String agent, int mu, String guid, long timestamp, String team,
+			String pguid1, long plat1, long plng1, String pguid2, long plat2, long plng2, String pguid3, long plat3,
+			long plng3, boolean valid) throws EntityDAOException {
+		// System.out.println("SQLMUFieldDAO::insert");
 		try (Connection c = spdDs.getConnection();
-			 PreparedStatement ps = c.prepareStatement(FIELD_INSERT)) {
+				PreparedStatement ps = c.prepareStatement(FIELD_INSERT)) {
 			ps.setString(1, creator);
 			ps.setString(2, agent);
 			ps.setInt(3, mu);
 			ps.setString(4, guid.trim());
-			ps.setString(5, "" + timestamp); //timestamp sql type 
+			ps.setLong(5, timestamp);
 			ps.setString(6, team);
 			ps.setString(7, pguid1);
 			ps.setLong(8, plat1);
@@ -788,9 +799,9 @@ public class SQLEntityDAO implements EntityDAO {
 			ps.setBoolean(16, valid);
 
 			ps.executeUpdate();
-			c.commit(); 
+			c.commit();
 		} catch (SQLException se) {
-			//System.out.println("GUID: >" + guid+"<");
+			// System.out.println("GUID: >" + guid+"<");
 			Logger.getLogger(SQLEntityDAO.class.getName()).log(Level.WARNING, "Duplicate field GUID: " + guid);
 
 			// going to silently swallow duplicate entry failures
@@ -803,20 +814,21 @@ public class SQLEntityDAO implements EntityDAO {
 	 * cannot be held responsible for incorrectly calculated S2CellRegions.
 	 *
 	 *
-	 * @param guid of the field
+	 * @param guid  of the field
 	 * @param cells an S2CellUnion of all cells which make this field
 	 *
 	 * @throws EntityDAOException containing an SQL Exception message
 	 */
 
-	//@Override
-	@TransactionAttribute(TransactionAttributeType.REQUIRES_NEW) 
+	// @Override
+	@TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
 	public void insertCellsForField(String guid, S2CellUnion cells) throws EntityDAOException {
 		try (Connection c = spdDs.getConnection();
-			 PreparedStatement ps = c.prepareStatement(FIELD_INSERT_CELLS)) {
+				PreparedStatement ps = c.prepareStatement(FIELD_INSERT_CELLS)) {
 			ps.setString(1, guid);
 			for (S2CellId cell : cells) {
-				//Logger.getLogger(SQLEntityDAO.class.getName()).log(Level.INFO,"insert cell: " +cell.toToken() +" for guid: " +guid);
+				// Logger.getLogger(SQLEntityDAO.class.getName()).log(Level.INFO,"insert cell: "
+				// +cell.toToken() +" for guid: " +guid);
 				ps.setLong(2, cell.id() >> 32); // DB only supports signed 64 bit
 				ps.executeUpdate();
 			}
@@ -836,12 +848,12 @@ public class SQLEntityDAO implements EntityDAO {
 	 * @throws EntityDAOException containing an SQL Exception message
 	 */
 
-	//@Override
+	// @Override
 	public ArrayList<String> fieldGuidsForCell(S2CellId cell) throws EntityDAOException {
 		ArrayList<String> ret = new ArrayList<>();
 		try (Connection c = spdDs.getConnection();
-			 PreparedStatement ps = c.prepareStatement(FIELD_FIND_FROM_CELL)) {
-			ps.setLong(1, cell.id() >> 32);  // BIGINT is signed 64bit
+				PreparedStatement ps = c.prepareStatement(FIELD_FIND_FROM_CELL)) {
+			ps.setLong(1, cell.id() >> 32); // BIGINT is signed 64bit
 			try (ResultSet rs = ps.executeQuery()) {
 				while (rs.next()) {
 					ret.add(rs.getString("field_guid"));
@@ -856,7 +868,7 @@ public class SQLEntityDAO implements EntityDAO {
 
 	public void deleteFieldGuidCells(String field_guid) throws EntityDAOException {
 		try (Connection c = spdDs.getConnection();
-			 PreparedStatement ps = c.prepareStatement(FIELD_CELL_DELETE)) {
+				PreparedStatement ps = c.prepareStatement(FIELD_CELL_DELETE)) {
 			ps.setString(1, field_guid);
 			ps.executeUpdate();
 		} catch (SQLException se) {
@@ -865,16 +877,17 @@ public class SQLEntityDAO implements EntityDAO {
 		}
 	}
 
-    @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
+	@TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
 	public void deleteFieldGuidCellsAll() throws EntityDAOException {
 		try (Connection c = spdDs.getConnection();
-			 PreparedStatement ps = c.prepareStatement(FIELD_CELL_DELETE_ALL)) {
+				PreparedStatement ps = c.prepareStatement(FIELD_CELL_DELETE_ALL)) {
 			ps.executeUpdate();
 		} catch (SQLException se) {
 			Logger.getLogger(SQLEntityDAO.class.getName()).log(Level.SEVERE, null, se);
 			throw new EntityDAOException("SQLException: " + se.getMessage());
 		}
 	}
+
 	/**
 	 * Gets all Portals contains within an S2Region.
 	 *
@@ -888,7 +901,7 @@ public class SQLEntityDAO implements EntityDAO {
 		ArrayList<Portal> ret = new ArrayList<>();
 		S2LatLngRect bound = reg.getRectBound();
 		try (Connection c = spdDs.getConnection();
-			 PreparedStatement ps = c.prepareStatement(PORTAL_GET_FROM_BOX)) {
+				PreparedStatement ps = c.prepareStatement(PORTAL_GET_FROM_BOX)) {
 			ps.setString(1, Long.toString(bound.latLo().e6()));
 			ps.setString(2, Long.toString(bound.latHi().e6()));
 			ps.setString(3, Long.toString(bound.lngLo().e6()));
@@ -900,7 +913,8 @@ public class SQLEntityDAO implements EntityDAO {
 					S2LatLng latLng = S2LatLng.fromE6(plat, plng);
 					S2Cell cell = new S2Cell(latLng); // I wonder what level cell this produces
 					if (reg.contains(cell)) {
-						Portal p = new Portal(rs.getString("guid"), rs.getString("title"), plat, plng, rs.getInt("health"), rs.getString("team"), rs.getInt("level"));
+						Portal p = new Portal(rs.getString("guid"), rs.getString("title"), plat, plng,
+								rs.getInt("health"), rs.getString("team"), rs.getInt("level"));
 						ret.add(p);
 					}
 				}
@@ -915,8 +929,8 @@ public class SQLEntityDAO implements EntityDAO {
 	public ArrayList<Portal> getPortalsAll() throws EntityDAOException {
 		ArrayList<Portal> ret = new ArrayList<>();
 		try (Connection c = spdDs.getConnection();
-			 PreparedStatement ps = c.prepareStatement(PORTAL_GET);
-			 ResultSet rs = ps.executeQuery()) {
+				PreparedStatement ps = c.prepareStatement(PORTAL_GET);
+				ResultSet rs = ps.executeQuery()) {
 			while (rs.next()) {
 				Portal p = new Portal(rs.getString("guid"),
 						rs.getString("title"),
@@ -932,7 +946,7 @@ public class SQLEntityDAO implements EntityDAO {
 		}
 		return ret;
 	}
-	
+
 	/**
 	 * Gets Portals within an S2LatLngRect.
 	 *
@@ -946,7 +960,7 @@ public class SQLEntityDAO implements EntityDAO {
 	public ArrayList<Portal> getPortalsInRect(S2LatLngRect bound) throws EntityDAOException {
 		ArrayList<Portal> ret = new ArrayList<>();
 		try (Connection c = spdDs.getConnection();
-			 PreparedStatement ps = c.prepareStatement(PORTAL_GET_FROM_BOX)) {
+				PreparedStatement ps = c.prepareStatement(PORTAL_GET_FROM_BOX)) {
 			ps.setString(1, Long.toString(bound.latLo().e6()));
 			ps.setString(2, Long.toString(bound.latHi().e6()));
 			ps.setString(3, Long.toString(bound.lngLo().e6()));
@@ -959,8 +973,7 @@ public class SQLEntityDAO implements EntityDAO {
 							rs.getLong("lngE6"),
 							rs.getInt("health"),
 							rs.getString("team"),
-							rs.getInt("level")
-					);
+							rs.getInt("level"));
 					ret.add(p);
 				}
 			}
@@ -983,7 +996,7 @@ public class SQLEntityDAO implements EntityDAO {
 	 * @return S2LatLng location of the portal
 	 *
 	 * @throws EntityDAOException containing the ambiguous portal description or
-	 * an SQL Exception message
+	 *                            an SQL Exception message
 	 *
 	 *
 	 */
@@ -991,7 +1004,7 @@ public class SQLEntityDAO implements EntityDAO {
 	public S2LatLng getPortalLocationFromTitle(String title) throws EntityDAOException {
 		S2LatLng ret = null;
 		try (Connection c = spdDs.getConnection();
-			 PreparedStatement ps = c.prepareStatement(PORTAL_GET_LOCATION_FROM_TITLE)) {
+				PreparedStatement ps = c.prepareStatement(PORTAL_GET_LOCATION_FROM_TITLE)) {
 			ps.setString(1, title);
 			try (ResultSet rs = ps.executeQuery()) {
 				/* this whole code block is horrible pwease we wite it */
@@ -1009,7 +1022,7 @@ public class SQLEntityDAO implements EntityDAO {
 					err = err + rs.getString("guid") + " ";
 				}
 				if (searchError) {
-					//if (ret != null)
+					// if (ret != null)
 					err = err + ret.toStringDegrees();
 					throw new EntityDAOException("Ambiguous Title: " + err);
 				}
@@ -1036,7 +1049,8 @@ public class SQLEntityDAO implements EntityDAO {
 	public S2LatLng getPortalLocationFromGuid(String guid) throws EntityDAOException {
 		S2LatLng ret = null;
 		try (Connection c = spdDs.getConnection();
-			 PreparedStatement ps = c.prepareStatement(PORTAL_GET_LOCATION_FROM_GUID, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)) {
+				PreparedStatement ps = c.prepareStatement(PORTAL_GET_LOCATION_FROM_GUID,
+						ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)) {
 			ps.setString(1, guid);
 			try (ResultSet rs = ps.executeQuery()) {
 				if (rs.first()) {
@@ -1071,34 +1085,35 @@ public class SQLEntityDAO implements EntityDAO {
 		return S2LatLng.fromE6(latE6, lngE6);
 		// would I ever consider using this code.
 		// leaving it in here for prosperity?
-/*
-		System.out.println(">>> getLocationFromLocation: " + latE6 + ", " + lngE6);
-		PreparedStatement ps = null;
-		ResultSet rs = null;
-		S2LatLng ret = null;
-		//Connection c = null;
-
-		try {
-			c = spdDs.getConnection();
-			//ps = c.prepareStatement(GET_LOCATION_FROM_LOCATION);
-                        ps = c.prepareStatement(GET_LOCATION_FROM_LOCATION,ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
-
-			ps.setString(1, Long.toString(latE6));
-			ps.setString(2, Long.toString(lngE6));
-			rs = ps.executeQuery();
-			if(rs.first()) {
-				long plat = rs.getLong("latE6");
-				long plng = rs.getLong("lngE6");
-				ret = S2LatLng.fromE6(plat,plng);
-			}
-
-			rs.close();
-			ps.close();
-			c.close();
-			return ret;
-		} catch (SQLException se) {
-			throw new EntityDAOException("SQLException: " + se.getMessage());
-		}
+		/*
+		 * System.out.println(">>> getLocationFromLocation: " + latE6 + ", " + lngE6);
+		 * PreparedStatement ps = null;
+		 * ResultSet rs = null;
+		 * S2LatLng ret = null;
+		 * //Connection c = null;
+		 * 
+		 * try {
+		 * c = spdDs.getConnection();
+		 * //ps = c.prepareStatement(GET_LOCATION_FROM_LOCATION);
+		 * ps = c.prepareStatement(GET_LOCATION_FROM_LOCATION,ResultSet.
+		 * TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
+		 * 
+		 * ps.setString(1, Long.toString(latE6));
+		 * ps.setString(2, Long.toString(lngE6));
+		 * rs = ps.executeQuery();
+		 * if(rs.first()) {
+		 * long plat = rs.getLong("latE6");
+		 * long plng = rs.getLong("lngE6");
+		 * ret = S2LatLng.fromE6(plat,plng);
+		 * }
+		 * 
+		 * rs.close();
+		 * ps.close();
+		 * c.close();
+		 * return ret;
+		 * } catch (SQLException se) {
+		 * throw new EntityDAOException("SQLException: " + se.getMessage());
+		 * }
 		 */
 	}
 
@@ -1114,7 +1129,7 @@ public class SQLEntityDAO implements EntityDAO {
 	 * @return Portal the portal object
 	 *
 	 * @throws EntityDAOException containing the ambiguous portal description or
-	 * an SQL Exception message
+	 *                            an SQL Exception message
 	 *
 	 *
 	 */
@@ -1122,7 +1137,7 @@ public class SQLEntityDAO implements EntityDAO {
 	public Portal getPortalFromTitle(String title) throws EntityDAOException {
 		Portal ret = null;
 		try (Connection c = spdDs.getConnection();
-			 PreparedStatement ps = c.prepareStatement(PORTAL_GET_PORTAL_FROM_TITLE)) {
+				PreparedStatement ps = c.prepareStatement(PORTAL_GET_PORTAL_FROM_TITLE)) {
 			ps.setString(1, title);
 			try (ResultSet rs = ps.executeQuery()) {
 				/* this whole code block is horrible pwease we wite it */
@@ -1140,14 +1155,13 @@ public class SQLEntityDAO implements EntityDAO {
 							rs.getLong("lngE6"),
 							rs.getInt("health"),
 							rs.getString("team"),
-							rs.getInt("level")
-					);
+							rs.getInt("level"));
 
 					if (searchError)
 						err = err + rs.getString("guid") + " ";
 				}
 				if (searchError) {
-					//if (ret != null)
+					// if (ret != null)
 					err = err + ret.getLatE6() + "," + ret.getLngE6();
 					throw new EntityDAOException("Ambiguous Title: " + err);
 				}
@@ -1160,48 +1174,46 @@ public class SQLEntityDAO implements EntityDAO {
 		return ret;
 	}
 
-/**
- * Get the portal(s) from the portal's title.
- *
- * As titles are not unique, this method will return an array of all
- * the matching portals. 
- *
- * @param title The Portal title.
- *
- * @return ArrayList<Portal> the portal object(s)
- *
- * @throws EntityDAOException containing an SQL Exception message
- *
- *
- */
-@Override
-public ArrayList<Portal> getPortalsFromTitle(String title) throws EntityDAOException {
-	ArrayList<Portal> ret = new ArrayList<>();
-	try (Connection c = spdDs.getConnection();
-		 PreparedStatement ps = c.prepareStatement(PORTAL_GET_PORTAL_FROM_TITLE)) {
-		ps.setString(1, title);
-		try (ResultSet rs = ps.executeQuery()) {
-			while (rs.next()) {
-				Portal row = new Portal(rs.getString("guid"),
-						rs.getString("title"),
-						rs.getLong("latE6"),
-						rs.getLong("lngE6"),
-						rs.getInt("health"),
-						rs.getString("team"),
-						rs.getInt("level")
-				);
-				ret.add(row);
+	/**
+	 * Get the portal(s) from the portal's title.
+	 *
+	 * As titles are not unique, this method will return an array of all
+	 * the matching portals.
+	 *
+	 * @param title The Portal title.
+	 *
+	 * @return ArrayList<Portal> the portal object(s)
+	 *
+	 * @throws EntityDAOException containing an SQL Exception message
+	 *
+	 *
+	 */
+	@Override
+	public ArrayList<Portal> getPortalsFromTitle(String title) throws EntityDAOException {
+		ArrayList<Portal> ret = new ArrayList<>();
+		try (Connection c = spdDs.getConnection();
+				PreparedStatement ps = c.prepareStatement(PORTAL_GET_PORTAL_FROM_TITLE)) {
+			ps.setString(1, title);
+			try (ResultSet rs = ps.executeQuery()) {
+				while (rs.next()) {
+					Portal row = new Portal(rs.getString("guid"),
+							rs.getString("title"),
+							rs.getLong("latE6"),
+							rs.getLong("lngE6"),
+							rs.getInt("health"),
+							rs.getString("team"),
+							rs.getInt("level"));
+					ret.add(row);
+				}
 			}
+		} catch (SQLException se) {
+			se.printStackTrace();
+			throw new EntityDAOException("SQLException: " + se.getMessage());
 		}
-	} catch (SQLException se) {
-		se.printStackTrace();
-		throw new EntityDAOException("SQLException: " + se.getMessage());
+		return ret;
 	}
-	return ret;
-}
 
-
-/**
+	/**
 	 * Get the portal from the portal's guid.
 	 *
 	 *
@@ -1217,7 +1229,7 @@ public ArrayList<Portal> getPortalsFromTitle(String title) throws EntityDAOExcep
 	public Portal getPortalFromGuid(String guid) throws EntityDAOException {
 		Portal ret = null;
 		try (Connection c = spdDs.getConnection();
-			 PreparedStatement ps = c.prepareStatement(PORTAL_GET_PORTAL_FROM_GUID)) {
+				PreparedStatement ps = c.prepareStatement(PORTAL_GET_PORTAL_FROM_GUID)) {
 			ps.setString(1, guid);
 			try (ResultSet rs = ps.executeQuery()) {
 				// should only ever be one, so doesn't need the multiple row handling code.
@@ -1228,8 +1240,7 @@ public ArrayList<Portal> getPortalsFromTitle(String title) throws EntityDAOExcep
 							rs.getLong("lngE6"),
 							rs.getInt("health"),
 							rs.getString("team"),
-							rs.getInt("level")
-					);
+							rs.getInt("level"));
 				}
 			}
 		} catch (SQLException se) {
@@ -1240,11 +1251,10 @@ public ArrayList<Portal> getPortalsFromTitle(String title) throws EntityDAOExcep
 	}
 
 	@Override
-	public Portal getPortalFromLocation (long latE6, long lngE6) throws EntityDAOException
-	{
+	public Portal getPortalFromLocation(long latE6, long lngE6) throws EntityDAOException {
 		Portal ret = null;
 		try (Connection c = spdDs.getConnection();
-			 PreparedStatement ps = c.prepareStatement(PORTAL_GET_PORTAL_FROM_LOCATION)) {
+				PreparedStatement ps = c.prepareStatement(PORTAL_GET_PORTAL_FROM_LOCATION)) {
 			ps.setString(1, Long.toString(latE6));
 			ps.setString(2, Long.toString(lngE6));
 			try (ResultSet rs = ps.executeQuery()) {
@@ -1256,8 +1266,7 @@ public ArrayList<Portal> getPortalsFromTitle(String title) throws EntityDAOExcep
 							rs.getLong("lngE6"),
 							rs.getInt("health"),
 							rs.getString("team"),
-							rs.getInt("level")
-					);
+							rs.getInt("level"));
 				}
 			}
 		} catch (SQLException se) {
@@ -1279,10 +1288,10 @@ public ArrayList<Portal> getPortalsFromTitle(String title) throws EntityDAOExcep
 	@TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
 	public void deletePortal(String guid) throws EntityDAOException {
 		try (Connection c = spdDs.getConnection();
-			 PreparedStatement ps = c.prepareStatement(PORTAL_UPDATE_DELETED)) {
+				PreparedStatement ps = c.prepareStatement(PORTAL_UPDATE_DELETED)) {
 			ps.setString(1, guid);
 			ps.executeUpdate();
-			c.commit(); 
+			c.commit();
 
 		} catch (SQLException se) {
 			throw new EntityDAOException("SQLException: " + se.getMessage());
@@ -1292,10 +1301,10 @@ public ArrayList<Portal> getPortalsFromTitle(String title) throws EntityDAOExcep
 	/**
 	 * Short form update the portal identified by its guid.
 	 *
-	 * @param guid The Portal guid.
+	 * @param guid  The Portal guid.
 	 * @param latE6 the portal latitude in E6 format
 	 * @param lngE6 the portal longiture in E6 format
-	 * @param team the portal team either 'R' or 'E'
+	 * @param team  the portal team either 'R' or 'E'
 	 *
 	 * @throws EntityDAOException containing an SQL Exception message
 	 *
@@ -1304,13 +1313,13 @@ public ArrayList<Portal> getPortalsFromTitle(String title) throws EntityDAOExcep
 	@TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
 	public void updatePortal(String guid, long latE6, long lngE6, String team) throws EntityDAOException {
 		try (Connection c = spdDs.getConnection();
-			 PreparedStatement ps = c.prepareStatement(PORTAL_UPDATE)) {
+				PreparedStatement ps = c.prepareStatement(PORTAL_UPDATE)) {
 			ps.setLong(1, latE6);
 			ps.setLong(2, lngE6);
 			ps.setString(3, team);
 			ps.setString(4, guid);
 			ps.executeUpdate();
-			c.commit(); 
+			c.commit();
 
 		} catch (SQLException se) {
 			throw new EntityDAOException("SQLException: " + se.getMessage());
@@ -1320,24 +1329,25 @@ public ArrayList<Portal> getPortalsFromTitle(String title) throws EntityDAOExcep
 	/**
 	 * Long form update the portal identified by its guid.
 	 *
-	 * @param guid The Portal guid.
-	 * @param title The name of the portal.
-	 * @param latE6 the portal latitude in E6 format
-	 * @param lngE6 the portal longiture in E6 format
-	 * @param team the portal team either 'R' or 'E'
-	 * @param level the portal level
+	 * @param guid     The Portal guid.
+	 * @param title    The name of the portal.
+	 * @param latE6    the portal latitude in E6 format
+	 * @param lngE6    the portal longiture in E6 format
+	 * @param team     the portal team either 'R' or 'E'
+	 * @param level    the portal level
 	 * @param resCount the portal number of resonators
-	 * @param health the portal total energy, resonator decay or damage
-	 * @param image the portal image url
+	 * @param health   the portal total energy, resonator decay or damage
+	 * @param image    the portal image url
 	 *
 	 * @throws EntityDAOException containing an SQL Exception message
 	 *
 	 */
 	@Override
 	@TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
-	public void updatePortalFull(String guid, String title, long latE6, long lngE6, String team, int level, int resCount, int health, String image) throws EntityDAOException {
+	public void updatePortalFull(String guid, String title, long latE6, long lngE6, String team, int level,
+			int resCount, int health, String image) throws EntityDAOException {
 		try (Connection c = spdDs.getConnection();
-			 PreparedStatement ps = c.prepareStatement(PORTAL_UPDATE_FULL)) {
+				PreparedStatement ps = c.prepareStatement(PORTAL_UPDATE_FULL)) {
 			ps.setString(1, title);
 			ps.setLong(2, latE6);
 			ps.setLong(3, lngE6);
@@ -1348,7 +1358,7 @@ public ArrayList<Portal> getPortalsFromTitle(String title) throws EntityDAOExcep
 			ps.setString(8, image);
 			ps.setString(9, guid);
 			ps.executeUpdate();
-			c.commit(); 
+			c.commit();
 
 		} catch (SQLException se) {
 			throw new EntityDAOException("SQLException: " + se.getMessage());
@@ -1358,24 +1368,25 @@ public ArrayList<Portal> getPortalsFromTitle(String title) throws EntityDAOExcep
 	/**
 	 * Long form insert portal.
 	 *
-	 * @param guid The Portal guid.
-	 * @param title The name of the portal.
-	 * @param latE6 the portal latitude in E6 format
-	 * @param lngE6 the portal longiture in E6 format
-	 * @param team the portal team either 'R' or 'E'
-	 * @param level the portal level
+	 * @param guid     The Portal guid.
+	 * @param title    The name of the portal.
+	 * @param latE6    the portal latitude in E6 format
+	 * @param lngE6    the portal longiture in E6 format
+	 * @param team     the portal team either 'R' or 'E'
+	 * @param level    the portal level
 	 * @param resCount the portal number of resonators
-	 * @param health the portal total energy, resonator decay or damage
-	 * @param image the portal image url
+	 * @param health   the portal total energy, resonator decay or damage
+	 * @param image    the portal image url
 	 *
 	 * @throws EntityDAOException containing an SQL Exception message
 	 *
 	 */
 	@Override
 	@TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
-	public void insertPortalFull(String guid, String title, long latE6, long lngE6, String team, int level, int resCount, int health, String image) throws EntityDAOException {
+	public void insertPortalFull(String guid, String title, long latE6, long lngE6, String team, int level,
+			int resCount, int health, String image) throws EntityDAOException {
 		try (Connection c = spdDs.getConnection();
-			 PreparedStatement ps = c.prepareStatement(PORTAL_INSERT_FULL)) {
+				PreparedStatement ps = c.prepareStatement(PORTAL_INSERT_FULL)) {
 			ps.setString(1, guid);
 			ps.setString(2, title);
 			ps.setLong(3, latE6);
@@ -1386,7 +1397,7 @@ public ArrayList<Portal> getPortalsFromTitle(String title) throws EntityDAOExcep
 			ps.setInt(8, health);
 			ps.setString(9, image);
 			ps.executeUpdate();
-			c.commit(); 
+			c.commit();
 
 		} catch (SQLException se) {
 			throw new EntityDAOException("SQLException: " + se.getMessage());
@@ -1396,10 +1407,10 @@ public ArrayList<Portal> getPortalsFromTitle(String title) throws EntityDAOExcep
 	/**
 	 * Short form insert portal
 	 *
-	 * @param guid The Portal guid.
+	 * @param guid  The Portal guid.
 	 * @param latE6 the portal latitude in E6 format
 	 * @param lngE6 the portal longiture in E6 format
-	 * @param team the portal team either 'R' or 'E'
+	 * @param team  the portal team either 'R' or 'E'
 	 *
 	 * @throws EntityDAOException containing an SQL Exception message
 	 *
@@ -1408,13 +1419,13 @@ public ArrayList<Portal> getPortalsFromTitle(String title) throws EntityDAOExcep
 	@TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
 	public void insertPortal(String guid, long latE6, long lngE6, String team) throws EntityDAOException {
 		try (Connection c = spdDs.getConnection();
-			 PreparedStatement ps = c.prepareStatement(PORTAL_INSERT)) {
+				PreparedStatement ps = c.prepareStatement(PORTAL_INSERT)) {
 			ps.setString(1, guid);
 			ps.setLong(2, latE6);
 			ps.setLong(3, lngE6);
 			ps.setString(4, team);
 			ps.executeUpdate();
-			c.commit(); 
+			c.commit();
 
 		} catch (SQLException se) {
 			throw new EntityDAOException("SQLException: " + se.getMessage());
@@ -1434,7 +1445,8 @@ public ArrayList<Portal> getPortalsFromTitle(String title) throws EntityDAOExcep
 	private boolean existsPortal(String guid) throws EntityDAOException {
 		boolean exists;
 		try (Connection c = spdDs.getConnection();
-			 PreparedStatement ps = c.prepareStatement(PORTAL_GUID_EXISTS, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)) {
+				PreparedStatement ps = c.prepareStatement(PORTAL_GUID_EXISTS, ResultSet.TYPE_SCROLL_INSENSITIVE,
+						ResultSet.CONCUR_READ_ONLY)) {
 			ps.setString(1, guid);
 			try (ResultSet rs = ps.executeQuery()) {
 				exists = rs.first();
@@ -1448,10 +1460,10 @@ public ArrayList<Portal> getPortalsFromTitle(String title) throws EntityDAOExcep
 	/**
 	 * Short form insert or update portal depending on its existence.
 	 *
-	 * @param guid The Portal guid.
+	 * @param guid  The Portal guid.
 	 * @param latE6 the portal latitude in E6 format
 	 * @param lngE6 the portal longiture in E6 format
-	 * @param team the portal team either 'R' or 'E'
+	 * @param team  the portal team either 'R' or 'E'
 	 *
 	 * @throws EntityDAOException containing an SQL Exception message
 	 *
@@ -1468,21 +1480,22 @@ public ArrayList<Portal> getPortalsFromTitle(String title) throws EntityDAOExcep
 	/**
 	 * Long form insert or update portal depending on its existence.
 	 *
-	 * @param guid The Portal guid.
-	 * @param title The name of the portal.
-	 * @param latE6 the portal latitude in E6 format
-	 * @param lngE6 the portal longiture in E6 format
-	 * @param team the portal team either 'R' or 'E'
-	 * @param level the portal level
+	 * @param guid     The Portal guid.
+	 * @param title    The name of the portal.
+	 * @param latE6    the portal latitude in E6 format
+	 * @param lngE6    the portal longiture in E6 format
+	 * @param team     the portal team either 'R' or 'E'
+	 * @param level    the portal level
 	 * @param resCount the portal number of resonators
-	 * @param health the portal total energy, resonator decay or damage
-	 * @param image the portal image url
+	 * @param health   the portal total energy, resonator decay or damage
+	 * @param image    the portal image url
 	 *
 	 * @throws EntityDAOException containing an SQL Exception message
 	 *
 	 */
 	@Override
-	public void writePortalFull(String guid, String title, long latE6, long lngE6, String team, int level, int resCount, int health, String image) throws EntityDAOException {
+	public void writePortalFull(String guid, String title, long latE6, long lngE6, String team, int level, int resCount,
+			int health, String image) throws EntityDAOException {
 		if (existsPortal(guid)) {
 			updatePortalFull(guid, title, latE6, lngE6, team, level, resCount, health, image);
 		} else {
@@ -1490,7 +1503,4 @@ public ArrayList<Portal> getPortalsFromTitle(String title) throws EntityDAOExcep
 		}
 	}
 
-
-		
-	
 }

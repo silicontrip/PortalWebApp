@@ -7,7 +7,6 @@ package net.silicontrip.ingress;
 
 import com.google.common.geometry.*;
 
-
 import java.io.Serializable;
 import jakarta.persistence.Basic;
 import jakarta.persistence.Column;
@@ -28,23 +27,23 @@ import jakarta.xml.bind.annotation.XmlRootElement;
 @Table(name = "mufields")
 @XmlRootElement
 @NamedQueries({
-    @NamedQuery(name = "Mufields.findAll", query = "SELECT m FROM Mufields m"),
-    @NamedQuery(name = "Mufields.findByCreator", query = "SELECT m FROM Mufields m WHERE m.creator = :creator"),
-    @NamedQuery(name = "Mufields.findByAgent", query = "SELECT m FROM Mufields m WHERE m.agent = :agent"),
-    @NamedQuery(name = "Mufields.findByMu", query = "SELECT m FROM Mufields m WHERE m.mu = :mu"),
-    @NamedQuery(name = "Mufields.findByGuid", query = "SELECT m FROM Mufields m WHERE m.guid = :guid"),
-    @NamedQuery(name = "Mufields.findByTimestamp", query = "SELECT m FROM Mufields m WHERE m.timestamp = :timestamp"),
-    @NamedQuery(name = "Mufields.findByTeam", query = "SELECT m FROM Mufields m WHERE m.team = :team"),
-    @NamedQuery(name = "Mufields.findByPguid1", query = "SELECT m FROM Mufields m WHERE m.pguid1 = :pguid1"),
-    @NamedQuery(name = "Mufields.findByPlat1", query = "SELECT m FROM Mufields m WHERE m.plat1 = :plat1"),
-    @NamedQuery(name = "Mufields.findByPlng1", query = "SELECT m FROM Mufields m WHERE m.plng1 = :plng1"),
-    @NamedQuery(name = "Mufields.findByPguid2", query = "SELECT m FROM Mufields m WHERE m.pguid2 = :pguid2"),
-    @NamedQuery(name = "Mufields.findByPlat2", query = "SELECT m FROM Mufields m WHERE m.plat2 = :plat2"),
-    @NamedQuery(name = "Mufields.findByPlng2", query = "SELECT m FROM Mufields m WHERE m.plng2 = :plng2"),
-    @NamedQuery(name = "Mufields.findByPguid3", query = "SELECT m FROM Mufields m WHERE m.pguid3 = :pguid3"),
-    @NamedQuery(name = "Mufields.findByPlat3", query = "SELECT m FROM Mufields m WHERE m.plat3 = :plat3"),
-    @NamedQuery(name = "Mufields.findByPlng3", query = "SELECT m FROM Mufields m WHERE m.plng3 = :plng3"),
-    @NamedQuery(name = "Mufields.findByValid", query = "SELECT m FROM Mufields m WHERE m.valid = :valid")})
+        @NamedQuery(name = "Mufields.findAll", query = "SELECT m FROM Mufields m"),
+        @NamedQuery(name = "Mufields.findByCreator", query = "SELECT m FROM Mufields m WHERE m.creator = :creator"),
+        @NamedQuery(name = "Mufields.findByAgent", query = "SELECT m FROM Mufields m WHERE m.agent = :agent"),
+        @NamedQuery(name = "Mufields.findByMu", query = "SELECT m FROM Mufields m WHERE m.mu = :mu"),
+        @NamedQuery(name = "Mufields.findByGuid", query = "SELECT m FROM Mufields m WHERE m.guid = :guid"),
+        @NamedQuery(name = "Mufields.findByTimestamp", query = "SELECT m FROM Mufields m WHERE m.timestamp = :timestamp"),
+        @NamedQuery(name = "Mufields.findByTeam", query = "SELECT m FROM Mufields m WHERE m.team = :team"),
+        @NamedQuery(name = "Mufields.findByPguid1", query = "SELECT m FROM Mufields m WHERE m.pguid1 = :pguid1"),
+        @NamedQuery(name = "Mufields.findByPlat1", query = "SELECT m FROM Mufields m WHERE m.plat1 = :plat1"),
+        @NamedQuery(name = "Mufields.findByPlng1", query = "SELECT m FROM Mufields m WHERE m.plng1 = :plng1"),
+        @NamedQuery(name = "Mufields.findByPguid2", query = "SELECT m FROM Mufields m WHERE m.pguid2 = :pguid2"),
+        @NamedQuery(name = "Mufields.findByPlat2", query = "SELECT m FROM Mufields m WHERE m.plat2 = :plat2"),
+        @NamedQuery(name = "Mufields.findByPlng2", query = "SELECT m FROM Mufields m WHERE m.plng2 = :plng2"),
+        @NamedQuery(name = "Mufields.findByPguid3", query = "SELECT m FROM Mufields m WHERE m.pguid3 = :pguid3"),
+        @NamedQuery(name = "Mufields.findByPlat3", query = "SELECT m FROM Mufields m WHERE m.plat3 = :plat3"),
+        @NamedQuery(name = "Mufields.findByPlng3", query = "SELECT m FROM Mufields m WHERE m.plng3 = :plng3"),
+        @NamedQuery(name = "Mufields.findByValid", query = "SELECT m FROM Mufields m WHERE m.valid = :valid") })
 public class Mufields implements Serializable {
 
     private static final long serialVersionUID = 1L;
@@ -115,7 +114,8 @@ public class Mufields implements Serializable {
         this.guid = guid;
     }
 
-    public Mufields(String guid, String agent, int mu, int timestamp, int plat1, int plng1, int plat2, int plng2, int plat3, int plng3) {
+    public Mufields(String guid, String agent, int mu, int timestamp, int plat1, int plng1, int plat2, int plng2,
+            int plat3, int plng3) {
         this.guid = guid;
         this.agent = agent;
         this.mu = mu;
@@ -281,33 +281,45 @@ public class Mufields implements Serializable {
         return "net.silicontrip.ingress.Mufields[ guid=" + guid + " ]";
     }
 
-        public S2LatLng getP1LatLng() { return S2LatLng.fromE6(plat1,plng1); }
-        public S2LatLng getP2LatLng() { return S2LatLng.fromE6(plat2,plng2); }
-        public S2LatLng getP3LatLng() { return S2LatLng.fromE6(plat3,plng3); }
-        public S2Point getP1Point() { return getP1LatLng().toPoint(); }
-        public S2Point getP2Point() { return getP2LatLng().toPoint(); }
-        public S2Point getP3Point() { return getP3LatLng().toPoint(); }
+    public S2LatLng getP1LatLng() {
+        return S2LatLng.fromE6(plat1, plng1);
+    }
 
+    public S2LatLng getP2LatLng() {
+        return S2LatLng.fromE6(plat2, plng2);
+    }
 
-        public S2Polygon getS2Polygon ()
-        {
-                S2PolygonBuilder pb = new S2PolygonBuilder(S2PolygonBuilder.Options.UNDIRECTED_UNION);
-                pb.addEdge(getP1Point(),getP2Point());
-                pb.addEdge(getP2Point(),getP3Point());
-                pb.addEdge(getP3Point(),getP1Point());
-                return pb.assemblePolygon();
-        }
+    public S2LatLng getP3LatLng() {
+        return S2LatLng.fromE6(plat3, plng3);
+    }
 
-    
-        public S2CellUnion getCells()
-        {
-                S2RegionCoverer rc = new S2RegionCoverer();
-                // ingress mu calculation specifics
-                rc.setMaxLevel(13);
-                rc.setMinLevel(0);
-                rc.setMaxCells(20);
-                return rc.getCovering (getS2Polygon());
-        }
+    public S2Point getP1Point() {
+        return getP1LatLng().toPoint();
+    }
 
+    public S2Point getP2Point() {
+        return getP2LatLng().toPoint();
+    }
+
+    public S2Point getP3Point() {
+        return getP3LatLng().toPoint();
+    }
+
+    public S2Polygon getS2Polygon() {
+        S2PolygonBuilder pb = new S2PolygonBuilder(S2PolygonBuilder.Options.UNDIRECTED_UNION);
+        pb.addEdge(getP1Point(), getP2Point());
+        pb.addEdge(getP2Point(), getP3Point());
+        pb.addEdge(getP3Point(), getP1Point());
+        return pb.assemblePolygon();
+    }
+
+    public S2CellUnion getCells() {
+        S2RegionCoverer rc = new S2RegionCoverer();
+        // ingress mu calculation specifics
+        rc.setMaxLevel(13);
+        rc.setMinLevel(0);
+        rc.setMaxCells(20);
+        return rc.getCovering(getS2Polygon());
+    }
 
 }

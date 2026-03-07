@@ -46,6 +46,7 @@ import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.PersistenceException;
 
 import net.silicontrip.AreaDistribution;
+import net.silicontrip.UniformDensityCurve;
 import net.silicontrip.UniformDistribution;
 import net.silicontrip.UniformDistributionException;
 //import static net.silicontrip.ingress.CellSessionBean.getS2Polygon;
@@ -473,38 +474,85 @@ public class FieldSessionBean {
 
 	public HashSet<S2CellId> disagreements(Field field) throws EntityDAOException {
 
-		int disagree = 0;
 		HashSet<S2CellId> disagreecells = new HashSet<S2CellId>();
 
 		if (field == null) {
 			Logger.getLogger(FieldSessionBean.class.getName()).log(Level.WARNING, "Null field passed to disagreements");
 			return disagreecells;
 		}
+
 		final S2CellUnion cells = field.getCells();
 		try {
 			for (S2CellId cell : cells) {
 
-				UniformDistribution outerRemaining = remaining(field, cell);
-
 				ArrayList<String> fieldGuids = fieldsCells.fieldGuidsForCell(cell);
+
+				ArrayList<UniformDistribution> bestMUList = new ArrayList<>();
+
+				// Compute remaining for the incoming field first, so we can identify it later
+				UniformDistribution incomingRemaining = remaining(field, cell);
+				bestMUList.add(incomingRemaining);
 
 				for (String fguid : fieldGuids) {
 					if (!fguid.equals(field.getGuid())) {
 						Field fi = dao.getField(fguid);
 						if (fi != null) {
-							UniformDistribution innerRemaining = remaining(fi, cell);
-
-							if (!outerRemaining.intersects(innerRemaining)) {
-								disagree++;
-								disagreecells.add(cell);
-							}
+							bestMUList.add(remaining(fi, cell));
 						}
 					}
+				}
+
+				// Need at least one other field to form a consensus
+				if (bestMUList.size() < 2)
+					continue;
+
+				UniformDensityCurve udc = new UniformDensityCurve(bestMUList);
+
+				if (udc.allValid()) {
+					// Scenario 1: All fields agree — no disagreement
+					Logger.getLogger(FieldSessionBean.class.getName()).log(Level.FINE,
+							"disagreements: AGREE cell=" + cell.toToken()
+									+ " guid=" + field.getGuid()
+									+ " peak=" + udc.getPeakValue()
+									+ " incoming=" + incomingRemaining);
+				} else if (udc.isValid(incomingRemaining)) {
+					// Scenario 2: Incoming agrees with consensus — an existing field is the error
+					Logger.getLogger(FieldSessionBean.class.getName()).log(Level.INFO,
+							"disagreements: INCOMING_AGREES (existing field error?) cell=" + cell.toToken()
+									+ " guid=" + field.getGuid()
+									+ " peak=" + udc.getPeakValue()
+									+ " invalid=" + udc.countInvalid()
+									+ " incoming=" + incomingRemaining
+									+ " peakDist=" + udc.getPeakDistribution());
+				} else if (udc.countInvalid() == 1) {
+					// Scenario 3: Lone outlier — only the incoming field is out of step
+					Logger.getLogger(FieldSessionBean.class.getName()).log(Level.WARNING,
+							"disagreements: LONE_OUTLIER cell=" + cell.toToken()
+									+ " guid=" + field.getGuid()
+									+ " peak=" + udc.getPeakValue()
+									+ " incoming=" + incomingRemaining
+									+ " peakDist=" + udc.getPeakDistribution()
+									+ " gapToPeak=" + udc.gapToPeak(incomingRemaining)
+									+ " peakWidth=" + udc.getPeakDistribution().range());
+					disagreecells.add(cell);
+				} else {
+					// Scenario 4: Twin peak / ambiguous — multiple invalids, unclear which cluster
+					// is correct
+					Logger.getLogger(FieldSessionBean.class.getName()).log(Level.WARNING,
+							"disagreements: TWIN_PEAK cell=" + cell.toToken()
+									+ " guid=" + field.getGuid()
+									+ " peak=" + udc.getPeakValue()
+									+ " invalid=" + udc.countInvalid()
+									+ " total=" + bestMUList.size()
+									+ " incoming=" + incomingRemaining
+									+ " peakDist=" + udc.getPeakDistribution()
+									+ " gapToPeak=" + udc.gapToPeak(incomingRemaining)
+									+ " peakWidth=" + udc.getPeakDistribution().range());
+					disagreecells.add(cell);
 				}
 			}
 		} catch (Exception e) {
 			Logger.getLogger(FieldSessionBean.class.getName()).log(Level.SEVERE, null, e);
-
 		}
 		return disagreecells;
 	}

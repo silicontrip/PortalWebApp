@@ -9,12 +9,12 @@ public class UniformDensityCurve {
     ArrayList<UniformDistribution> distributions;
     ArrayList<double[]> segments;
     UniformDistribution peakDistribution;
-   // TreeSet<Double> boundaries;
+    // TreeSet<Double> boundaries;
     int peakValue;
 
     public UniformDensityCurve(ArrayList<UniformDistribution> dists) {
         this.distributions = dists;
-       // boundaries = buildBoundaries(distributions);
+        // boundaries = buildBoundaries(distributions);
         segments = buildSegments(dists);
         peakValue = getPeakValue(segments);
         peakDistribution = buildPeakDistribution(dists);
@@ -25,7 +25,7 @@ public class UniformDensityCurve {
         for (UniformDistribution ud : dists) {
             bound.add(ud.getLower());
             bound.add(ud.getUpper());
-        }   
+        }
         ArrayList<Double> points = new ArrayList<>(bound);
         ArrayList<double[]> seg = new ArrayList<>();
 
@@ -50,16 +50,15 @@ public class UniformDensityCurve {
         int max = getPeakValue(segm);
 
         if (max == 0)
-            return new UniformDistribution(0,Float.MAX_VALUE);
+            return new UniformDistribution(0, Float.MAX_VALUE);
 
         while (max > 0) {
             boolean first = true;
-            double lower=0;
-            double upper=Float.MAX_VALUE;
+            double lower = 0;
+            double upper = Float.MAX_VALUE;
             for (double[] seg : segm) {
                 if (seg[2] == max) {
-                    if (first)
-                    {
+                    if (first) {
                         lower = seg[0];
                         upper = seg[1];
                         first = false;
@@ -72,51 +71,44 @@ public class UniformDensityCurve {
             }
             boolean valley = false;
             double valley1 = 0;
-            double valley2 = 0 ;
-            for (double[] seg : segm)
-            {
-                if ( seg[2] < max && seg[0] > lower && seg[1] < upper)
-                {
+            double valley2 = 0;
+            for (double[] seg : segm) {
+                if (seg[2] < max && seg[0] > lower && seg[1] < upper) {
                     valley = true;
                     valley1 = seg[0];
                     valley2 = seg[1];
                     break;
                 }
             }
-            if (!valley)
-            {
-                return new UniformDistribution(lower,upper);
+            if (!valley) {
+                return new UniformDistribution(lower, upper);
             } else {
-                for (int i=0; i < dists.size(); i++)
-                {
+                for (int i = 0; i < dists.size(); i++) {
                     UniformDistribution seg = dists.get(i);
-                    if (seg.getLower() == valley1 ||  seg.getUpper() == valley1)
-                    {
-                        //System.out.println("Removing: " + dists.get(i));
+                    if (seg.getLower() == valley1 || seg.getUpper() == valley1) {
+                        // System.out.println("Removing: " + dists.get(i));
                         dists.remove(i);
                         break;
                     }
                 }
-                for (int i=0; i < dists.size(); i++)
-                {
+                for (int i = 0; i < dists.size(); i++) {
                     UniformDistribution seg = dists.get(i);
-                    if (seg.getLower() == valley2 ||  seg.getUpper() == valley2)
-                    {
-                        //System.out.println("Removing: " + dists.get(i));
+                    if (seg.getLower() == valley2 || seg.getUpper() == valley2) {
+                        // System.out.println("Removing: " + dists.get(i));
                         dists.remove(i);
                         break;
                     }
                 }
                 segm = buildSegments(dists);
-                //for (double[] g : getXYPlot(segm))
-                //    System.out.println("" + g[0] + " " + g[1]);
-                //peakDistribution = buildPeakDistribution(segm);
+                // for (double[] g : getXYPlot(segm))
+                // System.out.println("" + g[0] + " " + g[1]);
+                // peakDistribution = buildPeakDistribution(segm);
             }
             max = getPeakValue(segm);
             peakValue = max;
-            //System.out.println("Build Peak error. Max: " + max);
+            // System.out.println("Build Peak error. Max: " + max);
         }
-        return new UniformDistribution(0,Float.MAX_VALUE);
+        return new UniformDistribution(0, Float.MAX_VALUE);
 
     }
 
@@ -124,21 +116,18 @@ public class UniformDensityCurve {
         return peakValue;
     }
 
-    private int getPeakValue(ArrayList<double[]> segm)
-    {
+    private int getPeakValue(ArrayList<double[]> segm) {
         double max = 0;
         for (double[] seg : segm) {
             max = Math.max(max, seg[2]);
         }
-        return (int)max;
+        return (int) max;
     }
 
     public boolean allValid() {
-        for (int i=0; i < distributions.size(); i++)
-        {
+        for (int i = 0; i < distributions.size(); i++) {
             UniformDistribution io = distributions.get(i);
-            for (int j=i+1; j < distributions.size(); j++)
-            {
+            for (int j = i + 1; j < distributions.size(); j++) {
                 UniformDistribution ii = distributions.get(j);
                 if (!io.intersects(ii))
                     return false;
@@ -151,32 +140,27 @@ public class UniformDensityCurve {
         int count = 0;
         for (UniformDistribution ud : distributions)
             if (!isValid(ud))
-                count ++;
+                count++;
         return count;
     }
 
-    public boolean isValid(UniformDistribution ud)
-    {
+    public boolean isValid(UniformDistribution ud) {
         return ud.contains(peakDistribution);
     }
 
-    public boolean isPeak(UniformDistribution ud)
-    {
+    public boolean isPeak(UniformDistribution ud) {
         return ud.getLower() == peakDistribution.getLower() || ud.getUpper() == peakDistribution.getUpper();
     }
 
-    public boolean isDualPeak(UniformDistribution ud)
-    {
+    public boolean isDualPeak(UniformDistribution ud) {
         return ud.getLower() == peakDistribution.getLower() && ud.getUpper() == peakDistribution.getUpper();
     }
 
-    public boolean isLowerPeak(UniformDistribution ud)
-    {
+    public boolean isLowerPeak(UniformDistribution ud) {
         return ud.getLower() == peakDistribution.getLower();
     }
 
-    public boolean isUpperPeak(UniformDistribution ud)
-    {
+    public boolean isUpperPeak(UniformDistribution ud) {
         return ud.getUpper() == peakDistribution.getUpper();
     }
 
@@ -184,36 +168,46 @@ public class UniformDensityCurve {
         return peakDistribution;
     }
 
+    /**
+     * Returns the gap between the given distribution and the peak distribution.
+     * Returns 0.0 if they overlap or touch. Useful for diagnosing how far an
+     * outlier sits from the consensus.
+     *
+     * @param ud the distribution to measure
+     * @return non-negative gap; 0 means overlapping or touching
+     */
+    public double gapToPeak(UniformDistribution ud) {
+        double gapBelow = peakDistribution.getLower() - ud.getUpper(); // ud is entirely below peak
+        double gapAbove = ud.getLower() - peakDistribution.getUpper(); // ud is entirely above peak
+        return Math.max(0.0, Math.max(gapBelow, gapAbove));
+    }
+
     // meaning that a single UD from the array covers both
-    public boolean hasDualPeak(ArrayList<UniformDistribution> udl)
-    {
+    public boolean hasDualPeak(ArrayList<UniformDistribution> udl) {
         for (UniformDistribution ud : udl)
             if (isDualPeak(ud))
                 return true;
         return false;
     }
 
-    public ArrayList<double[]> getXYPlot()
-    {
+    public ArrayList<double[]> getXYPlot() {
         return getXYPlot(segments);
     }
 
-    private ArrayList<double[]> getXYPlot(ArrayList<double[]> segm)
-    {
+    private ArrayList<double[]> getXYPlot(ArrayList<double[]> segm) {
         ArrayList<double[]> plot = new ArrayList<double[]>();
         double[] seg;
         double x;
         double y;
 
-        for (int i=0; i < segm.size(); i++)
-        {
+        for (int i = 0; i < segm.size(); i++) {
             seg = segm.get(i);
             y = seg[2];
 
             x = seg[0];
-            plot.add(new double[] { x,y } );
+            plot.add(new double[] { x, y });
             x = seg[1];
-            plot.add(new double[] { x,y } );
+            plot.add(new double[] { x, y });
 
         }
         return plot;

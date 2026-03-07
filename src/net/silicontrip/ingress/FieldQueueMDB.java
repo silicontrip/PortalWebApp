@@ -51,7 +51,7 @@ public class FieldQueueMDB implements MessageListener {
 				pobj.getString("agent"),
 				-1, // place holder
 				guid,
-				options.getInt("timestamp"),
+				options.getLong("timestamp") / 1000L,
 				entPoints.getString(1),
 				p1.getString("guid"), p1.getLong("latE6"), p1.getLong("lngE6"),
 				p2.getString("guid"), p2.getLong("latE6"), p2.getLong("lngE6"),

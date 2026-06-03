@@ -250,19 +250,28 @@ public class FieldSessionBean {
 					consensusMU.clampLower(0.0);
 					UniformDistribution cellOuterMU = muBean.getMU(cellOuter.toToken());
 
-					muBean.setMU(cellOuter.toToken(), consensusMU);
-
-					if (cellOuterMU != null) {
-						Logger.getLogger(FieldSessionBean.class.getName()).log(Level.INFO,
-								"UPDATED CONSENSUS: " + cellOuter.toToken() + " old "
-										+ cellOuterMU.toStringWithPrecision(3) + " new "
-										+ consensusMU.toStringWithPrecision(3) + " fguid: " + field.getGuid());
-					} else {
+					boolean changed = false;
+					if (cellOuterMU == null) {
+						changed = true;
 						Logger.getLogger(FieldSessionBean.class.getName()).log(Level.INFO,
 								"NEW CONSENSUS: " + cellOuter.toToken() + " " + consensusMU.toStringWithPrecision(3) + " fguid: "
 										+ field.getGuid());
+					} else {
+						// 1E-5 epsilon check for floating point drift
+						if (Math.abs(consensusMU.getLower() - cellOuterMU.getLower()) > 1E-5 ||
+							Math.abs(consensusMU.getUpper() - cellOuterMU.getUpper()) > 1E-5) {
+							changed = true;
+							Logger.getLogger(FieldSessionBean.class.getName()).log(Level.INFO,
+									"UPDATED CONSENSUS: " + cellOuter.toToken() + " old "
+											+ cellOuterMU.toStringWithPrecision(3) + " new "
+											+ consensusMU.toStringWithPrecision(3) + " fguid: " + field.getGuid());
+						}
 					}
-					modifiedCells.add(cellOuter);
+
+					if (changed) {
+						muBean.setMU(cellOuter.toToken(), consensusMU);
+						modifiedCells.add(cellOuter);
+					}
 
 				} catch (UniformDistributionException ae) {
 					Logger.getLogger(FieldSessionBean.class.getName()).log(Level.WARNING, "Field: " + field.getGuid()

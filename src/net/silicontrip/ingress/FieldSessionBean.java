@@ -223,132 +223,59 @@ public class FieldSessionBean {
 
 	public HashSet<S2CellId> processField(Field field) {
 		HashSet<S2CellId> modifiedCells = new HashSet<>();
-
-		UniformDistribution initialMU;
-		Double area;
-
-		Integer score = field.getMU();
-		S2Polygon thisField = field.getS2Polygon();
-
-		// Logger.getLogger(FieldSessionBean.class.getName()).log(Level.INFO,null,field);
-
-		// Logger.getLogger(FieldSessionBean.class.getName()).log(Level.INFO,"mu: "+
-		// score);
-
 		try {
-
-			if (score == 1)
-				initialMU = new UniformDistribution(0.0, 1.5);
-			else
-				initialMU = new UniformDistribution(score, range);
-
-			// an algorithmic version of the following equation
-			// mu[cell] = ( MU - intersectionArea[cell1] x mu[cell1] ... -
-			// intersectionArea[cellN] x mu[cellN]) / intersectionArea[cell]
-
 			final S2CellUnion cells = field.getCells();
-
 			for (S2CellId cellOuter : cells) {
-				StringBuilder cellLog = new StringBuilder();
-				UniformDistribution mus = new UniformDistribution(initialMU);
-				cellLog.append("( ");
-				cellLog.append(mus.toString());
-				for (S2CellId cellInner : cells) {
-					// if not cell from outer loop
-					if (!cellOuter.equals(cellInner)) {
-						// System.out.println("i<->o: " + cellOuter.toToken() + " - "+
-						// cellInner.toToken());
-						double areaInner = getIntersectionArea(thisField, cellInner);
+				ArrayList<String> fieldGuids = fieldsCells.fieldGuidsForCell(cellOuter);
+				ArrayList<UniformDistribution> bestMUList = new ArrayList<>();
 
-						// Logger.getLogger(FieldSessionBean.class.getName()).log(Level.INFO,"get mu for
-						// cell:" + cellInner.toToken());
-
-						UniformDistribution cellInnerMU = muBean.getMU(cellInner.toToken()); // em.find(CellMUEntity.class,
-																								// cellInner.id());
-
-						cellLog.append(" - ");
-						cellLog.append(areaInner);
-						cellLog.append(" x ");
-						cellLog.append(cellInner.toToken());
-						cellLog.append(":");
-
-						if (cellInnerMU != null) {
-							cellLog.append(cellInnerMU);
-							UniformDistribution cma = cellInnerMU.mul(areaInner);
-							mus = mus.sub(cma);
-						} else {
-							cellLog.append("undefined");
-							mus.setLower(0.0);
-						}
+				for (String fguid : fieldGuids) {
+					Field fi = dao.getField(fguid);
+					if (fi != null) {
+						bestMUList.add(remaining(fi, cellOuter));
 					}
 				}
-				cellLog.append(" ) / ");
-				double areaOuter = getIntersectionArea(thisField, cellOuter);
-				cellLog.append(areaOuter);
-				mus = mus.div(areaOuter);
-				cellLog.insert(0, " = ");
+
+				if (bestMUList.isEmpty()) continue;
+
+				UniformDistribution consensusMU;
+				if (bestMUList.size() == 1) {
+					consensusMU = bestMUList.get(0);
+				} else {
+					UniformDensityCurve udc = new UniformDensityCurve(bestMUList);
+					consensusMU = udc.getPeakDistribution();
+				}
 
 				try {
-					mus.clampLower(0.0);
-					cellLog.insert(0, mus);
-
+					consensusMU.clampLower(0.0);
 					UniformDistribution cellOuterMU = muBean.getMU(cellOuter.toToken());
 
-					cellLog.insert(0, " => ");
-					if (cellOuterMU == null)
-						cellLog.insert(0, "null");
-					else
-						cellLog.insert(0, cellOuterMU.toString());
+					muBean.setMU(cellOuter.toToken(), consensusMU);
 
-					cellLog.insert(0, ": ");
-					cellLog.insert(0, cellOuter.toToken());
-
-					if (muBean.refineMU(cellOuter.toToken(), mus)) {
-						if (cellOuterMU != null) {
-							mus.refine(cellOuterMU);
-							Logger.getLogger(FieldSessionBean.class.getName()).log(Level.INFO,
-									"UPDATED: " + cellOuter.toToken() + " old "
-											+ cellOuterMU.toStringWithPrecision(3) + " new "
-											+ mus.toStringWithPrecision(3) + " fguid: " + field.getGuid());
-						} else {
-							Logger.getLogger(FieldSessionBean.class.getName()).log(Level.INFO,
-									"NEW: " + cellOuter.toToken() + " " + mus.toStringWithPrecision(3) + " fguid: "
-											+ field.getGuid());
-						}
-						modifiedCells.add(cellOuter);
+					if (cellOuterMU != null) {
+						Logger.getLogger(FieldSessionBean.class.getName()).log(Level.INFO,
+								"UPDATED CONSENSUS: " + cellOuter.toToken() + " old "
+										+ cellOuterMU.toStringWithPrecision(3) + " new "
+										+ consensusMU.toStringWithPrecision(3) + " fguid: " + field.getGuid());
+					} else {
+						Logger.getLogger(FieldSessionBean.class.getName()).log(Level.INFO,
+								"NEW CONSENSUS: " + cellOuter.toToken() + " " + consensusMU.toStringWithPrecision(3) + " fguid: "
+										+ field.getGuid());
 					}
+					modifiedCells.add(cellOuter);
 
 				} catch (UniformDistributionException ae) {
-					// field error
 					Logger.getLogger(FieldSessionBean.class.getName()).log(Level.WARNING, "Field: " + field.getGuid()
 							+ " Cell: " + cellOuter.toToken() + " MU exception " + ae.getMessage());
-
-					System.out.println(ae.getMessage() + " " + cellLog.toString());
-					// findInvalid(field);
-					// something something, out of range error
-					// mark field as invalid
-					// logic to find invalid field for cell
 				}
-
-				// Logger.getLogger(FieldSessionBean.class.getName()).log(Level.INFO,cellLog.toString());
 			}
-			// em.getTransaction().commit(); // I hope this works.
-
-			// unlock cells
-
-			// it didn't work, it threw some error about being incompatible with JTA
-			// but I really think I need to control the transaction
-
-			StringBuilder fieldLog = new StringBuilder();
 			return modifiedCells;
 
 		} catch (Exception e) {
 			Logger.getLogger(FieldSessionBean.class.getName()).log(Level.SEVERE, null, e);
-
 			System.out.println("processFieldException: " + e.getMessage());
 			e.printStackTrace();
 		}
-
 		return modifiedCells;
 	}
 

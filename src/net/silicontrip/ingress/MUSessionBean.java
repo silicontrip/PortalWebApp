@@ -99,6 +99,18 @@ public class MUSessionBean {
 
 	public void flush() { em.flush(); }
 
+	@TransactionAttribute(TransactionAttributeType.REQUIRES_NEW) 
+	public boolean setMU(String tok, UniformDistribution ud) {
+		CellMUEntity c = getMUEntity(tok);
+		if (c != null) {
+			c.setDistribution(ud);
+		} else {
+			CellMUEntity newMU = new CellMUEntity(tok,ud);
+			em.persist(newMU);
+		}
+		return true;
+	}
+
 	// some sort of lock
 	@Lock(LockType.WRITE)
 	public void createMU (String tok, UniformDistribution ud) throws UniformDistributionException {

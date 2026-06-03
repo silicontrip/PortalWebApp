@@ -146,61 +146,13 @@ public class FieldQueueMDB implements MessageListener {
 								// same geo field with different guid
 								if (fieldBean.muKnownField(fi) == -1) {
 									// validate this field against others.
-									if (fieldBean.disagreements(fi).size() == 0) {
-										// does this field improve (or is unknown) the cell model.
-										if (fieldBean.improvesModel(fi)) {
+									HashSet<S2CellId> disagreements = fieldBean.disagreements(fi);
+									boolean shouldInsert = false;
 
-											Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.INFO,
-													"INSERTING: " + tm);
-
-											dao.insertField(fi.getCreator(),
-													fi.getAgent(),
-													fi.getMU(),
-													fi.getGuid(),
-													fi.getTimestamp(),
-													fi.getTeam(),
-													fi.getPGuid1(),
-													fi.getPLat1(),
-													fi.getPLng1(),
-													fi.getPGuid2(),
-													fi.getPLat2(),
-													fi.getPLng2(),
-													fi.getPGuid3(),
-													fi.getPLat3(),
-													fi.getPLng3(),
-													true);
-											// S2CellUnion fieldCells = getCellsForField(field.getS2Polygon());
-
-											S2CellUnion fieldCells = fi.getCells();
-											fieldsCells.insertCellsForField(fi.getGuid(), fieldCells);
-
-											// fpCache.addFieldGuid(fi.getGuid());
-											// fieldBean.beginProcessing();
-											// Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.INFO,
-											// "PROCESSING FIELD");
-
-											HashSet<S2CellId> updates = fieldBean.processField(fi);
-											// Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.INFO, "CELLS
-											// UPDATED...");
-
-											JSONArray jsoncells = new JSONArray();
-											for (S2CellId cid : updates)
-												jsoncells.put(cid.toToken());
-											Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.INFO,
-													"UPDATED: " + jsoncells.toString());
-											// Now add these to the cell processing queue
-
-										} else {
-											// Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.WARNING, "Does
-											// not improve model: " + fi.getGuid() + " " + fi.getCreator() + " " +
-											// fi.getMU());
-											//
-										}
-									} else {
-										HashSet<S2CellId> cells = fieldBean.disagreements(fi);
+									if (disagreements.size() > 0) {
 										StringBuilder sb = new StringBuilder();
 										boolean first = true;
-										for (S2CellId cell : cells) {
+										for (S2CellId cell : disagreements) {
 											if (!first)
 												sb.append(",");
 											first = false;
@@ -208,7 +160,57 @@ public class FieldQueueMDB implements MessageListener {
 										}
 										Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.WARNING,
 												"Has Disagreements: " + fi.getGuid() + " " + fi.getCreator() + " "
-														+ fi.getMU() + " " + sb.toString());
+														+ fi.getMU() + " " + sb.toString() + " - FORCING INSERT");
+										shouldInsert = true;
+									} else if (fieldBean.improvesModel(fi)) {
+										shouldInsert = true;
+									} else {
+										// Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.WARNING, "Does
+										// not improve model: " + fi.getGuid() + " " + fi.getCreator() + " " +
+										// fi.getMU());
+										//
+									}
+
+									if (shouldInsert) {
+										Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.INFO,
+												"INSERTING: " + tm);
+
+										dao.insertField(fi.getCreator(),
+												fi.getAgent(),
+												fi.getMU(),
+												fi.getGuid(),
+												fi.getTimestamp(),
+												fi.getTeam(),
+												fi.getPGuid1(),
+												fi.getPLat1(),
+												fi.getPLng1(),
+												fi.getPGuid2(),
+												fi.getPLat2(),
+												fi.getPLng2(),
+												fi.getPGuid3(),
+												fi.getPLat3(),
+												fi.getPLng3(),
+												true);
+										// S2CellUnion fieldCells = getCellsForField(field.getS2Polygon());
+
+										S2CellUnion fieldCells = fi.getCells();
+										fieldsCells.insertCellsForField(fi.getGuid(), fieldCells);
+
+										// fpCache.addFieldGuid(fi.getGuid());
+										// fieldBean.beginProcessing();
+										// Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.INFO,
+										// "PROCESSING FIELD");
+
+										HashSet<S2CellId> updates = fieldBean.processField(fi);
+										// Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.INFO, "CELLS
+										// UPDATED...");
+
+										JSONArray jsoncells = new JSONArray();
+										for (S2CellId cid : updates)
+											jsoncells.put(cid.toToken());
+										Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.INFO,
+												"UPDATED: " + jsoncells.toString());
+										// Now add these to the cell processing queue
 									}
 								} else {
 									Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.WARNING, "Already Known: "

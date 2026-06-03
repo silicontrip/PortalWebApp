@@ -234,12 +234,13 @@ public class FieldQueueMDB implements MessageListener {
 			}
 		} catch (JMSException e) {
 			Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.SEVERE, e.getMessage());
-			System.out.println("Error while trying to consume messages: " + e.getMessage());
+			// System.out.println("Error while trying to consume messages: " +
+			// e.getMessage());
 		} catch (Exception e) {
 			Logger.getLogger(FieldQueueMDB.class.getName()).log(Level.SEVERE, e.getMessage());
-			System.out.println("FQB: exception");
-			System.out.println(tm);
-			e.printStackTrace();
+			// System.out.println("FQB: exception");
+			// System.out.println(tm);
+			// e.printStackTrace();
 		}
 	}
 }

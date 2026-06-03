@@ -314,7 +314,7 @@ public class CellDBManager implements CellDBManagerMBean {
 		return missing;
 	}
 
-	private static HashMap<S2CellId, UniformDistribution> agreements(ArrayList<String[]> flist,
+	private HashMap<S2CellId, UniformDistribution> agreements(ArrayList<String[]> flist,
 			HashMap<S2CellId, UniformDistribution> cellw) {
 		ArrayList<String[]> outList = new ArrayList<String[]>();
 		HashMap<S2CellId, UniformDistribution> newCellm = new HashMap<S2CellId, UniformDistribution>(cellw);
@@ -366,15 +366,9 @@ public class CellDBManager implements CellDBManagerMBean {
 				UniformDensityCurve udc = new UniformDensityCurve(bestMUList);
 
 				if (!udc.allValid()) {
-					// as this implementation is non interactive, we should throw at this point and
-					// let the user deal with cleaning up invalid
-					// fields first.
-					System.out.println(io.toToken() + " " + udc.getPeakValue() + " " + udc.getPeakDistribution() + " "
-							+ udc.allValid());
-					// where is the invalid field? there was supposed to be an earth shattering
-					// invalid field
-					throw new ArithmeticException("INVALID FIELD: " + io.toToken() + " " + udc.getPeakValue() + " "
-							+ udc.getPeakDistribution() + " " + udc.allValid());
+					StringBuilder errorDetails = new StringBuilder();
+					appendInvalidFieldTrace(errorDetails, io, udc, bestFieldList, bestMUList, newCellm);
+					throw new ArithmeticException("INVALID FIELD:\n" + errorDetails.toString());
 				}
 
 				UniformDistribution celld = udc.getPeakDistribution();
@@ -458,10 +452,10 @@ public class CellDBManager implements CellDBManagerMBean {
 				UniformDensityCurve udc = new UniformDensityCurve(bestMUList);
 
 				if (!udc.allValid()) {
-					System.out.println(io.toToken() + " " + udc.getPeakValue() + " " + udc.getPeakDistribution() + " "
-							+ udc.allValid());
-					throw new ArithmeticException("INVALID FIELD: " + io.toToken() + " " + udc.getPeakValue() + " "
-							+ udc.getPeakDistribution() + " " + udc.allValid());
+					StringBuilder errorDetails = new StringBuilder();
+					errorDetails.append(diagCell(io.toToken()));
+					appendInvalidFieldTrace(errorDetails, io, udc, bestFieldList, bestMUList, newCellm);
+					throw new ArithmeticException("INVALID FIELD:\n" + errorDetails.toString());
 				}
 
 				UniformDistribution celld = udc.getPeakDistribution();
@@ -545,40 +539,12 @@ public class CellDBManager implements CellDBManagerMBean {
 				// Handle invalid field reporting.
 				if (!udc.allValid()) {
 					StringBuilder errorDetails = new StringBuilder();
-					errorDetails.append("Cell ").append(io.toToken())
-							.append(" (").append(iii).append("/").append(ksn).append("): ")
-							.append(udc.countInvalid()).append(" invalid field(s) detected.\n");
-
-					// Include the cell's current MU value if it exists
-					if (newCellm.containsKey(io)) {
-						errorDetails.append("  Cell MU: ").append(newCellm.get(io)).append("\n");
+					try {
+						errorDetails.append(formatCell(diagCell(io.toToken())));
+						appendInvalidFieldTrace(errorDetails, io, udc, bestFieldList, bestMUList, newCellm);
+					} catch (Exception e) {
+						errorDetails.append("\n[Error appending trace: ").append(e.getMessage()).append("]\n");
 					}
-					errorDetails.append("\n");
-
-					Logger.getLogger(CellDBManager.class.getName()).log(Level.WARNING,
-							"CellDBManager: " + iii + "/" + ksn + " " + io.toToken() + " " + udc.getPeakValue() + " "
-									+ udc.getPeakDistribution() + " " + udc.countInvalid());
-
-					for (int i = 0; i < bestMUList.size(); i++)
-						if (!udc.isValid(bestMUList.get(i))) {
-							String[] f = bestFieldList.get(i);
-							UniformDistribution mu = getEstMu(f, newCellm);
-							long epoch = Integer.toUnsignedLong(Integer.parseInt(f[4]));
-							Date time = new Date(epoch);
-
-							// Build detailed error message for web UI
-							errorDetails.append("  Field GUID: ").append(f[3]).append("\n");
-							errorDetails.append("    Timestamp: ").append(time).append(" (").append(epoch)
-									.append(")\n");
-							errorDetails.append("    Reported MU: ").append(f[2]).append("\n");
-							errorDetails.append("    Calculated MU: ").append(bestMUList.get(i)).append("\n");
-							errorDetails.append("    Estimated MU: ").append(mu).append("\n\n");
-
-							Logger.getLogger(CellDBManager.class.getName()).log(Level.WARNING,
-									"CellDBManager: " + f[3] + " " + time + " (" + epoch + ") " + bestMUList.get(i)
-											+ " est: " + mu + " mu: " + f[2]);
-						}
-
 					throw new ArithmeticException(
 							"Encountered potential Error MU fields:\n\n" + errorDetails.toString());
 				}
@@ -798,13 +764,17 @@ public class CellDBManager implements CellDBManagerMBean {
 						if (!tcid.equals(cid)) {
 							HashMap<S2CellId, Double> intersectionsOuter = fieldIntersections.get(f[3].trim());
 
-							UniformDistribution cmu = cellm.get(tcid)
-									.mul(intersectionsOuter.get(tcid) * 6367.0 * 6367.0);
-							double err = 100.0 * cmu.range() / imu;
-							// sb.append("<b>Cell contribution</b>: " + tcid.toToken() + " range: " + cmu +
-							// " error: "
-							// + cmu.range() + " mu\n");
-							contributions.put(tcid.toToken(), cmu);
+							if (cellm.containsKey(tcid)) {
+								UniformDistribution cmu = cellm.get(tcid)
+										.mul(intersectionsOuter.get(tcid) * 6367.0 * 6367.0);
+								double err = 100.0 * cmu.range() / imu;
+								// sb.append("<b>Cell contribution</b>: " + tcid.toToken() + " range: " + cmu +
+								// " error: "
+								// + cmu.range() + " mu\n");
+								contributions.put(tcid.toToken(), cmu);
+							} else {
+								contributions.put(tcid.toToken(), "[-1,-1]");
+							}
 							// contributions.put("mu",cmu);
 						}
 
@@ -1386,6 +1356,362 @@ public class CellDBManager implements CellDBManagerMBean {
 		}
 
 		return sb.toString();
+	}
+
+	/**
+	 * Field diagnostic: shows the per-cell MU breakdown, estimated total MU,
+	 * reported MU/km², and DrawTools polygon JSON for the given field GUID.
+	 * Mirrors FieldServlet.diag().
+	 */
+	@Override
+	public String diagField(String fieldGuid) {
+		try {
+			HashMap<S2CellId, UniformDistribution> cellm = bdao.readCells();
+			return diagFieldInternal(fieldGuid, cellm);
+		} catch (Exception e) {
+			e.printStackTrace();
+			return new JSONObject()
+					.put("status", "ERROR")
+					.put("message", "diagField failed. " + e.getMessage())
+					.toString();
+		}
+	}
+
+	private String diagFieldInternal(String fieldGuid, HashMap<S2CellId, UniformDistribution> cellm) {
+		try {
+			net.silicontrip.ingress.Field fi = edao.getField(fieldGuid.trim());
+			if (fi == null)
+				return new JSONObject()
+						.put("status", "ERROR")
+						.put("message", "Field not found: " + fieldGuid)
+						.toString();
+
+			String[] fiRow = new String[] {
+					"", "", "" + fi.getMU(), fi.getGuid(), "" + fi.getTimestamp(), fi.getTeam(),
+					fi.getPGuid1(), "" + fi.getPLat1(), "" + fi.getPLng1(),
+					fi.getPGuid2(), "" + fi.getPLat2(), "" + fi.getPLng2(),
+					fi.getPGuid3(), "" + fi.getPLat3(), "" + fi.getPLng3(), "true"
+			};
+			S2Polygon fiPoly = getS2Polygon(fiRow);
+			S2CellUnion cells = getCells(fiPoly);
+			HashMap<S2CellId, Double> intersections = getCellIntersection(cells, fiPoly);
+
+			double fiArea = fiPoly.getArea() * 6367.0 * 6367.0;
+			UniformDistribution estMU = getEstMu(fiRow, cellm);
+
+			JSONObject response = new JSONObject();
+			response.put("guid", fi.getGuid());
+			response.put("mu", fi.getMU());
+			response.put("area", fiArea);
+			response.put("mukm", fi.getMU() / fiArea);
+
+			if (estMU.getUpper() >= Float.MAX_VALUE) {
+				response.put("estimatedMU", "unknown (missing cell data)");
+				response.put("estimatedMUPrecise", "unknown");
+
+			} else {
+				response.put("estimatedMU", estMU.toString());
+				response.put("estimatedMUPrecise", estMU.toStringWithPrecision(3));
+				response.put("gapToPeak", 0.0); // logic placeholder
+			}
+
+			// Per-cell breakdown
+			JSONObject cellBreakdown = new JSONObject();
+			for (S2CellId cid : cells) {
+				double area = intersections.get(cid) * 6367.0 * 6367.0;
+				JSONObject cellEntry = new JSONObject();
+				cellEntry.put("area", area);
+				if (cellm.containsKey(cid)) {
+					UniformDistribution cmu = cellm.get(cid);
+					cellEntry.put("mu", cmu.toString());
+					cellEntry.put("muPrecise", cmu.toStringWithPrecision(3));
+					cellEntry.put("contribution", cmu.mul(area).toString());
+				} else {
+					cellEntry.put("mu", "unknown");
+					cellEntry.put("contribution","unknown");
+				}
+				cellBreakdown.put(cid.toToken(), cellEntry);
+			}
+			response.put("cells", cellBreakdown);
+
+			DrawTools dt = new DrawTools();
+			dt.addField(fiPoly);
+			response.put("drawtools", dt.toString());
+			response.put("intel", dt.asIntelLink());
+
+			return response.toString(2);
+
+		} catch (Exception e) {
+			e.printStackTrace();
+			return new JSONObject()
+					.put("status", "ERROR")
+					.put("message", "diagField failed. " + e.getMessage())
+					.toString();
+		}
+	}
+
+
+/*
+    {
+      "drawtools": "[{\"latLngs\":[{\"lng\":144.881351,\"lat\":-37.804435000000005},{\"lng\":144.856412,\"lat\":-37.792061},{\"lng\":144.86275899999998,\"lat\":-37.796153}],\"color\":\"#a24ac3\",\"type\":\"polygon\"}]",
+      "remainingMUPerKmPrecise": "1379.077 +/- 17.987",
+      "fieldArea": 0.11460113837924352,
+      "guid": "943d20d1cdc142009b1424ccbb0d8b66.b",
+      "mukm": 1369.968939404844,
+      "reportedMU": 157,
+      "intel": "https://intel.ingress.com/?pls=-37.804435,144.881351,-37.792061,144.856412_-37.792061,144.856412,-37.796153,144.862759_-37.796153,144.862759,-37.804435,144.881351&ll=-37.797550,144.866841",
+      "remainingMUPerKm": "[1361.090393794535,1397.0636981777784]"
+    },
+*/
+
+	private static String formatCell(String diag)
+	{
+		StringBuilder sb = new StringBuilder();
+
+		try {
+			JSONObject cd = new JSONObject(diag);
+			sb.append(cd.getString("cellid")).append(" ").append(cd.getString("cellMU")).append("\n");
+			JSONArray fields = cd.getJSONArray("fields");
+			for (Object o : fields)
+			{
+				JSONObject fi = (JSONObject)o;
+				sb.append(fi.getString("guid")).append(" MU: ").append(fi.getInt("reportedMU"))
+					.append(" area: ").append(fi.getFloat("fieldArea"))
+					.append(" mukm: ").append(fi.getFloat("mukm")).append("\n");
+					
+				sb.append(fi.getString("drawtools")).append("\n");
+				sb.append("\n");
+			}
+		} catch (Exception e) {
+			sb.append( "Unable to decode cell diag: ") .append(e.getMessage()).append("\n");
+		}
+		return sb.toString();
+	}
+
+	/**
+	 * Cell diagnostic: lists all fields that cover the given cell token,
+	 * showing each field's reported MU, remaining MU/km² implied for this cell,
+	 * field area, and the cell's current DB MU.
+	 * Mirrors FieldServlet.celldiag().
+	 */
+	@Override
+	public String diagCell(String cellToken) {
+		try {
+			S2CellId cid = S2CellId.fromToken(cellToken.trim());
+			HashMap<S2CellId, UniformDistribution> cellm = bdao.readCells();
+
+			ArrayList<String> fieldGuids = edao.fieldGuidsForCell(cid);
+			ArrayList<String[]> flist = bdao.getFieldsForGuid(fieldGuids);
+			populate(flist);
+
+			JSONObject response = new JSONObject();
+			response.put("cellid", cellToken);
+
+			if (cellm.containsKey(cid)) {
+				UniformDistribution dbmu = cellm.get(cid);
+				response.put("cellMU", dbmu.toString());
+				response.put("cellMUPrecise", dbmu.toStringWithPrecision(3));
+			} else {
+				response.put("cellMU", "unknown");
+			}
+
+			JSONArray fields = new JSONArray();
+			for (String[] f : flist) {
+				String guid = f[3].trim();
+				S2CellUnion fieldCells = fieldUnion.get(guid);
+				if (fieldCells == null)
+					continue;
+				HashMap<S2CellId, Double> intersections = fieldIntersections.get(guid);
+
+				UniformDistribution muError = makeDist(f[2]);
+				muError = remaining(fieldCells, cid, cellm, intersections, muError);
+				double area = intersections.get(cid) * 6367.0 * 6367.0;
+				muError = muError.div(area);
+
+				S2Polygon fpoly = getS2Polygon(f);
+				double fieldArea = fpoly.getArea() * 6367.0 * 6367.0;
+				DrawTools dt = new DrawTools();
+				dt.addField(fpoly);
+
+				JSONObject field = new JSONObject();
+				field.put("guid", guid);
+				field.put("reportedMU", Integer.parseInt(f[2].trim()));
+				field.put("fieldArea", fieldArea);
+				field.put("mukm", Integer.parseInt(f[2].trim()) / fieldArea);
+				field.put("remainingMUPerKm", muError.toString());
+				field.put("remainingMUPerKmPrecise", muError.toStringWithPrecision(3));
+				field.put("drawtools", dt.toString());
+				field.put("intel", dt.asIntelLink());
+				fields.put(field);
+			}
+			response.put("fields", fields);
+			return response.toString(2);
+
+		} catch (Exception e) {
+			e.printStackTrace();
+			return "ERROR: diagCell failed. " + e.getMessage();
+		}
+	}
+
+	private static String formatTrace(String result) {
+		JSONObject json = new JSONObject(result);
+		StringBuilder sb = new StringBuilder();
+		for (Object o : json.getJSONArray("fields")) {
+			JSONObject fi = (JSONObject) o;
+			sb.append("GUID: " + fi.getString("guid") + "\n");
+			UniformDistribution mu = null;
+			try {
+				mu = new UniformDistribution(fi.getString("mu"));
+			} catch (Exception e) {
+				mu = new UniformDistribution(0, 0);
+			}
+			sb.append("MU: " + fi.getInt("imu") + " Scaled MU: " + mu + " : " + mu.toStringWithPrecision(3) + "\n");
+			sb.append("area: " + fi.getFloat("area") + " mukm: " + fi.getFloat("mukm") + "\n");
+			sb.append(fi.getString("drawtools") + "\n\n");
+		}
+		return sb.toString();
+	}
+
+	/**
+	 * Targeted standalone single-field processing. Calculates the potential MU
+	 * contribution
+	 * for each cell covered by this field. Updates the cellmu table and returns a
+	 * JSON report.
+	 */
+	@Override
+	public String processField(String fieldGuid) {
+		try {
+			net.silicontrip.ingress.Field fi = edao.getField(fieldGuid.trim());
+			if (fi == null)
+				return new JSONObject()
+						.put("status", "ERROR")
+						.put("message", "Field not found: " + fieldGuid)
+						.toString();
+
+			HashMap<S2CellId, UniformDistribution> cellm = bdao.readCells();
+
+			String[] fiRow = new String[] {
+					"", "", "" + fi.getMU(), fi.getGuid(), "" + fi.getTimestamp(), fi.getTeam(),
+					fi.getPGuid1(), "" + fi.getPLat1(), "" + fi.getPLng1(),
+					fi.getPGuid2(), "" + fi.getPLat2(), "" + fi.getPLng2(),
+					fi.getPGuid3(), "" + fi.getPLat3(), "" + fi.getPLng3(), "true"
+			};
+
+			S2Polygon targetPoly = getS2Polygon(fiRow);
+			S2CellUnion targetCells = getCells(targetPoly);
+			HashMap<S2CellId, Double> intersections = getCellIntersection(targetCells, targetPoly);
+
+			JSONObject response = new JSONObject();
+			response.put("guid", fi.getGuid());
+			response.put("mu", fi.getMU());
+
+			JSONArray cellResults = new JSONArray();
+			HashMap<S2CellId, UniformDistribution> toWrite = new HashMap<>();
+
+			for (S2CellId cid : targetCells) {
+				UniformDistribution muError = makeDist("" + fi.getMU());
+				// Account for other cells in this same field - standalone behavior
+				if (targetCells.size() > 1) {
+					muError.setLower(0.0);
+				}
+
+				double area = intersections.get(cid) * 6367.0 * 6367.0;
+				if (area > 1e-9) {
+					muError = muError.div(area);
+				} else {
+					continue;
+				}
+
+				toWrite.put(cid, muError);
+
+				JSONObject cr = new JSONObject();
+				cr.put("cellid", cid.toToken());
+				cr.put("mu", muError.toString());
+				cr.put("muPrecise", muError.toStringWithPrecision(3));
+				cellResults.put(cr);
+			}
+
+			if (!toWrite.isEmpty())
+				bdao.upsertCells(toWrite);
+
+			response.put("cells", cellResults);
+			response.put("updatedCount", toWrite.size());
+
+			LOGGER.log(Level.INFO,
+					"processField standalone for " + fi.getGuid() + ": " + toWrite.size() + " cells updated.");
+			return response.toString(2);
+
+		} catch (Exception e) {
+			e.printStackTrace();
+			try {
+				return new JSONObject()
+						.put("status", "ERROR")
+						.put("message", "processField failed: " + e.getMessage())
+						.toString();
+			} catch (Exception ex) {
+				return new JSONObject()
+						.put("status", "ERROR")
+						.put("message", "processField failed: " + e.getMessage())
+						.toString();
+			}
+		}
+	}
+
+	private void appendInvalidFieldTrace(StringBuilder errorDetails, S2CellId io, UniformDensityCurve udc,
+			java.util.ArrayList<String[]> bestFieldList, java.util.ArrayList<UniformDistribution> bestMUList,
+			java.util.HashMap<S2CellId, UniformDistribution> newCellm) {
+		errorDetails.append("Cell ").append(io.toToken())
+				.append(": ").append(udc.countInvalid()).append(" invalid field(s) detected.\n");
+		errorDetails.append("  peakDist=").append(udc.getPeakDistribution())
+				.append(" peakWidth=").append(udc.getPeakDistribution().range()).append("\n");
+
+		errorDetails.append("\n  Invalid Fields:\n");
+		for (int i = 0; i < bestMUList.size(); i++) {
+			if (!udc.isValid(bestMUList.get(i))) {
+				String[] f = bestFieldList.get(i);
+				UniformDistribution tmu = bestMUList.get(i);
+				errorDetails.append("    - GUID: ").append(f[3].trim())
+						.append(" | Reported MU: ").append(f[2].trim())
+						.append(" | Cell Calculated MU: ").append(tmu)
+						.append("\n");
+				String diagField = diagFieldInternal(f[3].trim(), newCellm);
+				JSONObject dfi = new JSONObject(diagField);
+				errorDetails.append("Est MU: ").append(dfi.getString("estimatedMUPrecise"))
+					.append(" area: ").append(dfi.getFloat("area")).append(" mukm: ").append(dfi.getFloat("mukm"))
+					.append("\n");
+				errorDetails.append(dfi.getString("drawtools")).append("\n");
+				for (String celtok : dfi.getJSONObject("cells").keySet()) {
+					JSONObject cell = dfi.getJSONObject("cells").getJSONObject(celtok);
+					errorDetails.append("  Cell ").append(celtok).append(": ")
+							.append(cell.getString("mu")).append(" x ")
+							.append(cell.getFloat("area")).append(" = ");
+					
+					errorDetails.append(cell.getString("contribution"));
+					errorDetails.append("\n");
+				}
+				errorDetails.append("\n");
+			}
+		}
+		errorDetails.append("\n  Valid Fields:\n");
+		for (int i = 0; i < bestMUList.size(); i++) {
+			if (udc.isValid(bestMUList.get(i))) {
+				String[] f = bestFieldList.get(i);
+				UniformDistribution tmu = bestMUList.get(i);
+				errorDetails.append("    - GUID: ").append(f[3].trim())
+						.append(" | Reported MU: ").append(f[2].trim())
+						.append(" | Cell Calculated MU: ").append(tmu).append("\n");
+			}
+		}
+		/*
+		 * errorDetails.append("\n=== FULL CELL TRACE (JSON) ===\n");
+		 * try {
+		 * errorDetails.append(formatTrace(traceCell(io.toToken())));
+		 * } catch (Exception e) {
+		 * errorDetails.append("Failed to generate cell trace: ").append(e.getMessage())
+		 * ;
+		 * }
+		 */
+		errorDetails.append("\n==============================\n");
 	}
 
 }

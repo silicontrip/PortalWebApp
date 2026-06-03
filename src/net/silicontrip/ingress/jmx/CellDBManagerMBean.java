@@ -76,4 +76,17 @@ public interface CellDBManagerMBean {
     // Add any other methods you want to expose here...
     // public int getCachedCellCount();
     // public void clearCache();
+
+    /** Field diagnostic: per-cell MU breakdown + DrawTools JSON for a field GUID */
+    public String diagField(String fieldGuid);
+
+    /** Cell diagnostic: lists all fields over a cell token with MU and MU/km² */
+    public String diagCell(String cellToken);
+
+    /**
+     * For each cell covered by the given field GUID, runs the full UDC analysis
+     * showing which other fields agree (are in the peak) and which conflict
+     * (are outliers), with DrawTools links for the conflicting fields.
+     */
+    public String processField(String fieldGuid);
 }

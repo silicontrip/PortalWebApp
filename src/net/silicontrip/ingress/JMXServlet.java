@@ -343,6 +343,106 @@ public class JMXServlet extends HttpServlet {
 				writer.println("<div class=\"control\">");
 				writer.println("<p>" + result + "</p>");
 				writer.println("</div>");
+			} else if (action.equals("diag-field")) {
+				String fieldguid = req.getParameter("fieldguid");
+				writer.println("<div class=\"title\">");
+				writer.println("<h1>Field Diagnostic: " + fieldguid + "</h1>");
+				writer.println("</div>");
+				writer.println("<div class=\"control\">");
+				Object[] par = { fieldguid };
+				String[] sig = { "java.lang.String" };
+				String result = callCellDBManager("diagField", par, sig);
+				if (result.startsWith("ERROR")) {
+					writer.println("<p>" + result + "</p>");
+				} else {
+					JSONObject json = new JSONObject(result);
+					writer.println("<p>GUID: " + json.getString("guid") + "</p>");
+					writer.println("<p>Reported MU: " + json.getInt("mu") + "</p>");
+					writer.println("<p>Area: " + json.getDouble("area") + " km²</p>");
+					writer.println("<p>MU/km²: " + json.getDouble("mukm") + "</p>");
+					writer.println("<p>Estimated MU: " + json.get("estimatedMU") + "</p>");
+					if (json.has("estimatedMUPrecise"))
+						writer.println("<p>Estimated MU (precise): " + json.getString("estimatedMUPrecise") + "</p>");
+					writer.println("<h2>Cells</h2>");
+					JSONObject cells = json.getJSONObject("cells");
+					for (String cellid : cells.keySet()) {
+						JSONObject cell = cells.getJSONObject(cellid);
+						writer.println("<p>" + cellid + " area=" + cell.getDouble("area")
+								+ " mu=" + cell.get("mu")
+								+ (cell.has("muPrecise") ? " (" + cell.getString("muPrecise") + ")" : "")
+								+ (cell.has("contribution") ? " contrib=" + cell.getString("contribution") : "")
+								+ "</p>");
+					}
+					writer.println("<h2>Visualise</h2>");
+					writer.println("<p>" + json.getString("drawtools") + "</p>");
+					writer.println("<p>" + json.getString("intel") + "</p>");
+				}
+				writer.println("</div>");
+			} else if (action.equals("diag-cell")) {
+				String cellid = req.getParameter("cellid");
+				writer.println("<div class=\"title\">");
+				writer.println("<h1>Cell Diagnostic: " + cellid + "</h1>");
+				writer.println("</div>");
+				writer.println("<div class=\"control\">");
+				Object[] par = { cellid };
+				String[] sig = { "java.lang.String" };
+				String result = callCellDBManager("diagCell", par, sig);
+				if (result.startsWith("ERROR")) {
+					writer.println("<p>" + result + "</p>");
+				} else {
+					JSONObject json = new JSONObject(result);
+					writer.println("<p>Cell: " + json.getString("cellid") + "</p>");
+					writer.println("<p>Cell MU (db): " + json.get("cellMU")
+							+ (json.has("cellMUPrecise") ? " (" + json.getString("cellMUPrecise") + ")" : "") + "</p>");
+					writer.println("<h2>Fields</h2>");
+					for (Object o : json.getJSONArray("fields")) {
+						JSONObject fi = (JSONObject) o;
+						writer.println("<p>GUID: " + fi.getString("guid") + "</p>");
+						writer.println("<p>&nbsp;&nbsp;Reported MU: " + fi.getInt("reportedMU")
+								+ " area: " + fi.getDouble("fieldArea")
+								+ " km² MU/km²: " + fi.getDouble("mukm") + "</p>");
+						writer.println("<p>&nbsp;&nbsp;Remaining MU/km² for cell: " + fi.getString("remainingMUPerKm")
+								+ " (" + fi.getString("remainingMUPerKmPrecise") + ")</p>");
+						writer.println("<p>" + fi.getString("drawtools") + "</p>");
+						writer.println("<p>" + fi.getString("intel") + "</p>");
+					}
+				}
+				writer.println("</div>");
+			} else if (action.equals("process-field")) {
+				String fieldguid = req.getParameter("fieldguid");
+				writer.println("<div class=\"title\">");
+				writer.println("<h1>Process Field: " + fieldguid + "</h1>");
+				writer.println("</div>");
+				writer.println("<div class=\"control\">");
+				Object[] par = { fieldguid };
+				String[] sig = { "java.lang.String" };
+				String result = callCellDBManager("processField", par, sig);
+				if (result.startsWith("ERROR")) {
+					writer.println("<p>" + result + "</p>");
+				} else {
+					try {
+						JSONObject json = new JSONObject(result);
+						if (json.has("status") && json.getString("status").equals("ERROR")) {
+							writer.println("<p>ERROR: " + json.getString("message") + "</p>");
+						} else {
+							writer.println("<p>GUID: " + json.getString("guid") + "</p>");
+							writer.println("<p>Reported MU: " + json.getInt("mu") + "</p>");
+							writer.println("<p>Cells updated: " + json.getInt("updatedCount") + "</p>");
+							writer.println("<h2>Cell Results</h2>");
+							JSONArray cellResults = json.getJSONArray("cells");
+							writer.println("<ul>");
+							for (int i = 0; i < cellResults.length(); i++) {
+								JSONObject cell = cellResults.getJSONObject(i);
+								writer.println("<li><b>" + cell.getString("cellid") + "</b>: "
+										+ cell.getString("muPrecise") + " (" + cell.getString("mu") + ")</li>");
+							}
+							writer.println("</ul>");
+						}
+					} catch (Exception e) {
+						writer.println("<pre>" + result + "</pre>");
+					}
+				}
+				writer.println("</div>");
 			} else {
 				writer.println("<div class=\"title\">");
 				writer.println("<h1>?UNKNOWN ACTION.</h1>");
@@ -456,6 +556,38 @@ public class JMXServlet extends HttpServlet {
 			writer.println("<input type='text' name='cellid'>");
 			writer.println("<input type='hidden' name='action' value='trace'>");
 			writer.println("<input type='submit' value='Trace'>");
+			writer.println("</form>");
+			writer.println("</div>");
+
+			writer.println("<div class=\"control\">");
+			writer.println("<h1>DIAG FIELD</h1>");
+			writer.println(
+					"<p>Enter a field GUID to show its per-cell MU breakdown and DrawTools visualisation link.</p>");
+			writer.println("<form method='POST' action='jarvis'>");
+			writer.println("<input type='text' name='fieldguid'>");
+			writer.println("<input type='hidden' name='action' value='diag-field'>");
+			writer.println("<input type='submit' value='Diag Field'>");
+			writer.println("</form>");
+			writer.println("</div>");
+
+			writer.println("<div class=\"control\">");
+			writer.println("<h1>DIAG CELL</h1>");
+			writer.println("<p>Enter a cell token to list all contributing fields and their implied MU/km².</p>");
+			writer.println("<form method='POST' action='jarvis'>");
+			writer.println("<input type='text' name='cellid'>");
+			writer.println("<input type='hidden' name='action' value='diag-cell'>");
+			writer.println("<input type='submit' value='Diag Cell'>");
+			writer.println("</form>");
+			writer.println("</div>");
+
+			writer.println("<div class=\"control\">");
+			writer.println("<h1>PROCESS FIELD</h1>");
+			writer.println(
+					"<p>Enter a field GUID to analyse each cell it covers, showing which other fields agree or conflict, with DrawTools visualisation for conflicting fields.</p>");
+			writer.println("<form method='POST' action='jarvis'>");
+			writer.println("<input type='text' name='fieldguid'>");
+			writer.println("<input type='hidden' name='action' value='process-field'>");
+			writer.println("<input type='submit' value='Process Field'>");
 			writer.println("</form>");
 			writer.println("</div>");
 

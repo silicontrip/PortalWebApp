@@ -368,7 +368,7 @@ public class CellDBManager implements CellDBManagerMBean {
 				if (!udc.allValid()) {
 					StringBuilder errorDetails = new StringBuilder();
 					appendInvalidFieldTrace(errorDetails, io, udc, bestFieldList, bestMUList, newCellm);
-					throw new ArithmeticException("INVALID FIELD:\n" + errorDetails.toString());
+					Logger.getLogger(CellDBManager.class.getName()).log(Level.WARNING, "INVALID FIELD encountered, relying on consensus peak:\n" + errorDetails.toString());
 				}
 
 				UniformDistribution celld = udc.getPeakDistribution();
@@ -455,7 +455,7 @@ public class CellDBManager implements CellDBManagerMBean {
 					StringBuilder errorDetails = new StringBuilder();
 					errorDetails.append(diagCell(io.toToken()));
 					appendInvalidFieldTrace(errorDetails, io, udc, bestFieldList, bestMUList, newCellm);
-					throw new ArithmeticException("INVALID FIELD:\n" + errorDetails.toString());
+					Logger.getLogger(CellDBManager.class.getName()).log(Level.WARNING, "INVALID FIELD encountered, relying on consensus peak:\n" + errorDetails.toString());
 				}
 
 				UniformDistribution celld = udc.getPeakDistribution();
@@ -545,8 +545,8 @@ public class CellDBManager implements CellDBManagerMBean {
 					} catch (Exception e) {
 						errorDetails.append("\n[Error appending trace: ").append(e.getMessage()).append("]\n");
 					}
-					throw new ArithmeticException(
-							"Encountered potential Error MU fields:\n\n" + errorDetails.toString());
+					Logger.getLogger(CellDBManager.class.getName()).log(Level.WARNING, 
+							"Encountered potential Error MU fields, relying on consensus peak:\n\n" + errorDetails.toString());
 				}
 				try {
 					UniformDistribution ud = udc.getPeakDistribution();

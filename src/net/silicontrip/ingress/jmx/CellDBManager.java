@@ -12,9 +12,12 @@ import jakarta.annotation.PreDestroy;
 
 import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -453,7 +456,6 @@ public class CellDBManager implements CellDBManagerMBean {
 
 				if (!udc.allValid()) {
 					StringBuilder errorDetails = new StringBuilder();
-					errorDetails.append(diagCell(io.toToken()));
 					appendInvalidFieldTrace(errorDetails, io, udc, bestFieldList, bestMUList, newCellm);
 					Logger.getLogger(CellDBManager.class.getName()).log(Level.WARNING, "INVALID FIELD encountered, relying on consensus peak:\n" + errorDetails.toString());
 				}
@@ -488,6 +490,10 @@ public class CellDBManager implements CellDBManagerMBean {
 
 		HashMap<S2CellId, Integer> updateCounts = new HashMap<S2CellId, Integer>();
 
+		HashMap<S2CellId, Integer> errorCells = new HashMap<S2CellId, Integer>();
+		HashMap<String, Integer> errorFields = new HashMap<String, Integer>();
+
+
 		int iterations = 0;
 		int count;
 
@@ -505,12 +511,54 @@ public class CellDBManager implements CellDBManagerMBean {
 			// Update progress
 			refineCellsProgress = iterations;
 			refineCellsTotal = ksn;
-			refineCellsStatus = "Processing iteration " + iterations + ", analyzing " + ksn + " cells...";
+			//refineCellsStatus = "Processing iteration " + iterations + ", analyzing " + ksn + " cells...";
+
+			StringBuilder rcs = new StringBuilder();
+			rcs.append("Refining cell model - iteration " + iterations + ", analyzing " + ksn + " cells...\n");
+
+			Object[] fe = errorFields.entrySet().toArray();
+			Arrays.sort(fe, new Comparator() {
+				public int compare(Object o1, Object o2) {
+					return ((Map.Entry<String, Integer>) o2).getValue()
+							.compareTo(((Map.Entry<String, Integer>) o1).getValue());
+				}
+			});
+			for (Object f : fe) {
+				Map.Entry<String, Integer> entry = (Map.Entry<String, Integer>) f;
+				rcs.append("Field " + entry.getKey() + " has " + entry.getValue() + " errors.\n");
+			}
+
+			Object[] ce = errorCells.entrySet().toArray();
+			Arrays.sort(ce, new Comparator() {
+				public int compare(Object o1, Object o2) {
+					return ((Map.Entry<S2CellId, Integer>) o2).getValue()
+							.compareTo(((Map.Entry<S2CellId, Integer>) o1).getValue());
+				}
+			});
+			for (Object c : ce) {
+				Map.Entry<S2CellId, Integer> entry = (Map.Entry<S2CellId, Integer>) c;
+				rcs.append("Cell " + entry.getKey().toToken() + " has " + entry.getValue() + " errors.\n");
+			}
+
+			Object[] ue = updateCounts.entrySet().toArray();
+			Arrays.sort(ue, new Comparator() {
+				public int compare(Object o1, Object o2) {
+					return ((Map.Entry<S2CellId, Integer>) o2).getValue()
+							.compareTo(((Map.Entry<S2CellId, Integer>) o1).getValue());
+				}
+			});
+			for (Object u : ue) {
+				Map.Entry<S2CellId, Integer> entry = (Map.Entry<S2CellId, Integer>) u;
+				rcs.append("Cell " + entry.getKey().toToken() + " has " + entry.getValue() + " updates " + newCellm.get(entry.getKey()).toString() + "\n");
+			}
+
+			refineCellsStatus = rcs.toString();
 
 			for (int iii = 0; iii < ksn; iii++) {
 				// Check for cancellation periodically
 				if (refineCellsCancelled) {
-					throw new RuntimeException("Refinement cancelled by user");
+					return newCellm;
+					//throw new RuntimeException("Refinement cancelled by user");
 				}
 
 				S2CellId io = keys.get(iii);
@@ -538,15 +586,26 @@ public class CellDBManager implements CellDBManagerMBean {
 
 				// Handle invalid field reporting.
 				if (!udc.allValid()) {
-					StringBuilder errorDetails = new StringBuilder();
-					try {
-						errorDetails.append(formatCell(diagCell(io.toToken())));
-						appendInvalidFieldTrace(errorDetails, io, udc, bestFieldList, bestMUList, newCellm);
-					} catch (Exception e) {
-						errorDetails.append("\n[Error appending trace: ").append(e.getMessage()).append("]\n");
+					for (int i = 0; i < bestMUList.size(); i++) {
+						if (!udc.isValid(bestMUList.get(i))) {
+							String[] f = bestFieldList.get(i);
+							if (!errorFields.containsKey(f[3].trim())) {
+								errorFields.put(f[3].trim(), 1);
+							} else {
+								errorFields.put(f[3].trim(), errorFields.get(f[3].trim()) + 1);
+							}
+						}
 					}
-					Logger.getLogger(CellDBManager.class.getName()).log(Level.WARNING, 
-							"Encountered potential Error MU fields, relying on consensus peak:\n\n" + errorDetails.toString());
+					if(!errorCells.containsKey(io)) {
+						errorCells.put(io, 1);
+					} else {
+						errorCells.put(io, errorCells.get(io) + 1);
+					}
+					//StringBuilder errorDetails = new StringBuilder();
+					//appendInvalidFieldTrace(errorDetails, io, udc, bestFieldList, bestMUList, newCellm);
+					//Logger.getLogger(CellDBManager.class.getName()).log(Level.WARNING, 
+					//		"Encountered potential Error MU fields, relying on consensus peak:\n\n" + errorDetails.toString());
+					
 				}
 				try {
 					UniformDistribution ud = udc.getPeakDistribution();
@@ -1662,56 +1721,13 @@ public class CellDBManager implements CellDBManagerMBean {
 			java.util.HashMap<S2CellId, UniformDistribution> newCellm) {
 		errorDetails.append("Cell ").append(io.toToken())
 				.append(": ").append(udc.countInvalid()).append(" invalid field(s) detected.\n");
-		errorDetails.append("  peakDist=").append(udc.getPeakDistribution())
-				.append(" peakWidth=").append(udc.getPeakDistribution().range()).append("\n");
-
-		errorDetails.append("\n  Invalid Fields:\n");
+		errorDetails.append("  Invalid Fields:\n");
 		for (int i = 0; i < bestMUList.size(); i++) {
 			if (!udc.isValid(bestMUList.get(i))) {
 				String[] f = bestFieldList.get(i);
-				UniformDistribution tmu = bestMUList.get(i);
-				errorDetails.append("    - GUID: ").append(f[3].trim())
-						.append(" | Reported MU: ").append(f[2].trim())
-						.append(" | Cell Calculated MU: ").append(tmu)
-						.append("\n");
-				String diagField = diagFieldInternal(f[3].trim(), newCellm);
-				JSONObject dfi = new JSONObject(diagField);
-				errorDetails.append("Est MU: ").append(dfi.getString("estimatedMUPrecise"))
-					.append(" area: ").append(dfi.getFloat("area")).append(" mukm: ").append(dfi.getFloat("mukm"))
-					.append("\n");
-				errorDetails.append(dfi.getString("drawtools")).append("\n");
-				for (String celtok : dfi.getJSONObject("cells").keySet()) {
-					JSONObject cell = dfi.getJSONObject("cells").getJSONObject(celtok);
-					errorDetails.append("  Cell ").append(celtok).append(": ")
-							.append(cell.getString("mu")).append(" x ")
-							.append(cell.getFloat("area")).append(" = ");
-					
-					errorDetails.append(cell.getString("contribution"));
-					errorDetails.append("\n");
-				}
-				errorDetails.append("\n");
+				errorDetails.append("    - GUID: ").append(f[3].trim()).append("\n");
 			}
 		}
-		errorDetails.append("\n  Valid Fields:\n");
-		for (int i = 0; i < bestMUList.size(); i++) {
-			if (udc.isValid(bestMUList.get(i))) {
-				String[] f = bestFieldList.get(i);
-				UniformDistribution tmu = bestMUList.get(i);
-				errorDetails.append("    - GUID: ").append(f[3].trim())
-						.append(" | Reported MU: ").append(f[2].trim())
-						.append(" | Cell Calculated MU: ").append(tmu).append("\n");
-			}
-		}
-		/*
-		 * errorDetails.append("\n=== FULL CELL TRACE (JSON) ===\n");
-		 * try {
-		 * errorDetails.append(formatTrace(traceCell(io.toToken())));
-		 * } catch (Exception e) {
-		 * errorDetails.append("Failed to generate cell trace: ").append(e.getMessage())
-		 * ;
-		 * }
-		 */
-		errorDetails.append("\n==============================\n");
 	}
 
 }

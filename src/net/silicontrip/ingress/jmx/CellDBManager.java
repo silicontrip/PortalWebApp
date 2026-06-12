@@ -1277,6 +1277,204 @@ public class CellDBManager implements CellDBManagerMBean {
 		return "";
 	}
 
+	@Override
+	public String exportCells() {
+		try {
+			HashMap<S2CellId, UniformDistribution> cellm = bdao.readCells();
+			StringBuilder sb = new StringBuilder();
+			for (Map.Entry<S2CellId, UniformDistribution> entry : cellm.entrySet()) {
+				S2CellId cid = entry.getKey();
+				UniformDistribution ud = entry.getValue();
+				sb.append(cid.toToken())
+				  .append("|").append(ud.getLower())
+				  .append("|").append(ud.getUpper())
+				  .append("|").append(ud.mean())
+				  .append("\n");
+			}
+			return sb.toString();
+		} catch (Exception e) {
+			Logger.getLogger(CellDBManager.class.getName()).log(Level.SEVERE, "Failed to export cells", e);
+		}
+		return "";
+	}
+
+	@Override
+	public String pruneFields() {
+		StringBuilder sb = new StringBuilder();
+		try {
+			long startTime = System.currentTimeMillis();
+			Logger.getLogger(CellDBManager.class.getName()).log(Level.INFO, "Starting pruneFields()...");
+			
+			ArrayList<String[]> allFields = bdao.readValidFields();
+			sb.append("Read ").append(allFields.size()).append(" valid fields for pruning.\n");
+
+			// Phase 1: Iterative Build Pruning (Spanning Tree)
+			HashSet<String> keptFieldGuids = new HashSet<>();
+			HashMap<S2CellId, UniformDistribution> localCellm = new HashMap<>();
+			
+			int count;
+			int iteration = 0;
+			do {
+				count = localCellm.size();
+				iteration++;
+				
+				HashMap<S2CellId, HashSet<String[]>> localCellField = new HashMap<>();
+				for (String[] field : allFields) {
+					S2Polygon s2polyOuter = getS2Polygon(field);
+					S2CellUnion cellsOuter = getCells(s2polyOuter);
+					if (countMissingCells(cellsOuter, localCellm) == 1) {
+						S2CellId analyseId = getMissingCell(cellsOuter, localCellm);
+						if (!localCellField.containsKey(analyseId)) {
+							localCellField.put(analyseId, new HashSet<String[]>());
+						}
+						localCellField.get(analyseId).add(field);
+					}
+				}
+
+				for (S2CellId io : localCellField.keySet()) {
+					ArrayList<String[]> bestFieldList = new ArrayList<>();
+					ArrayList<UniformDistribution> bestMUList = new ArrayList<>();
+
+					for (String[] ii : localCellField.get(io)) {
+						S2Polygon s2polyOuter = getS2Polygon(ii);
+						S2CellUnion cellsOuter = getCells(s2polyOuter);
+						HashMap<S2CellId, Double> intersectionsOuter = getCellIntersection(cellsOuter, s2polyOuter);
+						UniformDistribution muOuterError = makeDist(ii[2]);
+
+						muOuterError = remaining(cellsOuter, io, localCellm, intersectionsOuter, muOuterError);
+						double areaOuter = intersectionsOuter.get(io) * 6367.0 * 6367.0;
+						muOuterError = muOuterError.div(areaOuter);
+
+						bestFieldList.add(ii);
+						bestMUList.add(muOuterError);
+					}
+
+					UniformDensityCurve udc = new UniformDensityCurve(bestMUList);
+					UniformDistribution celld = udc.getPeakDistribution();
+					
+					try {
+						celld.clampLower(0.0);
+						celld.clampUpper(1000000.0);
+						localCellm.put(io, celld);
+						
+						double peakMean = celld.mean();
+						double bestDiff = Double.MAX_VALUE;
+						String bestGuid = null;
+						
+						for (int k = 0; k < bestMUList.size(); k++) {
+							if (udc.isPeak(bestMUList.get(k))) {
+								double diff = Math.abs(bestMUList.get(k).mean() - peakMean);
+								if (diff < bestDiff) {
+									bestDiff = diff;
+									bestGuid = bestFieldList.get(k)[3].trim();
+								}
+							}
+						}
+						if (bestGuid != null) {
+							keptFieldGuids.add(bestGuid);
+						}
+
+					} catch (UniformDistributionException e) {
+						System.err.println("Clamp EXCEPTION in prune build. " + celld);
+					}
+				}
+			} while (count != localCellm.size());
+
+			sb.append("Phase 1 complete. Iterations: ").append(iteration)
+			  .append(". Base cell map anchored: ").append(localCellm.size())
+			  .append(". Kept base field anchors: ").append(keptFieldGuids.size()).append("\n");
+
+			// Phase 2: Refinement Anchor
+			HashMap<S2CellId, UniformDistribution> refinedCellm = bdao.readCells(); 
+			refinedCellm = refineFieldCells(allFields, refinedCellm); 
+			sb.append("Phase 2 complete. Max precision refined.\n");
+
+			// Phase 3: Precision Prune
+			populate(allFields); // Populate class-level fieldUnion, fieldIntersections, cellField
+			
+			int precisionAnchorsAdded = 0;
+			for (S2CellId io : refinedCellm.keySet()) {
+				if (!this.cellField.containsKey(io) || this.cellField.get(io) == null) continue;
+				
+				ArrayList<String[]> bestFieldList = new ArrayList<>();
+				ArrayList<UniformDistribution> bestMUList = new ArrayList<>();
+				
+				for (String[] ii : this.cellField.get(io)) { 
+					String guidOuter = ii[3].trim();
+					S2CellUnion cellsOuter = fieldUnion.get(guidOuter);
+					HashMap<S2CellId, Double> intersectionsOuter = fieldIntersections.get(guidOuter);
+					UniformDistribution muOuterError = makeDist(ii[2]);
+					muOuterError = remaining(cellsOuter, io, refinedCellm, intersectionsOuter, muOuterError);
+					double areaOuter = intersectionsOuter.get(io) * 6367.0 * 6367.0;
+					muOuterError = muOuterError.div(areaOuter);
+					
+					bestFieldList.add(ii);
+					bestMUList.add(muOuterError);
+				}
+				
+				UniformDistribution targetMU = refinedCellm.get(io);
+				double targetLower = targetMU.getLower();
+				double targetUpper = targetMU.getUpper();
+				
+				String bestLowerGuid = null;
+				double bestLowerDiff = Double.MAX_VALUE;
+				
+				String bestUpperGuid = null;
+				double bestUpperDiff = Double.MAX_VALUE;
+				
+				for (int k = 0; k < bestMUList.size(); k++) {
+					UniformDistribution candMU = bestMUList.get(k);
+					String guid = bestFieldList.get(k)[3].trim();
+					
+					// Find the field that most tightly defines the lower bound
+					double lowerDiff = Math.abs(candMU.getLower() - targetLower);
+					if (lowerDiff < bestLowerDiff) {
+						bestLowerDiff = lowerDiff;
+						bestLowerGuid = guid;
+					}
+					
+					// Find the field that most tightly defines the upper bound
+					double upperDiff = Math.abs(candMU.getUpper() - targetUpper);
+					if (upperDiff < bestUpperDiff) {
+						bestUpperDiff = upperDiff;
+						bestUpperGuid = guid;
+					}
+				}
+				
+				if (bestLowerGuid != null && keptFieldGuids.add(bestLowerGuid)) {
+					precisionAnchorsAdded++;
+				}
+				// It's possible the same field sets both bounds (if it's incredibly precise)
+				if (bestUpperGuid != null && keptFieldGuids.add(bestUpperGuid)) {
+					precisionAnchorsAdded++;
+				}
+			}
+			
+			sb.append("Phase 3 complete. Precision anchors added: ").append(precisionAnchorsAdded)
+			  .append(". Total optimal fields: ").append(keptFieldGuids.size()).append("\n");
+			
+			// Phase 4: The Purge Simulate
+			int totalFields = allFields.size();
+			int purgedCount = 0;
+			for (String[] field : allFields) {
+				String guid = field[3].trim();
+				if (!keptFieldGuids.contains(guid)) {
+					purgedCount++;
+				}
+			}
+			sb.append("Phase 4 simulate. Would purge: ").append(purgedCount).append(" fields out of ").append(totalFields).append(".\n");
+
+			long endTime = System.currentTimeMillis();
+			long duration = (endTime - startTime) / 1000;
+			sb.append("Prune process completed in ").append(duration).append(" seconds.\n");
+
+		} catch (Exception e) {
+			Logger.getLogger(CellDBManager.class.getName()).log(Level.SEVERE, "Failed pruneFields", e);
+			sb.append("ERROR in pruneFields: ").append(e.getMessage());
+		}
+		return sb.toString();
+	}
+
 	/**
 	 * Helper method to parse pipe-delimited field content into ArrayList of String
 	 * arrays.

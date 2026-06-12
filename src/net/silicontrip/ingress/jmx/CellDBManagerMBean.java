@@ -24,6 +24,10 @@ public interface CellDBManagerMBean {
 
     public String exportAllFields();
 
+    public String exportCells();
+
+    public String pruneFields();
+
     // Background task methods for long-running refinement
     public String startRefineCellsBackground();
 

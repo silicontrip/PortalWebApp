@@ -613,22 +613,28 @@ public class CellDBManager implements CellDBManagerMBean {
 
 					if (newCellm.containsKey(io)) {
 						UniformDistribution cud = newCellm.get(io);
-						if (Math.abs(ud.mean() - cud.mean()) / cud.mean() > 0.1) {
+						
+						// Protect against floating-point noise dividing by near-zero means
+						boolean meanShifted = ud.meanDiff(cud) > 1E-5 && 
+											  (cud.mean() == 0 || ud.meanDiff(cud) / cud.mean() > 0.1);
 
-							if (updateCounts.containsKey(io)) {
-								Integer c = updateCounts.get(io);
-								c++;
-								updateCounts.put(io, c);
-							} else {
-								updateCounts.put(io, 1);
-							}
-							count++;
-						}
+
 
 						if (ud.getLower() > 0) {
 							// I'm quite impressed with the results from UniformDensityCurve
 							// as long as the cells stabilise.
 							newCellm.put(io, ud);
+							if (meanShifted) {
+
+								if (updateCounts.containsKey(io)) {
+									Integer c = updateCounts.get(io);
+									c++;
+									updateCounts.put(io, c);
+								} else {
+									updateCounts.put(io, 1);
+								}
+								count++;
+							}
 						} else if (cud.getLower() == 0 && cud.improves(ud)) {
 							newCellm.put(io, ud);
 							count++;
@@ -1393,8 +1399,10 @@ public class CellDBManager implements CellDBManagerMBean {
 			populate(allFields); // Populate class-level fieldUnion, fieldIntersections, cellField
 			
 			int precisionAnchorsAdded = 0;
-			for (S2CellId io : refinedCellm.keySet()) {
-				if (!this.cellField.containsKey(io) || this.cellField.get(io) == null) continue;
+			for (S2CellId io : this.cellField.keySet()) {
+				if (this.cellField.get(io) == null) continue;
+
+				if (!refinedCellm.containsKey(io)) continue;
 				
 				ArrayList<String[]> bestFieldList = new ArrayList<>();
 				ArrayList<UniformDistribution> bestMUList = new ArrayList<>();
@@ -1453,16 +1461,80 @@ public class CellDBManager implements CellDBManagerMBean {
 			sb.append("Phase 3 complete. Precision anchors added: ").append(precisionAnchorsAdded)
 			  .append(". Total optimal fields: ").append(keptFieldGuids.size()).append("\n");
 			
-			// Phase 4: The Purge Simulate
-			int totalFields = allFields.size();
-			int purgedCount = 0;
-			for (String[] field : allFields) {
-				String guid = field[3].trim();
-				if (!keptFieldGuids.contains(guid)) {
-					purgedCount++;
+			// Phase 4: Structural Deduplication
+			sb.append("Phase 4: Structural Deduplication of Ambiguous Clusters.\n");
+			HashMap<String, ArrayList<String[]>> signatureMap = new HashMap<>();
+			for (String[] f : allFields) {
+				String guid = f[3].trim();
+				if (keptFieldGuids.contains(guid)) continue;
+				S2Polygon poly = getS2Polygon(f);
+				S2CellUnion cells = getCells(poly);
+				
+				ArrayList<String> cellList = new ArrayList<>();
+				for (S2CellId c : cells) {
+					cellList.add(c.toToken());
+				}
+				java.util.Collections.sort(cellList);
+				
+				StringBuilder sigBuilder = new StringBuilder();
+				for (String c : cellList) {
+					sigBuilder.append(c).append(",");
+				}
+				String signature = sigBuilder.toString();
+				
+				if (!signatureMap.containsKey(signature)) {
+					signatureMap.put(signature, new ArrayList<String[]>());
+				}
+				signatureMap.get(signature).add(f);
+			}
+
+			int structuralBridgesAdded = 0;
+			for (Map.Entry<String, ArrayList<String[]>> entry : signatureMap.entrySet()) {
+				ArrayList<String[]> fields = entry.getValue();
+				String bestGuid = null;
+				double bestFit = -1.0;
+				for (String[] f : fields) {
+					S2Polygon poly = getS2Polygon(f);
+					S2CellUnion cells = getCells(poly);
+					HashMap<S2CellId, Double> intersections = getCellIntersection(cells, poly);
+					
+					double fit = 0.0;
+					for (Double area : intersections.values()) {
+						fit += area;
+					}
+					if (fit > bestFit) {
+						bestFit = fit;
+						bestGuid = f[3].trim();
+					}
+				}
+				if (bestGuid != null && keptFieldGuids.add(bestGuid)) {
+					structuralBridgesAdded++;
 				}
 			}
-			sb.append("Phase 4 simulate. Would purge: ").append(purgedCount).append(" fields out of ").append(totalFields).append(".\n");
+			sb.append("Phase 4 complete. Structural bridges added: ").append(structuralBridgesAdded).append("\n");
+			
+			// Phase 5: The Purge Execute
+			int totalFields = allFields.size();
+			ArrayList<String[]> prunedFields = new ArrayList<>();
+			
+			for (String[] field : allFields) {
+				String guid = field[3].trim();
+				if (keptFieldGuids.contains(guid)) {
+					prunedFields.add(field);
+				}
+			}
+			
+			int purgedCount = totalFields - prunedFields.size();
+			
+			// Log status immediately in case this shifts to a background task
+			Logger.getLogger(CellDBManager.class.getName()).log(Level.INFO, "Prune Phase 4: Executing DB wipe and replace. Purging " + purgedCount + " fields.");
+			
+			int deleted = bdao.deleteFields();
+			int written = bdao.writeFields(prunedFields);
+			
+			sb.append("Phase 4 execute. Wiped ").append(deleted).append(" fields. ")
+			  .append("Wrote back ").append(written).append(" optimal fields. ")
+			  .append("Effectively purged ").append(purgedCount).append(" fields out of ").append(totalFields).append(".\n");
 
 			long endTime = System.currentTimeMillis();
 			long duration = (endTime - startTime) / 1000;

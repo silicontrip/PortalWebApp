@@ -81,6 +81,12 @@ public class JMXServlet extends HttpServlet {
 				resp.setHeader("Content-Disposition", "attachment; filename=\"" + filename + "\"");
 				writer.println(callCellDBManager("exportAllFields", null, null));
 				return;
+			} else if (action.equals("export-cells")) {
+				String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+				String filename = "cell_export_" + timestamp + ".txt";
+				resp.setHeader("Content-Disposition", "attachment; filename=\"" + filename + "\"");
+				writer.println(callCellDBManager("exportCells", null, null));
+				return;
 			}
 
 			resp.setContentType("text/html");
@@ -443,6 +449,14 @@ public class JMXServlet extends HttpServlet {
 					}
 				}
 				writer.println("</div>");
+			} else if (action.equals("prune-fields")) {
+				writer.println("<div class=\"title\">");
+				writer.println("<h1>Pruning Fields</h1>");
+				writer.println("</div>");
+				writer.println("<div class=\"control\">");
+				String result = callCellDBManager("pruneFields", null, null);
+				writer.println("<pre>" + result + "</pre>");
+				writer.println("</div>");
 			} else {
 				writer.println("<div class=\"title\">");
 				writer.println("<h1>?UNKNOWN ACTION.</h1>");
@@ -635,6 +649,15 @@ public class JMXServlet extends HttpServlet {
 			writer.println("</div>");
 
 			writer.println("<div class=\"control\">");
+			writer.println("<h1>PRUNE FIELDS</h1>");
+			writer.println("<p>Find the optimal spanning tree of fields to accurately reproduce the cell map precision, and isolate the rest.</p>");
+			writer.println("<form method='POST' action='jarvis'>");
+			writer.println("<input type='hidden' name='action' value='prune-fields'>");
+			writer.println("<input type='submit' value='Prune Fields'>");
+			writer.println("</form>");
+			writer.println("</div>");
+
+			writer.println("<div class=\"control\">");
 			writer.println("<h1>REBUILD FIELD INDEX</h1>");
 			writer.println("<p>Rebuild field index when fields have been added or modified.</p>");
 			writer.println("<form method='POST' action='jarvis'>");
@@ -652,6 +675,9 @@ public class JMXServlet extends HttpServlet {
 			writer.println("</form><form method='POST' action='jarvis'>");
 			writer.println("<input type='hidden' name='action' value='backup'>");
 			writer.println("<input type='submit' value='Export All'>");
+			writer.println("</form><form method='POST' action='jarvis'>");
+			writer.println("<input type='hidden' name='action' value='export-cells'>");
+			writer.println("<input type='submit' value='Export Cells'>");
 			writer.println("</form>");
 			writer.println("</div>");
 

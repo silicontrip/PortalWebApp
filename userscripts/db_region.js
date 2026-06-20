@@ -899,8 +899,8 @@ window.plugin.muScraper = {
 			}
 
 			if (read[3] === "created") {
-				//console.log("search comms - created");
-				//console.log(entry);
+				console.log("search comms - created");
+				console.log(entry);
 				oPortal = entry[2].plext.markup[4][1];
 				var mu = entry[2].plext.markup[6][1].plain;
 
@@ -934,6 +934,7 @@ window.plugin.muScraper = {
 	},
 	searchCommsForField: function (fd) {
 		console.log(">> searchCommsForField");
+		//console.log("" + fd);
 		var minLatE6;
 		var maxLatE6;
 		var minLngE6;
@@ -1022,7 +1023,7 @@ window.plugin.muScraper = {
 		//console.log(JSON.stringify(field.getLatLngs()));
 
 		// var dt = {type:"polygon", color: "#ffffff", latLngs: field.getLatLngs()};
-		//console.log(field);
+		// console.log(JSON.stringify(field));
 		window.plugin.muScraper.highlightField(field);
 		window.plugin.muScraper.selectedField = field;
 		// only if a portal is selected.
@@ -1230,7 +1231,7 @@ window.plugin.muScraper = {
 					console.log("comm:");
 					console.log(comm);
 					console.log("field:");
-					console.log(fd.options);
+					console.log(JSON.stringify(fd));
 					console.log("TS diff: " + tsdiff);
 					console.log("");
 					if (tsdiff < 3000) comm.field.push(fd);

@@ -1,5 +1,6 @@
 package net.silicontrip;
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 
 /**
@@ -202,6 +203,14 @@ public class UniformDistribution implements Serializable {
 	 * @return double the mean value
 	 */
 	public double mean () { return (upper + lower) / 2.0; }
+
+	/**
+	 * returns the absolute difference between the means
+	 * @param ud a UniformDistribution to calculate the difference with
+	 * @return double the absolute difference between the means
+	 */
+	public double meanDiff(UniformDistribution ud) { return Math.abs(this.mean() - ud.mean()); }
+
 	/**
 	 * Gets the absolute error (or range)
 	 *
@@ -216,6 +225,8 @@ public class UniformDistribution implements Serializable {
 	public double perror() { return (upper - lower) / (upper + lower); }
 
 	public double range() { return upper - lower; }
+
+	public double rangeDiff(UniformDistribution a) { return Math.abs(this.range() - a.range()); }
 
 	/**
 	 * gets the UniformDistribution as an ArrayList of Doubles
@@ -503,7 +514,12 @@ public class UniformDistribution implements Serializable {
 	 * 	@return String representation of the UD, could be used to reconstruct the UD.
 	 */
 	@Override
-	public String toString () { return "[" + lower + "," + upper + "]"; }
+	public String toString () { 
+		String fpLower = new BigDecimal(lower).toString();
+		String fpUpper = new BigDecimal(upper).toString();
+
+		return "[" + fpLower + "," + fpUpper + "]"; 
+	}
 
 	/**
 	 * 	return a more human readable printable string

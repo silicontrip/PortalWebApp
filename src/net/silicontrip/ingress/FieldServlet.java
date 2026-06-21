@@ -329,10 +329,9 @@ public class FieldServlet extends HttpServlet {
 		return response.toString();
 	}
 
-	private JSONObject mu(String s) {
+	private JSONObject mu(JSONArray cells) {
 		// System.out.println("-> " + s);
 
-		JSONArray cells = new JSONArray(s);
 		JSONObject response = new JSONObject();
 		for (Object cobj : cells) {
 			// S2CellId cell = S2CellId.fromToken((String)cobj);
@@ -606,9 +605,11 @@ public class FieldServlet extends HttpServlet {
 
 			if (req.getParameter("mu") != null) {
 				// System.out.println("Field Servlet - mu request");
+				JSONArray cells = new JSONArray(req.getParameter("mu"));
+
 				Logger.getLogger(FieldServlet.class.getName()).log(Level.INFO,
-						"request mu for: " + req.getParameter("mu"));
-				jsonResponse = mu(req.getParameter("mu"));
+						"request mu for " + cells.length() + " cells.");
+				jsonResponse = mu(cells);
 			} else if (req.getParameter("use") != null) {
 				// System.out.println("Field Servlet - use request");
 				// Logger.getLogger(FieldServlet.class.getName()).log(Level.INFO, "use field

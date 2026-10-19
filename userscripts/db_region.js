@@ -481,174 +481,267 @@ window.plugin.muScraper = {
 
 					return positions;
 				},
-				CellRegionOverlap: function (cell, field) {
-					// could optimize by checking if boundaries overlap.
+				// S2RegionCoverer
+				// A port of com.google.common.geometry.S2RegionCoverer, the Java library used server side,
+				// configured as the server does: minLevel 0, levelMod 1, maxCells 20, maxLevel cellLevel.
+				//
+				// Starting from 4 cells around the field's bounding cap, candidates are kept in a priority
+				// queue, largest cells first. A popped candidate is replaced by its children that intersect
+				// the field only if the covering would still fit in maxCells, otherwise it is kept whole.
+				// A cell is final (terminal) when it is inside the field or at maxLevel, and a cell
+				// whose 4 children are all terminal is used in place of them.
+				//
+				// Cell and field edges are both great circle arcs so the geometry is done with vectors.
+				MAX_CELLS: 20,
+				MIN_WIDTH_DERIV: Math.SQRT2 / 3, // S2Projections.MIN_WIDTH for the quadratic projection
+				// hilbert curve tables from S2.java, ij is (i << 1) | j
+				POS_TO_IJ: [[0, 1, 3, 2], [0, 2, 3, 1], [3, 2, 0, 1], [3, 1, 0, 2]],
+				IJ_TO_POS: [[0, 1, 3, 2], [0, 3, 1, 2], [2, 3, 1, 0], [2, 1, 3, 0]],
+				POS_TO_ORIENTATION: [1, 0, 0, 3],
 
-					//console.log(cell);
-					//console.log(field);
-
-					var fpts = field.getLatLngs();
-					var cpts = cell.getCornerLatLngs();
-
-					//console.log(fpts);
-					//console.log(cpts);
-
-					var gfield = new google.maps.Polygon({ geodesic: true, paths: fpts });
-					var gcell = new google.maps.Polygon({ geodesic: true, paths: cpts });
-
-					var ll;
-					var glatlng;
-					for (ll in cpts) {
-						glatlng = new google.maps.LatLng(cpts[ll]);
-						// catch this error and try again
-						try {
-							if (google.maps.geometry.poly.containsLocation(glatlng, gfield)) return true;
-						} catch (err) {
-							if (google.maps.geometry.poly.containsLocation(glatlng, gfield)) return true;
+				cross: function (a, b) {
+					return [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+				},
+				dot: function (a, b) {
+					return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+				},
+				unit: function (a) {
+					var n = Math.sqrt(S2.dot(a, a));
+					return [a[0] / n, a[1] / n, a[2] / n];
+				},
+				latLngRadToXYZ: function (lat, lng) {
+					return [Math.cos(lng) * Math.cos(lat), Math.sin(lng) * Math.cos(lat), Math.sin(lat)];
+				},
+				// S2EdgeUtil.simpleCrossing: do edges AB and CD cross at a point interior to both
+				simpleCrossing: function (a, b, c, d) {
+					var ab = S2.cross(a, b);
+					var acb = -S2.dot(ab, c);
+					var bda = S2.dot(ab, d);
+					if (acb * bda <= 0) return false;
+					var cd = S2.cross(c, d);
+					var cbd = -S2.dot(cd, b);
+					var dac = S2.dot(cd, a);
+					return (acb * cbd > 0) && (acb * dac > 0);
+				},
+				// loop must be convex and counter clockwise
+				loopContainsPoint: function (loop, p) {
+					for (var k = 0; k < loop.length; k++) {
+						if (S2.dot(S2.cross(loop[k], loop[(k + 1) % loop.length]), p) < 0) return false;
+					}
+					return true;
+				},
+				toCCW: function (loop) {
+					if (S2.dot(S2.cross(loop[0], loop[1]), loop[2]) < 0) loop.reverse();
+					return loop;
+				},
+				loopsIntersect: function (a, b) {
+					var k, l;
+					for (k = 0; k < a.length; k++) if (S2.loopContainsPoint(b, a[k])) return true;
+					for (k = 0; k < b.length; k++) if (S2.loopContainsPoint(a, b[k])) return true;
+					for (k = 0; k < a.length; k++) {
+						for (l = 0; l < b.length; l++) {
+							if (S2.simpleCrossing(a[k], a[(k + 1) % a.length], b[l], b[(l + 1) % b.length])) return true;
 						}
 					}
-
-					for (ll in fpts) {
-						glatlng = new google.maps.LatLng(fpts[ll]);
-						if (google.maps.geometry.poly.containsLocation(glatlng, gcell)) return true;
+					return false;
+				},
+				loopContainsLoop: function (a, b) {
+					// both loops are convex, so b is inside a when all its vertices are
+					for (var k = 0; k < b.length; k++) if (!S2.loopContainsPoint(a, b[k])) return false;
+					return true;
+				},
+				// S2EdgeUtil.RectBounder: lat/lng bounds of the loop in radians, including geodesic edges
+				// that bulge past the latitude of their end points.
+				getLatLngRect: function (loop) {
+					var lat = [], lng = [], k;
+					for (k = 0; k < loop.length; k++) {
+						lat.push(Math.atan2(loop[k][2], Math.sqrt(loop[k][0] * loop[k][0] + loop[k][1] * loop[k][1])));
+						lng.push(Math.atan2(loop[k][1], loop[k][0]));
 					}
+					var latLo = Math.min.apply(null, lat);
+					var latHi = Math.max.apply(null, lat);
+					for (k = 0; k < loop.length; k++) {
+						var a = loop[k];
+						var b = loop[(k + 1) % loop.length];
+						var n = S2.unit(S2.cross(a, b));
+						// highest point on the edge's great circle, the lowest is its antipode
+						var m = S2.unit([-n[0] * n[2], -n[1] * n[2], 1 - n[2] * n[2]]);
+						if (S2.dot(S2.cross(a, m), n) > 0 && S2.dot(S2.cross(m, b), n) > 0) latHi = Math.max(latHi, Math.asin(m[2]));
+						m = [-m[0], -m[1], -m[2]];
+						if (S2.dot(S2.cross(a, m), n) > 0 && S2.dot(S2.cross(m, b), n) > 0) latLo = Math.min(latLo, Math.asin(m[2]));
+					}
+					if (S2.loopContainsPoint(loop, [0, 0, 1])) return { latLo: latLo, latHi: Math.PI / 2, lngLo: -Math.PI, lngSpan: 2 * Math.PI };
+					if (S2.loopContainsPoint(loop, [0, 0, -1])) return { latLo: -Math.PI / 2, latHi: latHi, lngLo: -Math.PI, lngSpan: 2 * Math.PI };
 
-					// console.log("No contains Location");
+					// the longitude range is everything outside the largest gap between vertices
+					var sorted = lng.slice().sort(function (x, y) { return x - y; });
+					var gap = -1;
+					var lngLo = 0;
+					for (k = 0; k < sorted.length; k++) {
+						var g = (k === sorted.length - 1) ? sorted[0] + 2 * Math.PI - sorted[k] : sorted[k + 1] - sorted[k];
+						if (g > gap) {
+							gap = g;
+							lngLo = sorted[(k + 1) % sorted.length];
+						}
+					}
+					return { latLo: latLo, latHi: latHi, lngLo: lngLo, lngSpan: 2 * Math.PI - gap };
+				},
+				// S2LatLngRect.getCapBound: the smaller of a cap centred on the rect or on a pole
+				getCapBound: function (rect) {
+					var poleZ, poleAngle;
+					if (rect.latLo + rect.latHi < 0) {
+						poleZ = -1;
+						poleAngle = Math.PI / 2 + rect.latHi;
+					} else {
+						poleZ = 1;
+						poleAngle = Math.PI / 2 - rect.latLo;
+					}
+					var sinHalf = Math.sin(0.5 * poleAngle);
+					var cap = { axis: [0, 0, poleZ], height: 2 * sinHalf * sinHalf };
 
-					var fl1 = new GeodesicLine(fpts[0], fpts[1]);
-					var fl2 = new GeodesicLine(fpts[1], fpts[2]);
-					var fl3 = new GeodesicLine(fpts[2], fpts[0]);
+					if (rect.lngSpan <= Math.PI) {
+						var center = S2.latLngRadToXYZ((rect.latLo + rect.latHi) / 2, rect.lngLo + rect.lngSpan / 2);
+						var lats = [rect.latLo, rect.latLo, rect.latHi, rect.latHi];
+						var lngs = [rect.lngLo, rect.lngLo + rect.lngSpan, rect.lngLo + rect.lngSpan, rect.lngLo];
+						var height = 0;
+						for (var k = 0; k < 4; k++) {
+							var v = S2.latLngRadToXYZ(lats[k], lngs[k]);
+							var d = [center[0] - v[0], center[1] - v[1], center[2] - v[2]];
+							height = Math.max(height, 0.5 * S2.dot(d, d));
+						}
+						if (height < cap.height) cap = { axis: center, height: height };
+					}
+					cap.angle = 2 * Math.asin(Math.sqrt(0.5 * cap.height));
+					return cap;
+				},
+				// S2.Metric.getMaxLevel for MIN_WIDTH: the deepest level whose cells are at least this wide
+				minWidthMaxLevel: function (value) {
+					if (value <= 0) return S2.MAX_LEVEL;
+					var level = Math.floor(Math.log2(2 * S2.MIN_WIDTH_DERIV / value));
+					return Math.max(0, Math.min(S2.MAX_LEVEL, level));
+				},
+				// S2CellId.getVertexNeighbors: the 4 cells at level sharing the vertex closest to point
+				getVertexNeighbors: function (point, level) {
+					var faceuv = S2.XYZToFaceUV(point);
+					var face = faceuv[0];
+					var st = S2.UVToST(faceuv[1]);
+					var ij = S2.STToIJ(st, level + 1);
+					var size = 1 / (1 << level);
+					var ds = (ij[0] & 1) ? size : -size;
+					var dt = (ij[1] & 1) ? size : -size;
+					var isame = st[0] + ds >= 0 && st[0] + ds < 1;
+					var jsame = st[1] + dt >= 0 && st[1] + dt < 1;
 
-					var cl1 = new GeodesicLine(cpts[0], cpts[1]);
-					var cl2 = new GeodesicLine(cpts[1], cpts[2]);
-					var cl3 = new GeodesicLine(cpts[2], cpts[3]);
-					var cl4 = new GeodesicLine(cpts[3], cpts[0]);
+					var cellAt = function (s, t) {
+						if (s >= 0 && s < 1 && t >= 0 && t < 1) return S2.S2Cell.FromFaceIJ(face, S2.STToIJ([s, t], level), level);
+						// just beyond the edge of this face, find the cell on the adjacent face.
+						// like S2CellId.fromFaceIJWrap, s,t are used as u,v without the quadratic transform
+						var e = 1 / (1 << 30);
+						s = Math.max(-e, Math.min(1 + e, s));
+						t = Math.max(-e, Math.min(1 + e, t));
+						var fuv = S2.XYZToFaceUV(S2.FaceUVToXYZ(face, [2 * s - 1, 2 * t - 1]));
+						return S2.S2Cell.FromFaceIJ(fuv[0], S2.STToIJ([(fuv[1][0] + 1) / 2, (fuv[1][1] + 1) / 2], level), level);
+					};
 
-
-					return fl1.intersects(cl1) ||
-						fl1.intersects(cl2) ||
-						fl1.intersects(cl3) ||
-						fl1.intersects(cl4) ||
-						fl2.intersects(cl1) ||
-						fl2.intersects(cl2) ||
-						fl2.intersects(cl3) ||
-						fl2.intersects(cl4) ||
-						fl3.intersects(cl1) ||
-						fl3.intersects(cl2) ||
-						fl3.intersects(cl3) ||
-						fl3.intersects(cl4);
-
+					var cells = [
+						cellAt(st[0], st[1]),
+						cellAt(st[0] + ds, st[1]),
+						cellAt(st[0], st[1] + dt)
+					];
+					// a cube corner only has 3 neighbours
+					if (isame || jsame) cells.push(cellAt(st[0] + ds, st[1] + dt));
+					return cells;
+				},
+				// S2CellUnion.normalize: replace any 4 sibling cells with their parent, repeatedly
+				normalizeCells: function (cells) {
+					var merged = true;
+					while (merged) {
+						merged = false;
+						var siblings = {};
+						var k;
+						for (k = 0; k < cells.length; k++) {
+							var c = cells[k];
+							if (c.level === 0) continue;
+							var key = c.face + '/' + (c.ij[0] >> 1) + ',' + (c.ij[1] >> 1) + '@' + (c.level - 1);
+							(siblings[key] = siblings[key] || []).push(c);
+						}
+						for (var key2 in siblings) {
+							if (siblings[key2].length === 4) {
+								var first = siblings[key2][0];
+								cells = cells.filter(function (c) { return siblings[key2].indexOf(c) < 0; });
+								cells.push(S2.S2Cell.FromFaceIJ(first.face, [first.ij[0] >> 1, first.ij[1] >> 1], first.level - 1));
+								merged = true;
+							}
+						}
+					}
+					return cells;
 				},
 				getCellsForRegion: function (field) {
+					var maxLevel = window.plugin.muScraper.cellLevel;
+					var maxCells = S2.MAX_CELLS;
+					var loop = S2.toCCW(field.getLatLngs().map(function (ll) { return S2.unit(S2.LatLngToXYZ(ll)); }));
 
-					var candidate = [
-						S2.S2Cell.FromLatLng({ 'lat': 0, 'lng': -90 }, 0),
-						S2.S2Cell.FromLatLng({ 'lat': 0, 'lng': 0 }, 0),
-						S2.S2Cell.FromLatLng({ 'lat': 0, 'lng': 90 }, 0),
-						S2.S2Cell.FromLatLng({ 'lat': 0, 'lng': 180 }, 0),
-						S2.S2Cell.FromLatLng({ 'lat': 90, 'lng': 0 }, 0),
-						S2.S2Cell.FromLatLng({ 'lat': -90, 'lng': 0 }, 0)
-					];
+					var result = [];
+					var queue = new S2.PriorityQueue();
 
-					var pts = field.getLatLngs();
-					// assuming the field is all on one face.
-					// this won't be true for all fields but just for testing.
-					/*
-						var candidate = [
-							S2.S2Cell.FromLatLng(pts[0],0)
-						];
-					*/
-					var altcandidate = [];
-					var altcandidate2 = [];
+					var newCandidate = function (cell) {
+						var cellLoop = S2.toCCW(cell.getCornerXYZ());
+						if (!S2.loopsIntersect(loop, cellLoop)) return null;
+						return {
+							cell: cell,
+							isTerminal: cell.level + 1 > maxLevel || S2.loopContainsLoop(loop, cellLoop),
+							children: []
+						};
+					};
 
-					var count = 0;
-					while (count < 32) {
-						//altcandidate = candidate;
-						altcandidate2 = S2.findCandidates(candidate, field);
-						//console.log("presingle: " + altcandidate.length);
-						altcandidate = S2.singleCandidates(altcandidate2, field);
-						//console.log("postsingle: " + candidate.length);
-						if (altcandidate.length < 20) candidate = altcandidate;
-						count++;
+					var addCandidate = function (candidate) {
+						if (candidate === null) return;
+						if (candidate.isTerminal) {
+							result.push(candidate.cell);
+							return;
+						}
+						var numTerminals = 0;
+						var cells = candidate.cell.subdivide();
+						for (var k = 0; k < cells.length; k++) {
+							var child = newCandidate(cells[k]);
+							if (child !== null) {
+								candidate.children.push(child);
+								if (child.isTerminal) numTerminals++;
+							}
+						}
+						if (candidate.children.length === 0) return;
+						if (numTerminals === 4) {
+							// use the parent cell rather than all of its children
+							candidate.isTerminal = true;
+							addCandidate(candidate);
+							return;
+						}
+						// largest cells first, then fewest intersecting children, then fewest terminal children
+						var priority = -((((candidate.cell.level << 2) + candidate.children.length) << 2) + numTerminals);
+						queue.add(priority, candidate);
+					};
+
+					var cap = S2.getCapBound(S2.getLatLngRect(loop));
+					var level = Math.min(S2.minWidthMaxLevel(2 * cap.angle), Math.min(maxLevel, S2.MAX_LEVEL - 1));
+					var k;
+					if (level > 0) {
+						var base = S2.getVertexNeighbors(cap.axis, level);
+						for (k = 0; k < base.length; k++) addCandidate(newCandidate(base[k]));
+					} else {
+						for (k = 0; k < 6; k++) addCandidate(newCandidate(S2.S2Cell.FromFaceIJ(k, [0, 0], 0)));
 					}
 
-					console.log("" + candidate.length + " <-> " + altcandidate.length);
-
-					return candidate;
-
-				},
-				singleCandidates: function (altcandidate, field) {
-					var candidate = [];
-					var cell;
-					for (cell in altcandidate) {
-						if (altcandidate[cell].level < window.plugin.muScraper.cellLevel) {
-							var ccells = altcandidate[cell].subdivide();
-							var count = 0;
-							var ccell;
-							for (ccell in ccells) {
-								if (S2.CellRegionOverlap(ccells[ccell], field)) count++;
-							}
-							if (count === 1) {
-								for (ccell in ccells) {
-									if (S2.CellRegionOverlap(ccells[ccell], field)) candidate.push(ccells[ccell]);
-								}
-							} else {
-								candidate.push(altcandidate[cell]);
-							}
+					while (!queue.isEmpty()) {
+						var candidate = queue.poll();
+						if (candidate.children.length === 1 || result.length + queue.size() + candidate.children.length <= maxCells) {
+							for (k = 0; k < candidate.children.length; k++) addCandidate(candidate.children[k]);
 						} else {
-							candidate.push(altcandidate[cell]);
+							candidate.isTerminal = true;
+							addCandidate(candidate);
 						}
 					}
-					return candidate;
-				},
-				findCandidates: function (altcandidate, field) {
-					var candidate = [];
-					//console.log(">>> findCandidates");
-					var cell;
-					for (cell in altcandidate) {
-						// console.log(altcandidate[cell]);
-						if (altcandidate[cell].level < window.plugin.muScraper.cellLevel) {
-							var ccells = altcandidate[cell].subdivide();
-							// console.log(ccells);
-							var count = 0;
-							var ccell;
-							for (ccell in ccells) {
-								if (S2.CellRegionOverlap(ccells[ccell], field)) count++;
-							}
-							// console.log("count: " + count);
-							if (count === 4 && altcandidate.length > 2) {
-								// don't subdivide further
-								// unless the children have 1 child as their children
-								candidate.push(altcandidate[cell]);
-							} else {
-								if (count > 0) {
-									for (ccell in ccells) {
-										if (S2.CellRegionOverlap(ccells[ccell], field)) candidate.push(ccells[ccell]);
-									}
-								}
-							}
-						} else {
-							candidate.push(altcandidate[cell]);
-						}
-					}
-					return candidate;
-				},
-				mergeCells: function (cellcover) {
-					var pcells = {};
-					var parent;
-					for (var cell in cellcover) {
-						parent = cellcover[cell].getParent();
-						if (parent.toId() in pcells) pcells[parent.toId()]++;
-						else pcells[parent.toId()] = 1;
-					}
-					// need to iterate multiple times...
-					var ucellcover = {};
-					for (cell in cellcover) {
-						parent = cellcover[cell].getParent();
-						if (pcells[parent.toId()] === 4) { ucellcover[parent.toId()] = parent; }
-						else { ucellcover[cell] = cellcover[cell]; }
-					}
-					return ucellcover;
+
+					return S2.normalizeCells(result);
 				}
 
 			};
@@ -696,21 +789,75 @@ window.plugin.muScraper = {
 				if (this.level === 0) return this;
 				return S2.S2Cell.FromLatLng(this.getLatLng(), this.level - 1);
 			};
+			// orientation of the hilbert curve within this cell
+			S2.S2Cell.prototype.getOrientation = function () {
+				var orientation = this.face & 1;
+				for (var k = this.level - 1; k >= 0; k--) {
+					var pos = S2.IJ_TO_POS[orientation][(((this.ij[0] >> k) & 1) << 1) | ((this.ij[1] >> k) & 1)];
+					orientation ^= S2.POS_TO_ORIENTATION[pos];
+				}
+				return orientation;
+			};
+			// children in hilbert curve order, the same order as S2Cell.subdivide in the S2 library
 			S2.S2Cell.prototype.subdivide = function () {
-				//console.log(JSON.stringify([this.ij,this.level]));
-				var children = [];
+				if (this.level === 30) return [this];
 
-				if (this.level === 30) return [this]; // is 30 correct?
+				var self = this;
+				return S2.POS_TO_IJ[this.getOrientation()].map(function (ij) {
+					return S2.S2Cell.FromFaceIJ(self.face, [self.ij[0] * 2 + (ij >> 1), self.ij[1] * 2 + (ij & 1)], self.level + 1);
+				});
+			};
 
-				// I'm wondering if there is a correct order to these...
-				children = [
-					S2.S2Cell.FromFaceIJ(this.face, [this.ij[0] * 2, this.ij[1] * 2], this.level + 1),
-					S2.S2Cell.FromFaceIJ(this.face, [this.ij[0] * 2 + 1, this.ij[1] * 2], this.level + 1),
-					S2.S2Cell.FromFaceIJ(this.face, [this.ij[0] * 2 + 1, this.ij[1] * 2 + 1], this.level + 1),
-					S2.S2Cell.FromFaceIJ(this.face, [this.ij[0] * 2, this.ij[1] * 2 + 1], this.level + 1)
-				];
+			S2.S2Cell.prototype.getCornerXYZ = function () {
+				var result = [];
+				var offsets = [[0.0, 0.0], [0.0, 1.0], [1.0, 1.0], [1.0, 0.0]];
+				for (var k = 0; k < 4; k++) {
+					var uv = S2.STToUV(S2.IJToST(this.ij, this.level, offsets[k]));
+					result.push(S2.unit(S2.FaceUVToXYZ(this.face, uv)));
+				}
+				return result;
+			};
 
-				return children;
+			// binary heap behaving exactly like java.util.PriorityQueue with the S2RegionCoverer comparator
+			// (highest priority first) so candidates of equal priority are taken in the same order
+			S2.PriorityQueue = function () { this.heap = []; };
+			S2.PriorityQueue.compare = function (x, y) {
+				return x.priority < y.priority ? 1 : (x.priority > y.priority ? -1 : 0);
+			};
+			S2.PriorityQueue.prototype.size = function () { return this.heap.length; };
+			S2.PriorityQueue.prototype.isEmpty = function () { return this.heap.length === 0; };
+			S2.PriorityQueue.prototype.add = function (priority, value) {
+				var heap = this.heap;
+				var e = { priority: priority, value: value };
+				var k = heap.length;
+				while (k > 0) {
+					var parent = (k - 1) >>> 1;
+					if (S2.PriorityQueue.compare(e, heap[parent]) >= 0) break;
+					heap[k] = heap[parent];
+					k = parent;
+				}
+				heap[k] = e;
+			};
+			S2.PriorityQueue.prototype.poll = function () {
+				var heap = this.heap;
+				var result = heap[0];
+				var x = heap.pop();
+				var size = heap.length;
+				if (size > 0) {
+					var k = 0;
+					var half = size >>> 1;
+					while (k < half) {
+						var child = 2 * k + 1;
+						var c = heap[child];
+						var right = child + 1;
+						if (right < size && S2.PriorityQueue.compare(c, heap[right]) > 0) c = heap[child = right];
+						if (S2.PriorityQueue.compare(x, c) <= 0) break;
+						heap[k] = c;
+						k = child;
+					}
+					heap[k] = x;
+				}
+				return result.value;
 			};
 
 			S2.S2Cell.prototype.getCornerLatLngs = function () {

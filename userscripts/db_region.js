@@ -306,7 +306,7 @@ window.plugin.muScraper = {
 
 					// 60-bit position value
 					//  posB = Long.fromString(posS, true, 4).toString(2);
-					posB = parseInt(posS, 4).toString(2);
+					posB = levelN ? parseInt(posS, 4).toString(2) : '';
 					while (posB.length < (2 * levelN)) {
 						posB = '0' + posB;
 					}
@@ -456,27 +456,15 @@ window.plugin.muScraper = {
 				// note: rather than calculating the final integer hilbert position, we just return the list of quads
 				// this ensures no precision issues whth large orders (S3 cell IDs use up to 30), and is more
 				// convenient for pulling out the individual bits as needed later
-				pointToHilbertQuadList: function (x, y, order) {
-					var hilbertMap = {
-						'a': [[0, 'd'], [1, 'a'], [3, 'b'], [2, 'a']],
-						'b': [[2, 'b'], [1, 'b'], [3, 'a'], [0, 'c']],
-						'c': [[2, 'c'], [3, 'd'], [1, 'c'], [0, 'b']],
-						'd': [[0, 'a'], [3, 'c'], [1, 'd'], [2, 'd']]
-					};
-
-					var currentSquare = 'a';
+				// the curve starts swapped on odd faces, as in the S2 library
+				pointToHilbertQuadList: function (face, i, j, order) {
+					var orientation = face & 1;
 					var positions = [];
 
-					for (var i = order - 1; i >= 0; i--) {
-						var mask = 1 << i;
-						var quad_x = x & mask ? 1 : 0;
-						var quad_y = y & mask ? 1 : 0;
-
-						var t = hilbertMap[currentSquare][quad_x * 2 + quad_y];
-
-						positions.push(t[0]);
-
-						currentSquare = t[1];
+					for (var k = order - 1; k >= 0; k--) {
+						var pos = S2.IJ_TO_POS[orientation][(((i >> k) & 1) << 1) | ((j >> k) & 1)];
+						positions.push(pos);
+						orientation ^= S2.POS_TO_ORIENTATION[pos];
 					}
 
 					return positions;
@@ -879,13 +867,13 @@ window.plugin.muScraper = {
 				return result;
 			};
 			S2.S2Cell.prototype.getFaceAndQuads = function () {
-				var quads = S2.pointToHilbertQuadList(this.ij[0], this.ij[1], this.level);
+				var quads = S2.pointToHilbertQuadList(this.face, this.ij[0], this.ij[1], this.level);
 				return [this.face, quads];
 			};
 
 			S2.S2Cell.prototype.toId = function () {
 				//				console.log("I: " + this.ij[0] + " J: " + this.ij[1] + " Level: " + this.level);
-				var quads = S2.pointToHilbertQuadList(this.ij[1], this.ij[0], this.level);
+				var quads = S2.pointToHilbertQuadList(this.face, this.ij[0], this.ij[1], this.level);
 				//console.log(quads);
 				var id = S2.fromFacePosLevel(this.face, quads.join(""), this.level);
 
@@ -895,7 +883,8 @@ window.plugin.muScraper = {
 
 				//id = id / shiftBits;
 				//				console.log("ID: " + id.toString(16));
-				const token = id.toString(16).replace(/0+$/, "");
+				// tokens keep the leading zeros of the 16 hex digit id (face 0 cells start with 0)
+				const token = id.toString(16).padStart(16, "0").replace(/0+$/, "");
 				return token;
 			};
 

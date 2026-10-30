@@ -2472,6 +2472,100 @@ public class CellDBManager implements CellDBManagerMBean {
         }
     }
 
+    @Override
+    public String reportInvalidFields() {
+        StringBuilder sb = new StringBuilder();
+        try {
+            ArrayList<String[]> fieldList = bdao.readValidFields();
+            HashMap<S2CellId, UniformDistribution> cellm = bdao.readCells();
+
+            sb.append(fieldList.size()).append(" fields read.\n");
+            sb.append(cellm.size()).append(" cells read.\n\n");
+
+            populate(fieldList);
+
+            // field guid -> list of [cellToken, peakDist, fieldDist]
+            HashMap<String, ArrayList<String[]>> fieldCellDetails = new HashMap<>();
+            HashMap<String, Integer> fieldErrorCount = new HashMap<>();
+
+            int ksn = cellField.size();
+            ArrayList<S2CellId> keys = new ArrayList<S2CellId>(cellField.keySet());
+
+            for (int iii = 0; iii < ksn; iii++) {
+                S2CellId io = keys.get(iii);
+
+                ArrayList<String[]> bestFieldList = new ArrayList<>();
+                ArrayList<UniformDistribution> bestMUList = new ArrayList<>();
+
+                for (String[] ii : cellField.get(io)) {
+                    String guidOuter = ii[3].trim();
+                    S2CellUnion cellsOuter = fieldUnion.get(guidOuter);
+                    HashMap<S2CellId, Double> intersectionsOuter = fieldIntersections.get(guidOuter);
+
+                    UniformDistribution muOuterError = makeDist(ii[2]);
+                    muOuterError = remaining(cellsOuter, io, cellm, intersectionsOuter, muOuterError);
+                    double areaOuter = intersectionsOuter.get(io) * 6367.0 * 6367.0;
+                    muOuterError = muOuterError.div(areaOuter);
+
+                    bestFieldList.add(ii);
+                    bestMUList.add(muOuterError);
+                }
+
+                UniformDensityCurve udc = new UniformDensityCurve(bestMUList);
+
+                if (!udc.allValid()) {
+                    int peakHeight = udc.getPeakValue();
+                    for (int i = 0; i < bestMUList.size(); i++) {
+                        if (!udc.isValid(bestMUList.get(i))) {
+                            String guid = bestFieldList.get(i)[3].trim();
+
+                            fieldErrorCount.merge(guid, 1, Integer::sum);
+
+                            if (!fieldCellDetails.containsKey(guid)) {
+                                fieldCellDetails.put(guid, new ArrayList<String[]>());
+                            }
+                            fieldCellDetails.get(guid).add(new String[] {
+                                io.toToken(),
+                                String.valueOf(peakHeight),
+                                bestMUList.get(i).toString()
+                            });
+                        }
+                    }
+                }
+            }
+
+            Object[] fe = fieldErrorCount.entrySet().toArray();
+            Arrays.sort(fe, new Comparator() {
+                public int compare(Object o1, Object o2) {
+                    return ((Map.Entry<String, Integer>) o2).getValue()
+                        .compareTo(((Map.Entry<String, Integer>) o1).getValue());
+                }
+            });
+
+            sb.append(fieldErrorCount.size()).append(" field(s) with invalid cell agreements.\n\n");
+
+            for (Object f : fe) {
+                Map.Entry<String, Integer> entry = (Map.Entry<String, Integer>) f;
+                String guid = entry.getKey();
+                sb.append("Field ").append(guid)
+                  .append(": ").append(entry.getValue())
+                  .append(" cell(s) mark as invalid\n");
+
+                for (String[] detail : fieldCellDetails.get(guid)) {
+                    sb.append("  cell ").append(detail[0])
+                      .append(" peak=").append(detail[1])
+                      .append(" field=").append(detail[2])
+                      .append("\n");
+                }
+                sb.append("\n");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            sb.append("ERROR: reportInvalidFields failed. ").append(e.getMessage());
+        }
+        return sb.toString();
+    }
+
     private void appendInvalidFieldTrace(
         StringBuilder errorDetails,
         S2CellId io,

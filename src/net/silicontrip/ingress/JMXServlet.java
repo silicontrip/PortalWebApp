@@ -457,6 +457,14 @@ public class JMXServlet extends HttpServlet {
 				String result = callCellDBManager("pruneFields", null, null);
 				writer.println("<pre>" + result + "</pre>");
 				writer.println("</div>");
+			} else if (action.equals("invalid-fields")) {
+				writer.println("<div class=\"title\">");
+				writer.println("<h1>Invalid Field Report</h1>");
+				writer.println("</div>");
+				writer.println("<div class=\"control\">");
+				String result = callCellDBManager("reportInvalidFields", null, null);
+				writer.println("<pre>" + result + "</pre>");
+				writer.println("</div>");
 			} else {
 				writer.println("<div class=\"title\">");
 				writer.println("<h1>?UNKNOWN ACTION.</h1>");
@@ -654,6 +662,15 @@ public class JMXServlet extends HttpServlet {
 			writer.println("<form method='POST' action='jarvis'>");
 			writer.println("<input type='hidden' name='action' value='prune-fields'>");
 			writer.println("<input type='submit' value='Prune Fields'>");
+			writer.println("</form>");
+			writer.println("</div>");
+
+			writer.println("<div class=\"control\">");
+			writer.println("<h1>INVALID FIELD REPORT</h1>");
+			writer.println("<p>Show fields that are classified as invalid by one or more cells, sorted by number of disagreeing cells. Includes the peak vs implied MU/km² for each disagreeing cell.</p>");
+			writer.println("<form method='POST' action='jarvis'>");
+			writer.println("<input type='hidden' name='action' value='invalid-fields'>");
+			writer.println("<input type='submit' value='Report Invalid Fields'>");
 			writer.println("</form>");
 			writer.println("</div>");
 

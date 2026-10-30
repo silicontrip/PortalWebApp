@@ -93,4 +93,13 @@ public interface CellDBManagerMBean {
      * (are outliers), with DrawTools links for the conflicting fields.
      */
     public String processField(String fieldGuid);
+
+    /**
+     * Reports fields that are classified as invalid by one or more cells,
+     * along with the number of cells that class each field as invalid and,
+     * for each such cell, the cell's peak distribution vs the field's implied
+     * distribution (showing how confident the disagreement is).
+     * Uses the current cell model from the database; does not modify any data.
+     */
+    public String reportInvalidFields();
 }
